@@ -8,7 +8,7 @@ def Ciudadano():
     display = pygame.display.set_mode((800, 600))
     pygame.display.set_caption("My Game")
 
-    fondo = pygame.image.load(Path(__file__).parent.parent / "Assets" / "Ciudadano.png").convert()
+    fondo = pygame.image.load(Path(__file__).parent.parent / "Assets" / "Interfaz" / "Ciudadano.png").convert()
 
     running = True
     while running:

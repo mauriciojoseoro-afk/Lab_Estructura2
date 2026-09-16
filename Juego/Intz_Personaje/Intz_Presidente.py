@@ -7,7 +7,7 @@ def Presidente():
     display = pygame.display.set_mode((800, 600))
     pygame.display.set_caption("My Game")
 
-    fondo = pygame.image.load(Path(__file__).parent.parent / "Assets" / "Presidente.png").convert()
+    fondo = pygame.image.load(Path(__file__).parent.parent / "Assets" /"Interfaz" / "Presidente.png").convert()
 
     running = True
     while running:

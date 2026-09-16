@@ -12,7 +12,7 @@ def SeleccionarPJ():
     display = pygame.display.set_mode((800, 600))
     pygame.display.set_caption("My Game")
 
-    fondo = pygame.image.load(Path(__file__).parent.parent / "Assets" / "Elegir_PJ.png").convert()
+    fondo = pygame.image.load(Path(__file__).parent.parent / "Assets" / "Interfaz" / "Elegir_PJ.png").convert()
 
     # posiciones distintas para cada botón
     boton_presidente = pygame.Rect(40, 500, 150, 60)

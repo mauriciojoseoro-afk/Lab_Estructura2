@@ -11,7 +11,7 @@ pygame.init()
 display = pygame.display.set_mode((800, 600))
 pygame.display.set_caption("My Game")
 
-fondo = pygame.image.load("Juego/Assets/Juego.png").convert()
+fondo = pygame.image.load("Juego/Assets/Interfaz/Juego.png").convert()
 
 #Boton
 boton_rect = pygame.Rect(50, 300, 200, 60)

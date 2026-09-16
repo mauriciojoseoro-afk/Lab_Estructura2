@@ -7,7 +7,7 @@ def Influencer():
     display = pygame.display.set_mode((800, 600))
     pygame.display.set_caption("My Game")
 
-    fondo = pygame.image.load(Path(__file__).parent.parent / "Assets" / "Influencer.png").convert()
+    fondo = pygame.image.load(Path(__file__).parent.parent / "Assets" /"Interfaz" / "Influencer.png").convert()
 
     running = True
     while running:
