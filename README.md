@@ -24,25 +24,6 @@ A través de eventos, decisiones y propuestas, los jugadores exploran cómo la i
 - **Árboles AVL:** organizan las preguntas y respuestas de cada rol (por ejemplo, el árbol de preguntas del periodista y el árbol de respuestas del presidente, sincronizados por ID), así como las propuestas de gobierno (inserción por el candidato, eliminación por votación de los demás roles).
 - **Grafos:** representan la ciudad y la red social de propagación de información entre jugadores.
 
-## Estructura del proyecto
-
-\`\`\`
-Lab_Estructura2/
-└── Juego/
-    ├── Arbol/
-    │   ├── ArbolAVL.py
-    │   └── Preguntas.py
-    ├── Assets/
-    │   └── (imágenes: fondos, personajes, botones)
-    ├── Intz_Personaje/
-    │   ├── Intz_Ciudadano.py
-    │   ├── Intz_Influencer.py
-    │   ├── Intz_Periodista.py
-    │   ├── Intz_Presidente.py
-    │   └── SeleccionarPJ.py
-    ├── Metodos.py
-    └── Pantalla.py
-\`\`\`
 
 ## Requisitos
 
