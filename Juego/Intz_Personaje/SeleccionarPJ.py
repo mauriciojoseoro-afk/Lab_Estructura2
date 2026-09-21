@@ -1,5 +1,6 @@
 import pygame
 from pathlib import Path
+import sys
 
 
 from Intz_Personaje import Intz_Ciudadano
@@ -9,17 +10,26 @@ import Metodos
 def SeleccionarPJ():
     pygame.init()
 
-    display = pygame.display.set_mode((800, 600))
+    fondo_original = pygame.image.load(Path(__file__).parent.parent / "Assets" / "Interfaz" / "Elegir_PJ.png")
+    ancho_original, alto_original = fondo_original.get_size()
+    ANCHO = 900
+    ALTO = int(ANCHO * alto_original / ancho_original)
+    display = pygame.display.set_mode((ANCHO, ALTO))
     pygame.display.set_caption("My Game")
 
-    fondo = pygame.image.load(Path(__file__).parent.parent / "Assets" / "Interfaz" / "Elegir_PJ.png").convert()
+    fondo = pygame.transform.smoothscale(fondo_original.convert(), (ANCHO, ALTO))
 
-    # posiciones distintas para cada botón
-    boton_presidente = pygame.Rect(40, 500, 150, 60)
-    boton_ciudadano = pygame.Rect(640, 500, 150, 60)
-    boton_periodista = pygame.Rect(240, 500, 150, 60)
-    boton_influencer = pygame.Rect(440, 500, 150, 60)
-   
+# posiciones distintas para cada botón
+    tarjeta_ancho = int(ANCHO * 0.19)
+    tarjeta_alto = int(ALTO * 0.42)
+    y_tarjetas = int(ALTO * 0.32)
+
+    boton_ciudadano = pygame.Rect(int(ANCHO * 0.11), y_tarjetas, tarjeta_ancho, tarjeta_alto)
+    boton_periodista = pygame.Rect(int(ANCHO * 0.32), y_tarjetas, tarjeta_ancho, tarjeta_alto)
+    boton_influencer = pygame.Rect(int(ANCHO * 0.53), y_tarjetas, tarjeta_ancho, tarjeta_alto)
+    boton_presidente = pygame.Rect(int(ANCHO * 0.74), y_tarjetas, tarjeta_ancho, tarjeta_alto)
+    tamano_salir = int(ANCHO * 0.08)
+    boton_salir = pygame.Rect(int(ANCHO * 0.04), int(ANCHO * 0.05), tamano_salir, tamano_salir)
 
     running = True
     while running:
@@ -31,23 +41,25 @@ def SeleccionarPJ():
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 click = True
+            if click and boton_salir.collidepoint(mouse_pos):
+                pygame.quit()
+                sys.exit()
 
         display.blit(fondo, (0, 0))
 
-        if Metodos.boton(display, boton_ciudadano, "Ciudadano", mouse_pos, click):
-            
-            Intz_Ciudadano.Ciudadano()   
+        if click and boton_ciudadano.collidepoint(mouse_pos):
+            Intz_Ciudadano.Ciudadano()
             running = False
 
-        if Metodos.boton(display, boton_presidente, "Presidente", mouse_pos, click):
+        if click and boton_presidente.collidepoint(mouse_pos):
             Intz_Presidente.Presidente()
             running = False
 
-        if Metodos.boton(display, boton_periodista, "Periodista", mouse_pos, click):
+        if click and boton_periodista.collidepoint(mouse_pos):
             Intz_Periodista.Periodista()
             running = False
 
-        if Metodos.boton(display, boton_influencer, "Influencer", mouse_pos, click):
+        if click and boton_influencer.collidepoint(mouse_pos):
             Intz_Influencer.Influencer()
             running = False
 
