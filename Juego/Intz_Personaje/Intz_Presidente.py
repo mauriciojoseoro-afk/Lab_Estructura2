@@ -1,6 +1,8 @@
 import pygame
 import sys
 from pathlib import Path
+from Eventos import Periodista_Presidente
+import Metodos
 
 
 def Presidente():
@@ -11,18 +13,34 @@ def Presidente():
     ANCHO = 900
     ALTO = int(ANCHO * alto_original / ancho_original)
 
-    display = pygame.display.set_mode((ANCHO, ALTO))
-    pygame.display.set_caption("My Game")
+    display, canvas = Metodos.crear_ventana(ANCHO, ALTO, "My Game")
 
     fondo = pygame.transform.smoothscale(fondo_original.convert(), (ANCHO, ALTO))
 
+    boton_primer_evento = pygame.Rect(int(ANCHO * 0.38), int(ALTO * 0.85), int(ANCHO * 0.24), int(ALTO * 0.08))
+
     running = True
     while running:
+        click = False
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            if event.type == pygame.VIDEORESIZE:
+                display = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                click = True
 
-        display.blit(fondo, (0, 0))
+        ancho_ventana, alto_ventana = display.get_size()
+        escala = min(ancho_ventana / ANCHO, alto_ventana / ALTO)
+        offset_x = (ancho_ventana - int(ANCHO * escala)) // 2
+        offset_y = (alto_ventana - int(ALTO * escala)) // 2
+        mouse_pos = Metodos.mouse_en_canvas(escala, offset_x, offset_y)
 
+        canvas.blit(fondo, (0, 0))
+
+        if Metodos.boton(canvas, boton_primer_evento, "Primer Evento", mouse_pos, click):
+            Periodista_Presidente.Entrevista()
+
+        Metodos.mostrar_canvas(display, canvas)
         pygame.display.update()

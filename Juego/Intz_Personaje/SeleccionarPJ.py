@@ -14,12 +14,12 @@ def SeleccionarPJ():
     ancho_original, alto_original = fondo_original.get_size()
     ANCHO = 900
     ALTO = int(ANCHO * alto_original / ancho_original)
-    display = pygame.display.set_mode((ANCHO, ALTO))
-    pygame.display.set_caption("My Game")
+
+    display, canvas = Metodos.crear_ventana(ANCHO, ALTO, "My Game")
 
     fondo = pygame.transform.smoothscale(fondo_original.convert(), (ANCHO, ALTO))
 
-# posiciones distintas para cada botón
+    # posiciones distintas para cada botón
     tarjeta_ancho = int(ANCHO * 0.19)
     tarjeta_alto = int(ALTO * 0.42)
     y_tarjetas = int(ALTO * 0.32)
@@ -33,19 +33,26 @@ def SeleccionarPJ():
 
     running = True
     while running:
-        mouse_pos = pygame.mouse.get_pos()
         click = False
-
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.type == pygame.VIDEORESIZE:
+                display = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 click = True
-            if click and boton_salir.collidepoint(mouse_pos):
-                pygame.quit()
-                sys.exit()
 
-        display.blit(fondo, (0, 0))
+        ancho_ventana, alto_ventana = display.get_size()
+        escala = min(ancho_ventana / ANCHO, alto_ventana / ALTO)
+        offset_x = (ancho_ventana - int(ANCHO * escala)) // 2
+        offset_y = (alto_ventana - int(ALTO * escala)) // 2
+        mouse_pos = Metodos.mouse_en_canvas(escala, offset_x, offset_y)
+
+        if click and boton_salir.collidepoint(mouse_pos):
+            pygame.quit()
+            sys.exit()
+
+        canvas.blit(fondo, (0, 0))
 
         if click and boton_ciudadano.collidepoint(mouse_pos):
             Intz_Ciudadano.Ciudadano()
@@ -63,6 +70,7 @@ def SeleccionarPJ():
             Intz_Influencer.Influencer()
             running = False
 
+        Metodos.mostrar_canvas(display, canvas)
         pygame.display.update()
 
     pygame.quit()

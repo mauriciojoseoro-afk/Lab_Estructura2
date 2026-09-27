@@ -2,10 +2,10 @@ import pygame
 import sys
 
 from Intz_Personaje import SeleccionarPJ
-
+from pathlib import Path
 pygame.init()
 
-fondo_original = pygame.image.load("Assets/Interfaz/Juego.png")
+fondo_original = pygame.image.load(Path(__file__).parent / "Assets" / "Interfaz" / "Juego.png")
 ancho_original, alto_original = fondo_original.get_size()
 
 ANCHO = 900

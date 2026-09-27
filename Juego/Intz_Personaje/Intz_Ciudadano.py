@@ -1,6 +1,7 @@
 import pygame
 import sys
 from pathlib import Path
+import Metodos
 
 
 def Ciudadano():
@@ -11,8 +12,7 @@ def Ciudadano():
     ANCHO = 900
     ALTO = int(ANCHO * alto_original / ancho_original)
 
-    display = pygame.display.set_mode((ANCHO, ALTO))
-    pygame.display.set_caption("My Game")
+    display, canvas = Metodos.crear_ventana(ANCHO, ALTO, "My Game")
 
     fondo = pygame.transform.smoothscale(fondo_original.convert(), (ANCHO, ALTO))
 
@@ -22,7 +22,10 @@ def Ciudadano():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            if event.type == pygame.VIDEORESIZE:
+                display = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
 
-        display.blit(fondo, (0, 0))
+        canvas.blit(fondo, (0, 0))
 
+        Metodos.mostrar_canvas(display, canvas)
         pygame.display.update()
