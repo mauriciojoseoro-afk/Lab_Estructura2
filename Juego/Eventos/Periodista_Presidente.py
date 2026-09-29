@@ -10,11 +10,11 @@ def Entrevista():
 
     ruta_assets = Path(__file__).parent.parent / "Assets" / "Interfaz"
 
-    # un fondo distinto según de quién es el turno
     fondos_originales = {
         "periodista": pygame.image.load(ruta_assets / "Escritorio_Periodista.png"),
         "presidente": pygame.image.load(ruta_assets / "Escritorio_Presidente.png"),
         "influencer": pygame.image.load(ruta_assets / "Escritorio_Influencer.png"),
+        "ciudadano": pygame.image.load(ruta_assets / "Escritorio_Ciudadano.png"),
     }
 
     ancho_original, alto_original = fondos_originales["periodista"].get_size()
@@ -29,11 +29,11 @@ def Entrevista():
         clave: pygame.transform.smoothscale(imagen.convert(), (ANCHO, ALTO))
         for clave, imagen in fondos_originales.items()
     }
-
+    
+    # Preparacion preguntas
     fuente = pygame.font.SysFont(None, 24)
     fuente_grande = pygame.font.SysFont(None, 28)
 
-    # --- preparación, una sola vez ---
     preguntas = Preguntas.preguntas_P()
     respuestas = Preguntas.respuestas_P()
 
@@ -47,19 +47,20 @@ def Entrevista():
 
     ids_disponibles = list(preguntas.keys())
 
-    fase = "pregunta"        # "pregunta" -> "respuesta" -> "opinion"
+    fase = "pregunta"       
     id_pregunta_actual = None
     respuesta_elegida = None
 
     espectadores = 50
     puntos_influencer = 0
+    puntos_ciudadano = 0
     preguntas_hechas = 0
-    total_preguntas = len(preguntas)  # ahora se usan todas, no un límite fijo
+    total_preguntas = len(preguntas)  
 
-    # qué fondo corresponde a cada fase (turno de quién es)
     fondo_por_fase = {
         "pregunta": "periodista",
         "respuesta": "presidente",
+        "ciudadano": "ciudadano",
         "opinion": "influencer",
     }
 
@@ -91,7 +92,7 @@ def Entrevista():
         y_texto = rect.y + 10
         for linea in lineas:
             if y_texto > rect.y + rect.height - 20:
-                break  # no seguir escribiendo si ya no cabe dentro de la casilla
+                break  
             render_linea = fuente.render(linea, True, (255, 255, 255))
             canvas.blit(render_linea, (rect.x + 10, y_texto))
             y_texto += 22
@@ -109,7 +110,7 @@ def Entrevista():
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 click = True
 
-        # se calcula la escala/offset actuales para traducir el mouse a coordenadas del canvas
+        # se calcula la escala actual para traducir el mouse a coordenadas del canvas
         ancho_ventana, alto_ventana = display.get_size()
         escala = min(ancho_ventana / ANCHO, alto_ventana / ALTO)
         offset_x = (ancho_ventana - int(ANCHO * escala)) // 2
@@ -125,13 +126,15 @@ def Entrevista():
         marcador = fuente.render(f"Espectadores: {espectadores}", True, (255, 255, 255))
         canvas.blit(marcador, (700, 20))
 
-        # ---------- FASE 1: turno del Periodista ----------
+        marcador_ciudadano = fuente.render(f"Confianza ciudadana: {puntos_ciudadano}", True, (255, 255, 255))
+        canvas.blit(marcador_ciudadano, (700, 45))
+
         if fase == "pregunta":
             instruccion = fuente.render("Periodista: elige una pregunta", True, (255, 255, 255))
             canvas.blit(instruccion, (30, 60))
 
             y = 100
-            preguntas_visibles = ids_disponibles[:3]  # solo se muestran 3 a la vez
+            preguntas_visibles = ids_disponibles[:3] 
             for id in preguntas_visibles:
                 rect = pygame.Rect(30, y, 800, 90)
                 texto_completo = f"{id}. {preguntas[id]}"
@@ -140,11 +143,11 @@ def Entrevista():
                     if arbol_preguntas.get(id) is not None:
                         id_pregunta_actual = id
                         ids_disponibles.remove(id)
+                        arbol_preguntas.eliminar(id) 
                         fase = "respuesta"
 
                 y += 105
 
-        # ---------- FASE 2: turno del Presidente ----------
         elif fase == "respuesta":
             texto_pregunta = preguntas[id_pregunta_actual]
             lineas = [texto_pregunta[i:i + 90] for i in range(0, len(texto_pregunta), 90)]
@@ -168,11 +171,39 @@ def Entrevista():
 
                 if dibujar_tarjeta(canvas, rect, texto_opcion, fuente, mouse_pos, click):
                     respuesta_elegida = clave
-                    fase = "opinion"
+                    fase = "ciudadano"
 
                 y += 105
 
-        # ---------- FASE 3: turno del Influencer ----------
+        elif fase == "ciudadano":
+            texto_respuesta = respuestas[id_pregunta_actual][respuesta_elegida]
+            lineas = [texto_respuesta[i:i + 90] for i in range(0, len(texto_respuesta), 90)]
+            y_resp = 60
+            for linea in lineas:
+                render_linea = fuente.render(linea, True, (255, 255, 0))
+                canvas.blit(render_linea, (30, y_resp))
+                y_resp += 26
+
+            instruccion = fuente.render("Ciudadano: ¿qué tan honesta crees que fue esta respuesta?", True, (255, 255, 255))
+            canvas.blit(instruccion, (30, y_resp + 10))
+
+            boton_muy_buena = pygame.Rect(30, y_resp + 45, 260, 60)
+            boton_regular = pygame.Rect(310, y_resp + 45, 260, 60)
+            boton_mala_c = pygame.Rect(590, y_resp + 45, 260, 60)
+
+            if Metodos.boton(canvas, boton_muy_buena, "Muy buena / honesta", mouse_pos, click):
+                if respuesta_elegida == "muy_buena":
+                    puntos_ciudadano += 5
+                fase = "opinion"
+            if Metodos.boton(canvas, boton_regular, "Regular / evasiva", mouse_pos, click):
+                if respuesta_elegida == "regular":
+                    puntos_ciudadano += 5
+                fase = "opinion"
+            if Metodos.boton(canvas, boton_mala_c, "Mala / corrupta", mouse_pos, click):
+                if respuesta_elegida == "mala":
+                    puntos_ciudadano += 5
+                fase = "opinion"
+
         elif fase == "opinion":
             texto_respuesta = respuestas[id_pregunta_actual][respuesta_elegida]
             lineas = [texto_respuesta[i:i + 90] for i in range(0, len(texto_respuesta), 90)]
@@ -199,7 +230,6 @@ def Entrevista():
                 espectadores -= 6
                 fase = "siguiente"
 
-        # ---------- transición ----------
         if fase == "siguiente":
             preguntas_hechas += 1
             id_pregunta_actual = None
@@ -218,4 +248,4 @@ def Entrevista():
         pygame.display.update()
 
     pygame.quit()
-    return puntos_influencer
+    return puntos_influencer, puntos_ciudadano

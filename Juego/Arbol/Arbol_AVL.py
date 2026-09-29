@@ -106,3 +106,62 @@ class ArbolAVL:
         if id < nodo.id:
             return self._buscar(nodo.izquierda, id)
         return self._buscar(nodo.derecha, id)
+
+    def eliminar(self, id):
+            self.raiz = self._eliminar(self.raiz, id)
+
+    def _eliminar(self, nodo, id):
+        if nodo is None:
+            return nodo
+
+        # Busqueda 
+        if id < nodo.id:
+            nodo.izquierda = self._eliminar(nodo.izquierda, id)
+        elif id > nodo.id:
+            nodo.derecha = self._eliminar(nodo.derecha, id)
+        else:
+            # Nodo con un solo hijo o sin hijos
+            if nodo.izquierda is None:
+                return nodo.derecha
+            elif nodo.derecha is None:
+                return nodo.izquierda
+
+            # Nodo con dos hijos, obtener el sucesor inorder
+            temp = self._obtener_minimo(nodo.derecha)
+            nodo.id = temp.id
+            nodo.derecha = self._eliminar(nodo.derecha, temp.id)
+
+        if nodo is None:
+            return nodo
+
+        # Actualizar altura
+        self._actualizar_altura(nodo)
+
+        # Obtener factor de balance
+        balance = self._balance(nodo)
+
+        # Aplicar rotaciones )
+
+        # balance < -1
+        if balance < -1:
+            if self._balance(nodo.izquierda) <= 0:
+                return self._rotacion_derecha(nodo)
+            else:
+                nodo.izquierda = self._rotacion_izquierda(nodo.izquierda)
+                return self._rotacion_derecha(nodo)
+
+        # balance > 1
+        if balance > 1:
+            if self._balance(nodo.derecha) >= 0:
+                return self._rotacion_izquierda(nodo)
+            else:
+                nodo.derecha = self._rotacion_derecha(nodo.derecha)
+                return self._rotacion_izquierda(nodo)
+
+        return nodo
+
+    def _obtener_minimo(self, nodo):
+        actual = nodo
+        while actual.izquierda is not None:
+            actual = actual.izquierda
+        return actual

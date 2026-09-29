@@ -1,51 +1,66 @@
 import pygame
 import sys
+import cv2
 
-from Intz_Personaje import SeleccionarPJ
+
 from pathlib import Path
+import Metodos
+import Historia
 pygame.init()
 
-fondo_original = pygame.image.load(Path(__file__).parent / "Assets" / "Interfaz" / "Juego.png")
-ancho_original, alto_original = fondo_original.get_size()
-
 ANCHO = 900
-ALTO = int(ANCHO * alto_original / ancho_original)
+ALTO = 600  
 
 display = pygame.display.set_mode((ANCHO, ALTO))
 pygame.display.set_caption("My Game")
 
-fondo = pygame.transform.smoothscale(fondo_original.convert(), (ANCHO, ALTO))
+ruta_video = Path(__file__).parent / "Assets" / "Interfaz" / "Juego.mp4"
+video = cv2.VideoCapture(str(ruta_video))
 
-frac_centro_x = 0.5
-frac_centro_y = 0.80
-frac_ancho = 0.27
-frac_alto = 0.12
+fps_video = video.get(cv2.CAP_PROP_FPS) or 30  
+reloj = pygame.time.Clock()
 
-boton_ancho = int(ANCHO * frac_ancho)
-boton_alto = int(ALTO * frac_alto)
-centro_x = int(ANCHO * frac_centro_x)
-centro_y = int(ALTO * frac_centro_y)
-boton_rect = pygame.Rect(centro_x - boton_ancho // 2, centro_y - boton_alto // 2, boton_ancho, boton_alto)
-tamano_salir = int(ANCHO * 0.08)
-boton_salir = pygame.Rect(int(ANCHO * 0.04), int(ANCHO * 0.05), tamano_salir, tamano_salir)
+
+def siguiente_frame(video, ancho, alto):
+    ret, frame = video.read()
+
+    if not ret:
+        video.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        ret, frame = video.read()
+
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    frame = cv2.resize(frame, (ancho, alto))
+    frame = frame.swapaxes(0, 1)  
+
+    return pygame.surfarray.make_surface(frame)
+
+
+boton_jugar = pygame.Rect(180, 270, 220, 60)
+boton_salir = pygame.Rect(180, 450, 230, 50)
 
 running = True
 while running:
     mouse_pos = pygame.mouse.get_pos()
+    click = False
 
     for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
+        if event.type == pygame.QUIT:
+            running = False
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            click = True
 
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if boton_rect.collidepoint(event.pos):
-                    SeleccionarPJ.SeleccionarPJ()
-                if boton_salir.collidepoint(event.pos):
-                    pygame.quit()
-                    sys.exit()
-
+    fondo = siguiente_frame(video, ANCHO, ALTO)
     display.blit(fondo, (0, 0))
 
-    pygame.display.update()
+    if Metodos.boton_inv(display, boton_jugar, mouse_pos, click):
+        Historia.Historia()
 
+    if Metodos.boton_inv(display, boton_salir, mouse_pos, click):
+        pygame.quit()
+        sys.exit()
+
+    pygame.display.update()
+    reloj.tick(fps_video)  
+
+video.release()
 pygame.quit()

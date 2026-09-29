@@ -1,7 +1,12 @@
 
 
-import pygame
 
+import pygame
+from pathlib import Path
+import sys
+import cv2
+import Metodos
+from Intz_Personaje import Intz_Presidente, Intz_Ciudadano, Intz_Periodista, Intz_Influencer
 
 def boton(display, rect, texto, mouse_pos, click):
     color_normal = (70, 130, 180)
@@ -14,6 +19,10 @@ def boton(display, rect, texto, mouse_pos, click):
     texto_render = fuente.render(texto, True, (255, 255, 255))
     texto_rect = texto_render.get_rect(center=rect.center)
     display.blit(texto_render, texto_rect)
+
+    return rect.collidepoint(mouse_pos) and click 
+
+def boton_inv(display, rect, mouse_pos, click):
 
     return rect.collidepoint(mouse_pos) and click 
 
@@ -48,3 +57,143 @@ def mouse_en_canvas(escala, offset_x, offset_y):
     if escala == 0:
         return (-1, -1)
     return ((x - offset_x) / escala, (y - offset_y) / escala)
+
+
+
+
+
+def ElegirGenero(rol):
+    ruta_video = Path(__file__).parent / "Assets" / "Interfaz" / f"Genero_{rol}.mp4"
+    
+    video = cv2.VideoCapture(str(ruta_video))
+
+    if not video.isOpened():
+        print(f"No se pudo encontrar o abrir el video: {ruta_video}")
+        return None
+
+    ancho_original = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
+    alto_original = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps_video = video.get(cv2.CAP_PROP_FPS) or 30
+
+    ANCHO = 900
+    ALTO = int(ANCHO * alto_original / ancho_original)
+
+    display, canvas = crear_ventana(ANCHO, ALTO, f"Elegir Género - {rol}")
+    reloj = pygame.time.Clock()
+
+    def siguiente_frame(vid, ancho, alto):
+        ret, frame = vid.read()
+        if not ret or frame is None:
+            vid.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            ret, frame = vid.read()
+            if not ret or frame is None:
+                return pygame.Surface((ancho, alto))
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame = cv2.resize(frame, (ancho, alto))
+        frame = frame.swapaxes(0, 1)
+        return pygame.surfarray.make_surface(frame)
+    #Botnoes 
+    boton_masculino = pygame.Rect(450, 300, 300, 220)
+    boton_femenino = pygame.Rect(80, 300, 300, 220)
+   
+
+    genero_elegido = None
+    running = True
+
+    while running:
+        click = False
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                video.release()
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.VIDEORESIZE:
+                display = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                click = True
+
+        ancho_ventana, alto_ventana = display.get_size()
+        escala = min(ancho_ventana / ANCHO, alto_ventana / ALTO)
+        offset_x = (ancho_ventana - int(ANCHO * escala)) // 2
+        offset_y = (alto_ventana - int(ALTO * escala)) // 2
+        mouse_pos = mouse_en_canvas(escala, offset_x, offset_y)
+
+        fondo = siguiente_frame(video, ANCHO, ALTO)
+        canvas.blit(fondo, (0, 0))
+
+        if boton_inv(canvas, boton_masculino, mouse_pos, click):
+            genero_elegido = "Masculino"
+            running = False
+
+        if boton_inv(canvas, boton_femenino, mouse_pos, click):
+            genero_elegido = "Femenino"
+            running = False
+
+
+        mostrar_canvas(display, canvas)
+        pygame.display.update()
+        reloj.tick(fps_video)
+
+    video.release()
+    return genero_elegido
+
+
+    def LanzarEscenaRol(rol, genero):
+        if rol == "Presidente":
+            Intz_Presidente.Presidente(genero)
+        elif rol == "Ciudadano":
+            Intz_Ciudadano.Ciudadano(genero)
+        elif rol == "Periodista":
+            Intz_Periodista.Periodista(genero)
+        elif rol == "Influencer":
+            Intz_Influencer.Influencer(genero)
+
+
+
+
+def ReproducirVideo(nombre_archivo):
+    ruta_video = Path(__file__).parent / "Assets" / "Interfaz" / nombre_archivo
+    video = cv2.VideoCapture(str(ruta_video))
+
+    if not video.isOpened():
+        print(f" No se pudo encontrar o abrir el video: {ruta_video}")
+        return
+
+    ancho_original = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
+    alto_original = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps_video = video.get(cv2.CAP_PROP_FPS) or 30
+
+    ANCHO = 900
+    ALTO = int(ANCHO * alto_original / ancho_original)
+
+    display, canvas = crear_ventana(ANCHO, ALTO, "Cinemática")
+    reloj = pygame.time.Clock()
+
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                video.release()
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.VIDEORESIZE:
+                display = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
+
+        ret, frame = video.read()
+
+        # Si el video se acaba, rompe el bucle automáticamente
+        if not ret or frame is None:
+            break
+
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame = cv2.resize(frame, (ANCHO, ALTO))
+        frame = frame.swapaxes(0, 1)
+        fondo = pygame.surfarray.make_surface(frame)
+
+        canvas.blit(fondo, (0, 0))
+
+        mostrar_canvas(display, canvas)
+        pygame.display.update()
+        reloj.tick(fps_video)
+
+    video.release()

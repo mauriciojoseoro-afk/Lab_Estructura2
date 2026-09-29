@@ -1,35 +1,43 @@
 import pygame
 from pathlib import Path
 import sys
+import cv2
 
-
-from Intz_Personaje import Intz_Ciudadano
-from Intz_Personaje import Intz_Influencer, Intz_Periodista, Intz_Presidente
+from Intz_Personaje import Intz_Ciudadano, Intz_Influencer, Intz_Periodista, Intz_Presidente
 import Metodos
 
 def SeleccionarPJ():
     pygame.init()
 
-    fondo_original = pygame.image.load(Path(__file__).parent.parent / "Assets" / "Interfaz" / "Elegir_PJ.png")
-    ancho_original, alto_original = fondo_original.get_size()
+    ruta_video = Path(__file__).parent.parent / "Assets" / "Interfaz" / "Elegir_PJ.mp4"
+    video = cv2.VideoCapture(str(ruta_video))
+
+    ancho_original = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
+    alto_original = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps_video = video.get(cv2.CAP_PROP_FPS) or 30
+
     ANCHO = 900
     ALTO = int(ANCHO * alto_original / ancho_original)
 
     display, canvas = Metodos.crear_ventana(ANCHO, ALTO, "My Game")
+    reloj = pygame.time.Clock()
 
-    fondo = pygame.transform.smoothscale(fondo_original.convert(), (ANCHO, ALTO))
+    def siguiente_frame(video, ancho, alto):
+        ret, frame = video.read()
+        if not ret:
+            video.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            ret, frame = video.read()
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame = cv2.resize(frame, (ancho, alto))
+        frame = frame.swapaxes(0, 1)
+        return pygame.surfarray.make_surface(frame)
 
-    # posiciones distintas para cada botón
-    tarjeta_ancho = int(ANCHO * 0.19)
-    tarjeta_alto = int(ALTO * 0.42)
-    y_tarjetas = int(ALTO * 0.32)
-
-    boton_ciudadano = pygame.Rect(int(ANCHO * 0.11), y_tarjetas, tarjeta_ancho, tarjeta_alto)
-    boton_periodista = pygame.Rect(int(ANCHO * 0.32), y_tarjetas, tarjeta_ancho, tarjeta_alto)
-    boton_influencer = pygame.Rect(int(ANCHO * 0.53), y_tarjetas, tarjeta_ancho, tarjeta_alto)
-    boton_presidente = pygame.Rect(int(ANCHO * 0.74), y_tarjetas, tarjeta_ancho, tarjeta_alto)
-    tamano_salir = int(ANCHO * 0.08)
-    boton_salir = pygame.Rect(int(ANCHO * 0.04), int(ANCHO * 0.05), tamano_salir, tamano_salir)
+    # Botones de roles (x, y, ancho, alto)
+    boton_presidente = pygame.Rect(100, 250, 300, 90)
+    boton_ciudadano = pygame.Rect(520, 250, 300, 90)
+    boton_periodista = pygame.Rect(100, 450, 300, 90)
+    boton_influencer = pygame.Rect(520, 450, 300, 90)
+    boton_salir = pygame.Rect(20, 100, 100, 60)
 
     running = True
     while running:
@@ -48,29 +56,60 @@ def SeleccionarPJ():
         offset_y = (alto_ventana - int(ALTO * escala)) // 2
         mouse_pos = Metodos.mouse_en_canvas(escala, offset_x, offset_y)
 
-        if click and boton_salir.collidepoint(mouse_pos):
+        fondo = siguiente_frame(video, ANCHO, ALTO)
+        canvas.blit(fondo, (0, 0))
+
+        # Se llama a la funcion
+        if Metodos.boton_inv(canvas, boton_presidente, mouse_pos, click):
+            video.release()
+            genero = Metodos.ElegirGenero("Presidente")
+            if genero in ["Masculino", "Femenino"]:
+                Intz_Presidente.Presidente()
+                running = False
+            else:
+                return SeleccionarPJ()
+
+        if Metodos.boton_inv(canvas, boton_ciudadano, mouse_pos, click):
+            video.release()
+            genero = Metodos.ElegirGenero("Ciudadano")
+            if genero in ["Masculino", "Femenino"]:
+                Intz_Ciudadano.Ciudadano()
+                running = False
+            else:
+                return SeleccionarPJ()
+
+        if Metodos.boton_inv(canvas, boton_periodista, mouse_pos, click):
+            video.release()
+            genero = Metodos.ElegirGenero("Periodista")
+            if genero in ["Masculino", "Femenino"]:
+                Intz_Periodista.Periodista()
+                running = False
+            else:
+                return SeleccionarPJ()
+
+        if Metodos.boton_inv(canvas, boton_influencer, mouse_pos, click):
+            video.release()
+            genero = Metodos.ElegirGenero("Influencer")
+            if genero in ["Masculino", "Femenino"]:
+                # Reproduce el video cinematográfico antes de entrar al influencer según su género
+                if genero == "Masculino":
+                    Metodos.ReproducirVideo("Video_Influencer_M.mp4")
+                else:
+                    Metodos.ReproducirVideo("Video_Influencer_F.mp4")
+                
+                Intz_Influencer.Influencer(genero)
+                running = False
+            else:
+                return SeleccionarPJ()
+
+        if Metodos.boton_inv(canvas, boton_salir, mouse_pos, click):
+            video.release()
             pygame.quit()
             sys.exit()
 
-        canvas.blit(fondo, (0, 0))
-
-        if click and boton_ciudadano.collidepoint(mouse_pos):
-            Intz_Ciudadano.Ciudadano()
-            running = False
-
-        if click and boton_presidente.collidepoint(mouse_pos):
-            Intz_Presidente.Presidente()
-            running = False
-
-        if click and boton_periodista.collidepoint(mouse_pos):
-            Intz_Periodista.Periodista()
-            running = False
-
-        if click and boton_influencer.collidepoint(mouse_pos):
-            Intz_Influencer.Influencer()
-            running = False
-
         Metodos.mostrar_canvas(display, canvas)
         pygame.display.update()
+        reloj.tick(fps_video)  
 
+    video.release()
     pygame.quit()
