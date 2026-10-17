@@ -11,10 +11,10 @@ def Entrevista():
     ruta_assets = Path(__file__).parent.parent / "Assets" / "Interfaz"
 
     fondos_originales = {
-        "periodista": pygame.image.load(ruta_assets / "Escritorio_Periodista.png"),
-        "presidente": pygame.image.load(ruta_assets / "Escritorio_Presidente.png"),
-        "influencer": pygame.image.load(ruta_assets / "Escritorio_Influencer.png"),
-        "ciudadano": pygame.image.load(ruta_assets / "Escritorio_Ciudadano.png"),
+        "periodista": pygame.image.load(ruta_assets / "Fondo_i.png"),
+        "presidente": pygame.image.load(ruta_assets / "Fondo_i.png"),
+        "influencer": pygame.image.load(ruta_assets / "Fondo_i.png"),
+        "ciudadano": pygame.image.load(ruta_assets / "Fondo_i.png"),
     }
 
     ancho_original, alto_original = fondos_originales["periodista"].get_size()
@@ -30,9 +30,15 @@ def Entrevista():
         for clave, imagen in fondos_originales.items()
     }
     
-    # Preparacion preguntas
-    fuente = pygame.font.SysFont(None, 24)
-    fuente_grande = pygame.font.SysFont(None, 28)
+    # Carga de la tipografía Upheaval desde los assets[cite: 8]
+    ruta_fuente = ruta_assets / "upheavtt.ttf"
+    try:
+        fuente = pygame.font.Font(str(ruta_fuente), 16)          
+        fuente_grande = pygame.font.Font(str(ruta_fuente), 22)    
+    except Exception:
+        # Fallback por si la ruta no coincide exactamente
+        fuente = pygame.font.SysFont("Consolas", 16)
+        fuente_grande = pygame.font.SysFont("Consolas", 20, bold=True)
 
     preguntas = Preguntas.preguntas_P()
     respuestas = Preguntas.respuestas_P()
@@ -47,7 +53,7 @@ def Entrevista():
 
     ids_disponibles = list(preguntas.keys())
 
-    fase = "pregunta"       
+    fase = "pregunta"        
     id_pregunta_actual = None
     respuesta_elegida = None
 
@@ -64,17 +70,18 @@ def Entrevista():
         "opinion": "influencer",
     }
 
-    def texto_recortado(texto, ancho_max, fuente):
-        if fuente.size(texto)[0] <= ancho_max:
-            return texto
-        while texto and fuente.size(texto + "...")[0] > ancho_max:
-            texto = texto[:-1]
-        return texto + "..."
+    # Dimensiones y centrado de la pantalla interior de la tablet
+    SCREEN_ANCHO = 580                      
+    SCREEN_X = ((ANCHO - SCREEN_ANCHO) // 2) - 15  
+    SCREEN_Y = 160                          
+    SCREEN_ALTO = ALTO - 190   
 
-    def dibujar_tarjeta(canvas, rect, texto, fuente, mouse_pos, click):
-        # dibuja una casilla con borde (sin relleno) y el texto ajustado en varias líneas
-        color_borde = (255, 230, 150) if rect.collidepoint(mouse_pos) else (255, 255, 255)
-        pygame.draw.rect(canvas, color_borde, rect, width=2, border_radius=10)
+    def dibujar_tarjeta_centrada(canvas, rect, texto, fuente, mouse_pos, click):
+        colision = rect.collidepoint(mouse_pos)
+        color_borde = (100, 180, 100) if colision else (60, 120, 60)  
+        
+        pygame.draw.rect(canvas, (20, 25, 20), rect, border_radius=6)
+        pygame.draw.rect(canvas, color_borde, rect, width=2, border_radius=6)
 
         palabras = texto.split(" ")
         lineas = []
@@ -89,15 +96,16 @@ def Entrevista():
                 linea = prueba
         lineas.append(linea.strip())
 
-        y_texto = rect.y + 10
-        for linea in lineas:
-            if y_texto > rect.y + rect.height - 20:
-                break  
-            render_linea = fuente.render(linea, True, (255, 255, 255))
-            canvas.blit(render_linea, (rect.x + 10, y_texto))
-            y_texto += 22
+        altura_total_texto = len(lineas) * 18
+        y_texto = rect.y + (rect.height - altura_total_texto) // 2
 
-        return rect.collidepoint(mouse_pos) and click
+        for linea in lineas:
+            render_linea = fuente.render(linea, True, (180, 240, 180)) 
+            x_texto = rect.x + (rect.width - render_linea.get_width()) // 2
+            canvas.blit(render_linea, (x_texto, y_texto))
+            y_texto += 18
+
+        return colision and click
 
     running = True
     while running:
@@ -110,123 +118,132 @@ def Entrevista():
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 click = True
 
-        # se calcula la escala actual para traducir el mouse a coordenadas del canvas
         ancho_ventana, alto_ventana = display.get_size()
         escala = min(ancho_ventana / ANCHO, alto_ventana / ALTO)
         offset_x = (ancho_ventana - int(ANCHO * escala)) // 2
         offset_y = (alto_ventana - int(ALTO * escala)) // 2
         mouse_pos = Metodos.mouse_en_canvas(escala, offset_x, offset_y)
 
-        # se dibuja el fondo del rol que tiene el turno en esta fase
         canvas.blit(fondos[fondo_por_fase[fase]], (0, 0))
 
-        titulo = fuente_grande.render(f"Entrevista  -  Pregunta {preguntas_hechas + 1} de {total_preguntas}", True, (255, 255, 255))
-        canvas.blit(titulo, (30, 20))
+        # Cabecera superior de la tablet
+        titulo = fuente_grande.render(f"Entrevista - Pregunta {preguntas_hechas + 1} de {total_preguntas}", True, (160, 200, 160))
+        canvas.blit(titulo, (SCREEN_X, SCREEN_Y))
 
-        marcador = fuente.render(f"Espectadores: {espectadores}", True, (255, 255, 255))
-        canvas.blit(marcador, (700, 20))
+        marcador = fuente.render(f"En vivo  {espectadores}", True, (255, 80, 80))
+        canvas.blit(marcador, (SCREEN_X + SCREEN_ANCHO - marcador.get_width(), SCREEN_Y))
 
-        marcador_ciudadano = fuente.render(f"Confianza ciudadana: {puntos_ciudadano}", True, (255, 255, 255))
-        canvas.blit(marcador_ciudadano, (700, 45))
+        marcador_ciudadano = fuente.render(f"Confianza: {puntos_ciudadano}", True, (180, 180, 180))
+        canvas.blit(marcador_ciudadano, (SCREEN_X + SCREEN_ANCHO - marcador_ciudadano.get_width(), SCREEN_Y + 22))
 
         if fase == "pregunta":
-            instruccion = fuente.render("Periodista: elige una pregunta", True, (255, 255, 255))
-            canvas.blit(instruccion, (30, 60))
+            # Instrucción colocada más arriba y separada de las preguntas
+            instruccion = fuente.render("Periodista: elige una pregunta", True, (130, 180, 130))
+            canvas.blit(instruccion, (SCREEN_X, SCREEN_Y + 45))
 
-            y = 100
-            preguntas_visibles = ids_disponibles[:3] 
+            y = SCREEN_Y + 75
+            preguntas_visibles = ids_disponibles[:3]  
             for id in preguntas_visibles:
-                rect = pygame.Rect(30, y, 800, 90)
+                rect = pygame.Rect(SCREEN_X, y, SCREEN_ANCHO, 65)
                 texto_completo = f"{id}. {preguntas[id]}"
 
-                if dibujar_tarjeta(canvas, rect, texto_completo, fuente, mouse_pos, click):
+                if dibujar_tarjeta_centrada(canvas, rect, texto_completo, fuente, mouse_pos, click):
                     if arbol_preguntas.get(id) is not None:
                         id_pregunta_actual = id
                         ids_disponibles.remove(id)
-                        arbol_preguntas.eliminar(id) 
+                        arbol_preguntas.eliminar(id)  
                         fase = "respuesta"
 
-                y += 105
+                y += 76
 
         elif fase == "respuesta":
             texto_pregunta = preguntas[id_pregunta_actual]
-            lineas = [texto_pregunta[i:i + 90] for i in range(0, len(texto_pregunta), 90)]
-            y_pregunta = 60
+            lineas = [texto_pregunta[i:i + 60] for i in range(0, len(texto_pregunta), 60)]
+            y_pregunta = SCREEN_Y + 35
             for linea in lineas:
-                render_linea = fuente.render(linea, True, (255, 255, 0))
-                canvas.blit(render_linea, (30, y_pregunta))
-                y_pregunta += 26
+                render_linea = fuente.render(linea, True, (240, 240, 100))
+                canvas.blit(render_linea, (SCREEN_X, y_pregunta))
+                y_pregunta += 20
 
-            instruccion = fuente.render("Presidente: elige una respuesta", True, (255, 255, 255))
-            canvas.blit(instruccion, (30, y_pregunta + 10))
+            # Instrucción del presidente separada arriba de las opciones
+            instruccion = fuente.render("Presidente: elige una respuesta", True, (130, 180, 130))
+            canvas.blit(instruccion, (SCREEN_X, y_pregunta + 10))
 
             opciones_nodo = arbol_respuestas.get(id_pregunta_actual)
             opciones = respuestas[id_pregunta_actual] if opciones_nodo is not None else {}
             claves = ["muy_buena", "regular", "mala"]
 
-            y = y_pregunta + 45
+            y = y_pregunta + 35
             for clave in claves:
-                rect = pygame.Rect(30, y, 800, 90)
+                rect = pygame.Rect(SCREEN_X, y, SCREEN_ANCHO, 65)
                 texto_opcion = opciones.get(clave, "")
 
-                if dibujar_tarjeta(canvas, rect, texto_opcion, fuente, mouse_pos, click):
+                if dibujar_tarjeta_centrada(canvas, rect, texto_opcion, fuente, mouse_pos, click):
                     respuesta_elegida = clave
                     fase = "ciudadano"
 
-                y += 105
+                y += 76
 
         elif fase == "ciudadano":
             texto_respuesta = respuestas[id_pregunta_actual][respuesta_elegida]
-            lineas = [texto_respuesta[i:i + 90] for i in range(0, len(texto_respuesta), 90)]
-            y_resp = 60
+            lineas = [texto_respuesta[i:i + 60] for i in range(0, len(texto_respuesta), 60)]
+            y_resp = SCREEN_Y + 35
             for linea in lineas:
-                render_linea = fuente.render(linea, True, (255, 255, 0))
-                canvas.blit(render_linea, (30, y_resp))
-                y_resp += 26
+                render_linea = fuente.render(linea, True, (240, 240, 100))
+                canvas.blit(render_linea, (SCREEN_X, y_resp))
+                y_resp += 20
 
-            instruccion = fuente.render("Ciudadano: ¿qué tan honesta crees que fue esta respuesta?", True, (255, 255, 255))
-            canvas.blit(instruccion, (30, y_resp + 10))
+            # Instrucción del ciudadano separada arriba
+            instruccion = fuente.render("Ciudadano: ¿qué tan honesta fue esta respuesta?", True, (130, 180, 130))
+            canvas.blit(instruccion, (SCREEN_X, y_resp + 10))
 
-            boton_muy_buena = pygame.Rect(30, y_resp + 45, 260, 60)
-            boton_regular = pygame.Rect(310, y_resp + 45, 260, 60)
-            boton_mala_c = pygame.Rect(590, y_resp + 45, 260, 60)
+            ancho_btn = (SCREEN_ANCHO - 20) // 3
+            y_btns = y_resp + 38
 
-            if Metodos.boton(canvas, boton_muy_buena, "Muy buena / honesta", mouse_pos, click):
+            rect_muy_buena = pygame.Rect(SCREEN_X, y_btns, ancho_btn, 55)
+            rect_regular = pygame.Rect(SCREEN_X + ancho_btn + 10, y_btns, ancho_btn, 55)
+            rect_mala = pygame.Rect(SCREEN_X + (ancho_btn * 2) + 20, y_btns, ancho_btn, 55)
+
+            if dibujar_tarjeta_centrada(canvas, rect_muy_buena, "Muy buena", fuente, mouse_pos, click):
                 if respuesta_elegida == "muy_buena":
                     puntos_ciudadano += 5
                 fase = "opinion"
-            if Metodos.boton(canvas, boton_regular, "Regular / evasiva", mouse_pos, click):
+            if dibujar_tarjeta_centrada(canvas, rect_regular, "Regular", fuente, mouse_pos, click):
                 if respuesta_elegida == "regular":
                     puntos_ciudadano += 5
                 fase = "opinion"
-            if Metodos.boton(canvas, boton_mala_c, "Mala / corrupta", mouse_pos, click):
+            if dibujar_tarjeta_centrada(canvas, rect_mala, "Mala", fuente, mouse_pos, click):
                 if respuesta_elegida == "mala":
                     puntos_ciudadano += 5
                 fase = "opinion"
 
         elif fase == "opinion":
             texto_respuesta = respuestas[id_pregunta_actual][respuesta_elegida]
-            lineas = [texto_respuesta[i:i + 90] for i in range(0, len(texto_respuesta), 90)]
-            y_resp = 60
+            lineas = [texto_respuesta[i:i + 60] for i in range(0, len(texto_respuesta), 60)]
+            y_resp = SCREEN_Y + 35
             for linea in lineas:
-                render_linea = fuente.render(linea, True, (255, 255, 0))
-                canvas.blit(render_linea, (30, y_resp))
-                y_resp += 26
+                render_linea = fuente.render(linea, True, (240, 240, 100))
+                canvas.blit(render_linea, (SCREEN_X, y_resp))
+                y_resp += 20
 
-            instruccion = fuente.render("Influencer: da tu opinión sobre esta respuesta", True, (255, 255, 255))
-            canvas.blit(instruccion, (30, y_resp + 10))
+            # Instrucción del influencer separada arriba
+            instruccion = fuente.render("Influencer: da tu opinión sobre esta respuesta", True, (130, 180, 130))
+            canvas.blit(instruccion, (SCREEN_X, y_resp + 10))
 
-            boton_positiva = pygame.Rect(30, y_resp + 45, 270, 60)
-            boton_imparcial = pygame.Rect(315, y_resp + 45, 270, 60)
-            boton_mala = pygame.Rect(600, y_resp + 45, 270, 60)
+            ancho_btn = (SCREEN_ANCHO - 20) // 3
+            y_btns = y_resp + 38
 
-            if Metodos.boton(canvas, boton_positiva, "Opinion positiva", mouse_pos, click):
+            rect_positiva = pygame.Rect(SCREEN_X, y_btns, ancho_btn, 55)
+            rect_imparcial = pygame.Rect(SCREEN_X + ancho_btn + 10, y_btns, ancho_btn, 55)
+            rect_mala_inf = pygame.Rect(SCREEN_X + (ancho_btn * 2) + 20, y_btns, ancho_btn, 55)
+
+            if dibujar_tarjeta_centrada(canvas, rect_positiva, "Positiva", fuente, mouse_pos, click):
                 espectadores += 8
                 fase = "siguiente"
-            if Metodos.boton(canvas, boton_imparcial, "Opinion imparcial", mouse_pos, click):
+            if dibujar_tarjeta_centrada(canvas, rect_imparcial, "Imparcial", fuente, mouse_pos, click):
                 espectadores += 2
                 fase = "siguiente"
-            if Metodos.boton(canvas, boton_mala, "Opinion mala", mouse_pos, click):
+            if dibujar_tarjeta_centrada(canvas, rect_mala_inf, "Mala", fuente, mouse_pos, click):
                 espectadores -= 6
                 fase = "siguiente"
 

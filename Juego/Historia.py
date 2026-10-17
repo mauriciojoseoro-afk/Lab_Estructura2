@@ -142,6 +142,7 @@ def Historia():
                 elif Metodos.boton_inv(canvas, boton_opcion2, posicion_mouse, clic):
                     escena_actual = destino2
                     enfriamiento = 15
+                
 
         Metodos.mostrar_canvas(pantalla, canvas)
         pygame.display.update()

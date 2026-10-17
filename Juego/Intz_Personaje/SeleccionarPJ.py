@@ -98,7 +98,8 @@ def SeleccionarPJ():
                     Metodos.ReproducirVideo("Video_Influencer_F.mp4")
                 
                 Intz_Influencer.Influencer(genero)
-                running = False
+                display, canvas = Metodos.crear_ventana(ANCHO, ALTO, "My Game")
+                video = cv2.VideoCapture(str(ruta_video))
             else:
                 return SeleccionarPJ()
 

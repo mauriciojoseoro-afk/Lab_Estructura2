@@ -12,21 +12,24 @@ def Influencer(genero):
     display, canvas = Metodos.crear_ventana(ANCHO, ALTO, f"Influencer - {genero}")
     reloj = pygame.time.Clock()
     
-    # Selección de la imagen de fondo principal según el género
+    ruta_assets = Path(__file__).parent.parent / "Assets" / "Interfaz"
+
     if genero == "Masculino":
-        ruta_imagen = Path(__file__).parent.parent / "Assets" / "Interfaz" / "Influencer_M.png"
+        ruta_imagen = ruta_assets / "Influencer_M.png"
+        ruta_detalles = ruta_assets / "Detalles_M.png"
+    elif genero == "Femenino":
+        ruta_imagen = ruta_assets / "Influencer_F.png"
+        ruta_detalles = ruta_assets / "Detalles_F.png"
     else:
-        ruta_imagen = Path(__file__).parent.parent / "Assets" / "Interfaz" / "Influencer_F.png"
+        raise ValueError(f"Género de influencer no válido: {genero}")
         
     imagen_fondo = pygame.image.load(str(ruta_imagen)).convert()
     imagen_fondo = pygame.transform.scale(imagen_fondo, (ANCHO, ALTO))
     
-    ruta_detalles = Path(__file__).parent.parent / "Assets" / "Interfaz" / "Detalles_F.png"
+    imagen_detalles = None
     if ruta_detalles.exists():
         imagen_detalles = pygame.image.load(str(ruta_detalles)).convert()
         imagen_detalles = pygame.transform.scale(imagen_detalles, (ANCHO, ALTO))
-    else:
-        imagen_detalles = None 
 
     boton_detalles = pygame.Rect(90, 190, 200, 60)
     boton_evento = pygame.Rect(600, 180, 200, 60)
@@ -63,7 +66,7 @@ def Influencer(genero):
             else:
                 canvas.fill((30, 30, 30))
             
-            if Metodos.boton(canvas, boton_regresar_detalles, "regresar dt", mouse_pos, click):
+            if Metodos.boton_inv(canvas, boton_regresar_detalles, mouse_pos, click):
                 en_detalles = False
 
         else:
@@ -77,7 +80,7 @@ def Influencer(genero):
                 Periodista_Presidente.Entrevista()
 
             if Metodos.boton_inv(canvas, boton_regresar_principal, mouse_pos, click):
-                SeleccionarP()
+                running = False
 
         Metodos.mostrar_canvas(display, canvas)
         pygame.display.update()
