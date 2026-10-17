@@ -1,6 +1,5 @@
 
 
-
 import pygame
 from pathlib import Path
 import sys
@@ -20,11 +19,10 @@ def boton(display, rect, texto, mouse_pos, click):
     texto_rect = texto_render.get_rect(center=rect.center)
     display.blit(texto_render, texto_rect)
 
-    return rect.collidepoint(mouse_pos) and click 
+    return rect.collidepoint(mouse_pos) and click
 
 def boton_inv(display, rect, mouse_pos, click):
-
-    return rect.collidepoint(mouse_pos) and click 
+    return rect.collidepoint(mouse_pos) and click
 
 def crear_ventana(ancho_logico, alto_logico, titulo="My Game"):
     display = pygame.display.set_mode((ancho_logico, alto_logico), pygame.RESIZABLE)
@@ -59,12 +57,8 @@ def mouse_en_canvas(escala, offset_x, offset_y):
     return ((x - offset_x) / escala, (y - offset_y) / escala)
 
 
-
-
-
 def ElegirGenero(rol):
     ruta_video = Path(__file__).parent / "Assets" / "Interfaz" / f"Genero_{rol}.mp4"
-    
     video = cv2.VideoCapture(str(ruta_video))
 
     if not video.isOpened():
@@ -92,10 +86,9 @@ def ElegirGenero(rol):
         frame = cv2.resize(frame, (ancho, alto))
         frame = frame.swapaxes(0, 1)
         return pygame.surfarray.make_surface(frame)
-    #Botnoes 
+
     boton_masculino = pygame.Rect(450, 300, 300, 220)
     boton_femenino = pygame.Rect(80, 300, 300, 220)
-   
 
     genero_elegido = None
     running = True
@@ -129,7 +122,6 @@ def ElegirGenero(rol):
             genero_elegido = "Femenino"
             running = False
 
-
         mostrar_canvas(display, canvas)
         pygame.display.update()
         reloj.tick(fps_video)
@@ -147,8 +139,6 @@ def ElegirGenero(rol):
             Intz_Periodista.Periodista(genero)
         elif rol == "Influencer":
             Intz_Influencer.Influencer(genero)
-
-
 
 
 def ReproducirVideo(nombre_archivo):
@@ -181,7 +171,6 @@ def ReproducirVideo(nombre_archivo):
 
         ret, frame = video.read()
 
-        # Si el video se acaba, rompe el bucle automáticamente
         if not ret or frame is None:
             break
 
@@ -197,3 +186,59 @@ def ReproducirVideo(nombre_archivo):
         reloj.tick(fps_video)
 
     video.release()
+
+
+def reproducir_video(display, canvas, ruta):
+    video = cv2.VideoCapture(str(ruta))
+    fps = video.get(cv2.CAP_PROP_FPS) or 30
+    reloj = pygame.time.Clock()
+    ancho_canvas, alto_canvas = canvas.get_size()
+
+    ruta_audio = Path(ruta).with_suffix(".mp3")
+    if ruta_audio.exists():
+        if not pygame.mixer.get_init():
+            pygame.mixer.init()
+        pygame.mixer.music.load(str(ruta_audio))
+        pygame.mixer.music.play()
+
+    inicio = pygame.time.get_ticks()
+    cuadro_actual = 0
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                video.release()
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.VIDEORESIZE:
+                display = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
+            if event.type == pygame.KEYDOWN and event.key in (pygame.K_SPACE, pygame.K_ESCAPE):
+                video.release()
+                pygame.mixer.music.stop()
+                return
+
+        cuadro_objetivo = int((pygame.time.get_ticks() - inicio) / 1000 * fps)
+        ok, cuadro = video.read()
+        cuadro_actual += 1
+        while ok and cuadro_actual < cuadro_objetivo:
+            ok, cuadro = video.read()
+            cuadro_actual += 1
+
+        if not ok:
+            break
+
+        cuadro = cv2.cvtColor(cuadro, cv2.COLOR_BGR2RGB)
+        alto_v, ancho_v = cuadro.shape[:2]
+        escala = min(ancho_canvas / ancho_v, alto_canvas / alto_v)
+        nuevo_ancho, nuevo_alto = int(ancho_v * escala), int(alto_v * escala)
+        cuadro = cv2.resize(cuadro, (nuevo_ancho, nuevo_alto))
+        imagen = pygame.image.frombuffer(cuadro.tobytes(), (nuevo_ancho, nuevo_alto), "RGB")
+
+        canvas.fill((0, 0, 0))
+        canvas.blit(imagen, ((ancho_canvas - nuevo_ancho) // 2, (alto_canvas - nuevo_alto) // 2))
+        mostrar_canvas(display, canvas)
+        pygame.display.update()
+        reloj.tick(fps)
+
+    video.release()
+    pygame.mixer.music.stop()
