@@ -2,6 +2,7 @@ import pygame
 import sys
 from pathlib import Path
 from Eventos import Periodista_Presidente
+from Eventos import Evento1_Pozo
 import Metodos
 
 
@@ -14,8 +15,7 @@ def Presidente():
     ALTO = int(ANCHO * alto_original / ancho_original)
 
     display, canvas = Metodos.crear_ventana(ANCHO, ALTO, "My Game")
-    ruta_video = Path(__file__).parent.parent / "Assets" / "Videos" / "escena1_llegada.mp4"
-    Metodos.reproducir_video(display, canvas, ruta_video)
+    resultado_evento1 = Evento1_Pozo.jugar(display, canvas)
     fondo = pygame.transform.smoothscale(fondo_original.convert(), (ANCHO, ALTO))
 
     boton_primer_evento = pygame.Rect(int(ANCHO * 0.38), int(ALTO * 0.85), int(ANCHO * 0.24), int(ALTO * 0.08))
