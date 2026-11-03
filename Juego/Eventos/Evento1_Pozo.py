@@ -1,29 +1,4 @@
-"""
-EVENTO 1 del Lider: "El pozo".
 
-Flujo:
-    1. Video de la intro (escena1_llegada). Termina mostrando la pantalla
-       de DECISION con los 4 botones (ya vienen dibujados en el video).
-    2. El ultimo cuadro de la intro se queda quieto y los 4 botones del video
-       se vuelven clicables (zonas invisibles encima de cada caja).
-    3. Video de la opcion elegida (ya trae dialogos y texto).
-       - VERIFICAR: el juego decide al azar si el rumor era falso (70%) o verdadero (30%).
-       - REPORTAR: todavia no tiene video, muestra el texto en pantalla.
-    4. El ultimo cuadro se queda quieto hasta que el jugador haga clic.
-
-Para saltar videos mientras prueban: doble clic en la esquina de arriba a la derecha.
-
-Indicadores (Confianza, Caos, Cohesion): se ven arriba a la izquierda en la
-pantalla de decision y, al final del video, se animan con el cambio.
-
-Uso desde Intz_Presidente.py:
-    from Eventos import Evento1_Pozo
-    resultado = Evento1_Pozo.jugar(display, canvas)
-
-Devuelve un diccionario con la opcion elegida, sus efectos y el objeto
-Indicadores ya actualizado (resultado["indicadores"]), para pasarselo
-al siguiente evento: Evento2.jugar(display, canvas, resultado["indicadores"]).
-"""
 
 import random
 import sys
@@ -182,6 +157,7 @@ def reproducir(canvas, ruta):
     video = cv2.VideoCapture(str(ruta))
     fps = video.get(cv2.CAP_PROP_FPS) or 30
     reloj = pygame.time.Clock()
+    Metodos.MAPA_BLOQUEADO = True          # durante el video no se puede abrir el mapa
 
     ancho_c, alto_c = canvas.get_size()
     zona_saltar = pygame.Rect(int(ancho_c * 0.80), 0, int(ancho_c * 0.20), int(alto_c * 0.20))
@@ -232,6 +208,7 @@ def reproducir(canvas, ruta):
     video.release()
     if pygame.mixer.get_init():
         pygame.mixer.music.stop()
+    Metodos.MAPA_BLOQUEADO = False
 
 
 # ================================================================== indicadores

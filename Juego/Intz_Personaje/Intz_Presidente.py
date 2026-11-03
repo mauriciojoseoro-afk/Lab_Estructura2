@@ -3,6 +3,8 @@ import sys
 from pathlib import Path
 from Eventos import Periodista_Presidente
 from Eventos import Evento1_Pozo
+from Eventos import Evento_2
+from Eventos import Mapa
 import Metodos
 
 
@@ -15,7 +17,23 @@ def Presidente():
     ALTO = int(ANCHO * alto_original / ancho_original)
 
     display, canvas = Metodos.crear_ventana(ANCHO, ALTO, "My Game")
+
+    # ---------- MAPA: se crea una sola vez, aquí vive el grafo de la ciudad ----------
+    mapa = Mapa.Mapa("LÍDER")
+    Metodos.MAPA = mapa                         # desde ahora el icono del mapa sale arriba a la derecha
+    Mapa.mostrar_mapa(display, mapa, terminar=False)   # "Estás aquí: El Cruce del Pozo"
+
+    # ---------- EVENTO 1: el pozo ----------
     resultado_evento1 = Evento1_Pozo.jugar(display, canvas)
+
+    # ---------- MAPA: X en el Cruce del Pozo y se abre el camino al Campo Sembrado ----------
+    Mapa.mostrar_mapa(display, mapa)
+
+    # ---------- EVENTO 2: campo minado ----------
+    resultado_evento2 = Evento_2.Evento_2()
+
+    # Evento 2 pone pantalla completa: volvemos a la ventana normal
+    display, canvas = Metodos.crear_ventana(ANCHO, ALTO, "My Game")
     fondo = pygame.transform.smoothscale(fondo_original.convert(), (ANCHO, ALTO))
 
     boton_primer_evento = pygame.Rect(int(ANCHO * 0.38), int(ALTO * 0.85), int(ANCHO * 0.24), int(ALTO * 0.08))

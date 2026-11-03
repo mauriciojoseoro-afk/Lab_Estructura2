@@ -30,6 +30,39 @@ def crear_ventana(ancho_logico, alto_logico, titulo="My Game"):
     canvas = pygame.Surface((ancho_logico, alto_logico))
     return display, canvas
 
+MAPA = None            
+MAPA_BLOQUEADO = False 
+_mapa_presionado = False
+
+
+def _icono_mapa(display, canvas, escala, offset_x, offset_y):
+    """Dibuja el icono arriba a la derecha y, si le dan clic (o tecla M), abre el mapa."""
+    global _mapa_presionado, MAPA_BLOQUEADO
+    from Eventos import Mapa
+    ancho_canvas = canvas.get_width()
+    margen = 150 if ancho_canvas >= 1400 else 75    # en el Evento 2 hay una barra a la derecha
+    rect = pygame.Rect(ancho_canvas - margen, 22, 50, 40)
+
+    raton = mouse_en_canvas(escala, offset_x, offset_y)
+    encima = rect.collidepoint(raton)
+    Mapa.dibujar_icono(canvas, rect, encima)
+
+    presionado = pygame.mouse.get_pressed()[0] and encima
+    tecla_m = pygame.key.get_pressed()[pygame.K_m]
+    abrir = (presionado or tecla_m) and not _mapa_presionado
+    _mapa_presionado = presionado or tecla_m
+
+    if abrir:
+        MAPA_BLOQUEADO = True
+        musica = pygame.mixer.get_init() and pygame.mixer.music.get_busy()
+        if musica:
+            pygame.mixer.music.pause()
+        Mapa.mostrar_mapa(display, MAPA, terminar=False)
+        if musica:
+            pygame.mixer.music.unpause()
+        pygame.event.clear()          # que el clic de cerrar el mapa no le llegue al evento
+        MAPA_BLOQUEADO = False
+
 
 def mostrar_canvas(display, canvas):
     ancho_ventana, alto_ventana = display.get_size()
@@ -39,10 +72,13 @@ def mostrar_canvas(display, canvas):
     nuevo_ancho = int(ancho_canvas * escala)
     nuevo_alto = int(alto_canvas * escala)
 
-    canvas_escalado = pygame.transform.smoothscale(canvas, (nuevo_ancho, nuevo_alto))
-
     offset_x = (ancho_ventana - nuevo_ancho) // 2
     offset_y = (alto_ventana - nuevo_alto) // 2
+
+    if MAPA is not None and not MAPA_BLOQUEADO:
+        _icono_mapa(display, canvas, escala, offset_x, offset_y)
+
+    canvas_escalado = pygame.transform.smoothscale(canvas, (nuevo_ancho, nuevo_alto))
 
     display.fill((0, 0, 0))
     display.blit(canvas_escalado, (offset_x, offset_y))
