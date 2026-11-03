@@ -1,11 +1,11 @@
-import pygame
 import sys
 import cv2
-
-
 from pathlib import Path
+import pygame
+import pygame.surfarray
 import Metodos
 import Historia
+
 pygame.init()
 
 ANCHO = 900
@@ -17,6 +17,12 @@ pygame.display.set_caption("My Game")
 ruta_video = Path(__file__).parent / "Assets" / "Interfaz" / "Juego.mp4"
 video = cv2.VideoCapture(str(ruta_video))
 
+# Validación para asegurar que el video cargó correctamente
+if not video.isOpened():
+    print(f"Error: No se pudo cargar el video en la ruta: {ruta_video}")
+    pygame.quit()
+    sys.exit()
+
 fps_video = video.get(cv2.CAP_PROP_FPS) or 30  
 reloj = pygame.time.Clock()
 
@@ -27,6 +33,8 @@ def siguiente_frame(video, ancho, alto):
     if not ret:
         video.set(cv2.CAP_PROP_POS_FRAMES, 0)
         ret, frame = video.read()
+        if not ret:
+            return pygame.Surface((ancho, alto))
 
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     frame = cv2.resize(frame, (ancho, alto))

@@ -2,7 +2,7 @@ import pygame
 from pathlib import Path
 import sys
 import Metodos
-from Eventos import Periodista_Presidente
+from Eventos import Evento_2, Periodista_Presidente
 
 
 def Influencer(genero):
@@ -33,6 +33,7 @@ def Influencer(genero):
 
     boton_detalles = pygame.Rect(90, 190, 200, 60)
     boton_evento = pygame.Rect(600, 180, 200, 60)
+    boton_evento2 = pygame.Rect(600, 280, 200, 60)
     boton_regresar_principal = pygame.Rect(90, 320, 200, 60)
     
     # Boton exclusivo de detalles
@@ -78,6 +79,8 @@ def Influencer(genero):
 
             if Metodos.boton_inv(canvas, boton_evento, mouse_pos, click):
                 Periodista_Presidente.Entrevista()
+            if Metodos.boton(canvas, boton_evento2,"Evento2", mouse_pos, click):
+                Evento_2.Evento_2()
 
             if Metodos.boton_inv(canvas, boton_regresar_principal, mouse_pos, click):
                 running = False
