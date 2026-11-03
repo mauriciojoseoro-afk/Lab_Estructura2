@@ -1,4 +1,3 @@
-
 import math
 import sys
 from pathlib import Path
@@ -12,9 +11,7 @@ ROJO = (200, 30, 25)
 TINTA = (48, 30, 18)
 
 
-# ============================================================
 # GRAFO DE LA CIUDAD
-# ============================================================
 class Grafo:
     def __init__(self):
         self.adyacencia = {}          # nodo -> {vecino: peso}
@@ -71,9 +68,7 @@ RUTAS = {
 PESOS = {("El Campo Sembrado", "El Almacén del Este"): 6}   # el resto pesa 8 (cruzar el campo)
 
 
-# ============================================================
 # NIEBLA (nubes que se mueven)
-# ============================================================
 import numpy as np
 
 REDUCCION = 4          # la niebla se calcula 4 veces más pequeña y se agranda: más rápida y más suave
@@ -173,9 +168,7 @@ class Niebla:
         return pygame.transform.smoothscale(sup, self.tam_mapa)
 
 
-# ============================================================
 # SONIDOS (se generan con código, no necesitan archivos)
-# ============================================================
 def crear_sonido(duracion, tipo):
     try:
         if not pygame.mixer.get_init():
@@ -212,9 +205,7 @@ def sonar(sonido):
         sonido.play()
 
 
-# ============================================================
 # MAPA
-# ============================================================
 class Mapa:
     def __init__(self, personaje):
         img = pygame.image.load(str(CARPETA / "mapa.png")).convert_alpha()
@@ -304,15 +295,16 @@ class Mapa:
             if ahora >= 1.0:
                 self.avance_niebla = 0.0
                 self.animacion.pop(0)
+                self.grafo.eliminar_nodo(actual)                            # ELIMINAR NODO (ya no se vuelve ahí)
 
     # ---------- Dibujar ----------
     def dibujar(self, pantalla):
         pantalla.fill((17, 20, 24))
         lienzo = self.img.copy()
 
-        # caminos (aristas del grafo), dibujados poco a poco con línea punteada
-        for a, b, peso in self.grafo.aristas():
-            p = self.camino_progreso.get((a, b), self.camino_progreso.get((b, a), 0))
+        # caminos recorridos, dibujados poco a poco con línea punteada
+        # (se dibujan aunque el lugar anterior ya no esté en el grafo)
+        for (a, b), p in self.camino_progreso.items():
             linea_punteada(lienzo, self.xy(a), self.xy(b), p, TINTA)
 
         # niebla que se mueve y se abre en las zonas descubiertas
@@ -425,9 +417,7 @@ def dibujar_x(superficie, trazos, progreso, cache, clave):
     superficie.blit(capa, (0, 0))
 
 
-# ============================================================
 # ICONO DEL MAPA (arriba a la derecha)
-# ============================================================
 def dibujar_icono(pantalla, rect, encima):
     color = (235, 215, 175) if encima else (210, 190, 150)
     pygame.draw.rect(pantalla, (17, 20, 24), rect.inflate(10, 10), border_radius=10)
@@ -441,9 +431,7 @@ def dibujar_icono(pantalla, rect, encima):
     pygame.draw.line(pantalla, ROJO, (x + 18, y + 14), (x + 8, y + 24), 3)
 
 
-# ============================================================
 # PARA USAR DENTRO DEL JUEGO
-# ============================================================
 def animacion_terminada(mapa):
     return not mapa.animacion
 
@@ -496,9 +484,7 @@ def mostrar_mapa(display, mapa, terminar=True):
         pygame.display.update()
 
 
-# ============================================================
 # PRUEBA (solo si corres este archivo directamente)
-# ============================================================
 def main():
     pygame.mixer.pre_init(44100, -16, 2, 512)
     pygame.init()
