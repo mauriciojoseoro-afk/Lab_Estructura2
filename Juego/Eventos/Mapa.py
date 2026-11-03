@@ -14,41 +14,48 @@ TINTA = (48, 30, 18)
 # GRAFO DE LA CIUDAD
 class Grafo:
     def __init__(self):
-        self.adyacencia = {}          # nodo -> {vecino: peso}
+        self.adyacencia = {}          # cada lugar guarda sus vecinos: {lugar: {vecino: peso}}
 
     def agregar_nodo(self, nodo):
-        self.adyacencia.setdefault(nodo, {})
+        if nodo not in self.adyacencia:
+            self.adyacencia[nodo] = {}          # el lugar nuevo empieza sin caminos
 
     def eliminar_nodo(self, nodo):
-        for vecino in list(self.adyacencia.get(nodo, {})):
+        if nodo not in self.adyacencia:
+            return                               # si no existe, no hay nada que borrar
+        # primero se borran los caminos que llegan a este lugar
+        for vecino in list(self.adyacencia[nodo]):
             del self.adyacencia[vecino][nodo]
-        self.adyacencia.pop(nodo, None)
+        # después se borra el lugar
+        del self.adyacencia[nodo]
 
     def agregar_arista(self, a, b, peso=1):
         self.agregar_nodo(a)
         self.agregar_nodo(b)
-        self.adyacencia[a][b] = peso
-        self.adyacencia[b][a] = peso
+        self.adyacencia[a][b] = peso             # camino de a hacia b
+        self.adyacencia[b][a] = peso             # y de b hacia a (no dirigido)
 
     def eliminar_arista(self, a, b):
-        self.adyacencia.get(a, {}).pop(b, None)
-        self.adyacencia.get(b, {}).pop(a, None)
+        if a in self.adyacencia and b in self.adyacencia[a]:
+            del self.adyacencia[a][b]
+        if b in self.adyacencia and a in self.adyacencia[b]:
+            del self.adyacencia[b][a]
 
     def vecinos(self, nodo):
-        return list(self.adyacencia.get(nodo, {}))
+        if nodo not in self.adyacencia:
+            return []
+        return list(self.adyacencia[nodo])
 
     def aristas(self):
-        vistas = set()
-        for a, vecinos in self.adyacencia.items():
-            for b, peso in vecinos.items():
-                if (b, a) not in vistas:
-                    vistas.add((a, b))
-                    yield a, b, peso
+        lista = []
+        for a in self.adyacencia:
+            for b in self.adyacencia[a]:
+                peso = self.adyacencia[a][b]
+                if (b, a, peso) not in lista:      # cada camino está guardado dos veces: se cuenta una
+                    lista.append((a, b, peso))
+        return lista
 
 
-# Cada lugar en la imagen del mapa (proporción 0 a 1 del ancho y alto):
-#   punto = donde va la X y el círculo
-#   zona  = óvalo que se descubre (centro x, centro y, ancho, alto): debe cubrir el dibujo y su nombre
 LUGARES = {
     "El Cruce del Pozo":     {"punto": (0.280, 0.731), "zona": (0.283, 0.794, 0.113, 0.122)},
     "Barrio Las Acacias":    {"punto": (0.128, 0.498), "zona": (0.128, 0.551, 0.116, 0.148)},
