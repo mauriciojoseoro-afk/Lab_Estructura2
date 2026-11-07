@@ -1,5 +1,4 @@
-
-
+import math
 import random
 import sys
 from pathlib import Path
@@ -9,211 +8,376 @@ import pygame
 
 import Metodos
 
-# ------------------------------------------------------------------ rutas
+# RUTAS
 RUTA_VIDEOS = Path(__file__).parent.parent / "Assets" / "Videos"
-RUTA_FUENTES = Path(__file__).parent.parent / "Assets" / "Interfaz"
+RUTA_FUENTES = Path(__file__).parent.parent / "Assets" / "Fuentes"
 
-# ------------------------------------------------------------------ colores
-ROJO = (229, 57, 53)
-BLANCO = (240, 240, 240)
+# COLORES (sacados de los videos originales)
+ROJO = (234, 50, 43)
+BLANCO = (252, 252, 252)
 GRIS = (170, 170, 170)
+VERDE = (76, 175, 80)
+NEGRO_ALERTA = (17, 9, 9)
+TINTA_ALERTA = (28, 12, 12)
 
-# ------------------------------------------------------------------ zonas clicables
-# Posicion de cada boton DENTRO DEL VIDEO, como fraccion del ancho y alto
-# del video: (x_inicio, y_inicio, x_fin, y_fin). 0 = borde izquierdo/arriba, 1 = derecho/abajo.
-ZONAS_BOTONES = {
-    "COMPARTIR": (0.133, 0.525, 0.432, 0.655),
-    "IGNORAR":   (0.548, 0.525, 0.848, 0.655),
-    "VERIFICAR": (0.133, 0.750, 0.432, 0.882),
-    "REPORTAR":  (0.548, 0.745, 0.848, 0.872),
-}
-# Ponlo en True para ver las zonas en rojo y comprobar que coinciden con tus cajas.
-MOSTRAR_ZONAS = False
+# Todo lo que se dibuja encima del video se mide sobre un video de 1920 x 1080.
+# El código lo agranda o lo achica según el tamaño de la ventana.
+REF_ANCHO, REF_ALTO = 1920, 1080
 
-# ------------------------------------------------------------------ contenido del evento
+# Oscuridad del filtro de la pregunta y de la consecuencia (0 = nada, 255 = negro)
+OSCURIDAD = 125
+
 PROBABILIDAD_FALSO = 0.7
+
+
+# GUION DE CADA VIDEO
+# subtitulos: (empieza, termina de escribirse, desaparece, texto)   en segundos del video
+# alerta:     (aparece, desaparece)  la notificación de Civitas
+# pantalla:   segundo en que se oscurece el video y sale la pregunta o la consecuencia
+INTRO = {
+    "video": "escena1_llegada.mp4",
+    "subtitulos": [
+        (0.07, 2.27, 4.10, "Llegaron a las ruinas hace apenas unas horas."),
+        (4.60, 7.23, 9.07, "No hay refugio seguro. El agua se está acabando."),
+        (11.43, 12.57, 13.93, 'MUJER: "¿Lo leyeron? Dicen que el agua del pozo está envenenada..."'),
+        (16.67, 17.83, 19.17, 'HOMBRE: "Dos personas se enfermaron por tomarla."'),
+        (21.90, 23.20, 24.73, 'ANCIANO: "¿Y ahora qué vamos a tomar?"'),
+        (33.67, 34.70, 35.97, "Todos te miran."),
+        (36.03, 37.87, 39.60, "Nadie te nombró líder... pero nadie más está hablando."),
+    ],
+    "alerta": (12.60, 16.75),
+    "pantalla": 39.63,
+}
 
 CONSECUENCIAS = {
     "COMPARTIR": {
         "video": "escena1_compartir.mp4",
-        "texto": "Compartiste sin saber si era cierto. El miedo se esparció más rápido que el agua.",
+        "subtitulos": [(1.47, 2.33, 3.33, 'LÍDER: "¡Aléjense del pozo! ¡El agua está envenenada!"')],
+        "pantalla": 7.27,
+        "opcion": "COMPARTIR",
+        "texto": "Compartiste sin saber si era\ncierto. El miedo se esparció más\nrápido que el agua...",
         "efectos": {"Confianza": -15, "Caos": +20, "Cohesión": -10},
     },
     "VERIFICAR_FALSO": {
         "video": "escena1_verificar_falso.mp4",
-        "texto": "Verificaste antes de hablar. Esta vez, la verdad llegó primero.",
+        "subtitulos": [(13.83, 14.67, 15.63, 'LÍDER: "El agua está bien. Se los aseguro."')],
+        "pantalla": 17.27,
+        "opcion": "VERIFICAR",
+        "texto": "Verificaste antes de hablar. Esta\nvez, la verdad llegó primero.",
         "efectos": {"Confianza": +15, "Caos": -10, "Cohesión": +10},
     },
     "VERIFICAR_VERDADERO": {
         "video": "escena1_verificar_verdadero.mp4",
-        "texto": "Verificaste, y esta vez el rumor era cierto. Gracias a ti, nadie bebió.",
+        "subtitulos": [],
+        "pantalla": 17.23,
+        "opcion": "VERIFICAR",
+        "texto": "Verificaste, y esta vez el rumor\nera cierto. Gracias a ti, nadie\nbebió.",
         "efectos": {"Confianza": +15, "Caos": -10, "Cohesión": +10},
     },
     "IGNORAR": {
         "video": "escena1_ignorar.mp4",
-        "texto": "Tu silencio también comunicó algo. El rumor siguió corriendo.",
+        "subtitulos": [(3.17, 4.03, 5.03, 'MUJER: "¿No va a decir nada?"')],
+        "pantalla": 5.33,
+        "opcion": "IGNORAR",
+        "texto": "Tu silencio también comunicó algo.\nEl rumor siguió corriendo.",
         "efectos": {"Confianza": -10, "Caos": +10, "Cohesión": -5},
     },
     "REPORTAR": {
         "video": "escena1_reportar.mp4",
-        "texto": "Marcaste el mensaje como no confiable. El rumor dejó de circular... aunque nadie comprobó el agua.",
+        "subtitulos": [],
+        "pantalla": 5.30,
+        "opcion": "REPORTAR",
+        "texto": "Marcaste el mensaje como no confiable.\nEl rumor dejó de circular... aunque\nnadie comprobó el agua.",
         "efectos": {"Confianza": 0, "Caos": -10, "Cohesión": +5},
     },
 }
 
+# Botones de la pregunta, en el video de 1920 x 1080: (x, y, ancho, alto)
+BOTONES = {
+    "COMPARTIR": (257, 568, 570, 132),
+    "IGNORAR":   (1053, 568, 570, 132),
+    "VERIFICAR": (257, 816, 570, 131),
+    "REPORTAR":  (1053, 806, 570, 131),
+}
 
-# ================================================================== ayudas
-def cargar_fuente(tamano, negrita=False):
-    """Usa Space Mono si esta en Assets/Interfaz; si no, Consolas."""
-    nombre = "SpaceMono-Bold.ttf" if negrita else "SpaceMono-Regular.ttf"
-    ruta = RUTA_FUENTES / nombre
-    if ruta.exists():
-        return pygame.font.Font(str(ruta), tamano)
-    return pygame.font.SysFont("Consolas", tamano, bold=negrita)
-
-
-def cuadro_a_imagen(cuadro):
-    """Convierte un cuadro de OpenCV en una imagen de pygame (tamano original)."""
-    cuadro = cv2.cvtColor(cuadro, cv2.COLOR_BGR2RGB)
-    alto, ancho = cuadro.shape[:2]
-    return pygame.image.frombuffer(cuadro.tobytes(), (ancho, alto), "RGB").copy()
-
-
-def ultimo_cuadro(ruta_video):
-    """Devuelve el ultimo cuadro de un video como imagen de pygame (o None)."""
-    video = cv2.VideoCapture(str(ruta_video))
-    total = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
-    video.set(cv2.CAP_PROP_POS_FRAMES, max(total - 2, 0))
-
-    cuadro = None
-    while True:
-        ok, siguiente = video.read()
-        if not ok:
-            break
-        cuadro = siguiente
-    video.release()
-
-    return None if cuadro is None else cuadro_a_imagen(cuadro)
+# Texto de la notificación de Civitas (cada línea como sale en el video)
+ALERTA_TITULO = "MENSAJE VIRAL"
+ALERTA_LINEAS = [
+    "EL AGUA DEL POZO DE LA PLAZA ESTÁ",
+    "ENVENENADA. COMPARTAN ANTES DE QUE ALGUIEN",
+    "MÁS LA TOME.",
+]
 
 
-def dibujar_ajustado(canvas, imagen):
-    """Dibuja la imagen lo mas grande posible sin recortarla (igual que el video).
-    Devuelve el rectangulo donde quedo dibujada."""
-    canvas.fill((0, 0, 0))
-    if imagen is None:
-        return canvas.get_rect()
-    ancho_c, alto_c = canvas.get_size()
-    ancho_i, alto_i = imagen.get_size()
-    escala = min(ancho_c / ancho_i, alto_c / alto_i)
-    nuevo = (int(ancho_i * escala), int(alto_i * escala))
-    rect = pygame.Rect(0, 0, *nuevo)
-    rect.center = (ancho_c // 2, alto_c // 2)
-    canvas.blit(pygame.transform.smoothscale(imagen, nuevo), rect)
-    return rect
+# FUENTES
+_fuentes = {}
 
 
-def partir_texto(texto, fuente, ancho_max):
-    """Divide un texto en lineas que quepan en ancho_max."""
-    lineas, actual = [], ""
-    for palabra in texto.split():
-        prueba = f"{actual} {palabra}".strip()
-        if fuente.size(prueba)[0] <= ancho_max:
-            actual = prueba
+def fuente(nombre, tamano):
+    """nombre: 'mono', 'mono_negrita' o 'subtitulo'. Se guardan para no cargarlas cada vez."""
+    tamano = max(8, int(tamano))
+    clave = (nombre, tamano)
+    if clave not in _fuentes:
+        archivos = {
+            "mono": "SpaceMono-Regular.ttf",
+            "mono_negrita": "SpaceMono-Bold.ttf",
+            "subtitulo": "CormorantGaramond-BoldItalic.ttf",
+        }
+        ruta = RUTA_FUENTES / archivos[nombre]
+        if ruta.exists():
+            _fuentes[clave] = pygame.font.Font(str(ruta), tamano)
         else:
-            lineas.append(actual)
-            actual = palabra
-    if actual:
-        lineas.append(actual)
-    return lineas
+            _fuentes[clave] = pygame.font.SysFont("georgia" if nombre == "subtitulo" else "consolas",
+                                                  tamano, bold=True, italic=nombre == "subtitulo")
+    return _fuentes[clave]
 
 
-def leer_eventos():
-    """Devuelve (click, tecla_continuar). Cierra el juego si se cierra la ventana."""
-    click = continuar = False
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
-        if event.type == pygame.VIDEORESIZE:
-            pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            click = True
-        if event.type == pygame.KEYDOWN and event.key in (pygame.K_SPACE, pygame.K_RETURN):
-            continuar = True
-    return click, continuar
+def cargar_fuente(tamano, negrita=False):
+    """La usan los indicadores."""
+    return fuente("mono_negrita" if negrita else "mono", tamano)
 
 
-def mostrar(canvas):
-    """Pasa el canvas a la ventana y devuelve la posicion del mouse dentro del canvas."""
-    escala, off_x, off_y = Metodos.mostrar_canvas(pygame.display.get_surface(), canvas)
-    pygame.display.update()
-    return Metodos.mouse_en_canvas(escala, off_x, off_y)
+# AYUDAS PARA DIBUJAR
+def letras_visibles(texto, t, empieza, termina):
+    """Efecto máquina de escribir: cuántas letras se ven en el segundo t."""
+    if t < empieza:
+        return 0
+    if t >= termina:
+        return len(texto)
+    return int(len(texto) * (t - empieza) / (termina - empieza))
 
 
-# ================================================================== video
-def reproducir(canvas, ruta):
-    """Reproduce un video con su .mp3.
-    Para saltarlo: doble clic en la esquina de arriba a la derecha."""
-    video = cv2.VideoCapture(str(ruta))
-    fps = video.get(cv2.CAP_PROP_FPS) or 30
-    reloj = pygame.time.Clock()
-    Metodos.MAPA_BLOQUEADO = True          # durante el video no se puede abrir el mapa
-
-    ancho_c, alto_c = canvas.get_size()
-    zona_saltar = pygame.Rect(int(ancho_c * 0.80), 0, int(ancho_c * 0.20), int(alto_c * 0.20))
-
-    ruta_audio = Path(ruta).with_suffix(".mp3")
-    if ruta_audio.exists():
-        if not pygame.mixer.get_init():
-            pygame.mixer.init()
-        pygame.mixer.music.load(str(ruta_audio))
-        pygame.mixer.music.play()
-
-    inicio = pygame.time.get_ticks()
-    cuadro_actual = 0
-    ultimo_click = -1000
-    mouse = (-1, -1)
-
-    while True:
-        saltar = False
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                video.release()
-                pygame.quit()
-                sys.exit()
-            if event.type == pygame.VIDEORESIZE:
-                pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and zona_saltar.collidepoint(mouse):
-                ahora = pygame.time.get_ticks()
-                if ahora - ultimo_click < 400:
-                    saltar = True
-                ultimo_click = ahora
-
-        if saltar:
-            break
-
-        cuadro_objetivo = int((pygame.time.get_ticks() - inicio) / 1000 * fps)
-        ok, cuadro = video.read()
-        cuadro_actual += 1
-        while ok and cuadro_actual < cuadro_objetivo:
-            ok, cuadro = video.read()
-            cuadro_actual += 1
-        if not ok:
-            break
-
-        dibujar_ajustado(canvas, cuadro_a_imagen(cuadro))
-        mouse = mostrar(canvas)
-        reloj.tick(fps)
-
-    video.release()
-    if pygame.mixer.get_init():
-        pygame.mixer.music.stop()
-    Metodos.MAPA_BLOQUEADO = False
+def escribir(pantalla, texto, letras, f, color, centro, sombra=False):
+    """Escribe solo las primeras 'letras', pero dejando el texto donde quedaría completo
+    (así crece hacia la derecha, como en el video)."""
+    if letras <= 0:
+        return
+    ancho_total = f.size(texto)[0]
+    x = centro[0] - ancho_total // 2
+    y = centro[1] - f.get_height() // 2
+    parte = texto[:letras]
+    if sombra:
+        s = f.render(parte, True, (0, 0, 0))
+        s.set_alpha(110)
+        pantalla.blit(s, (x + 2, y + 2))
+    pantalla.blit(f.render(parte, True, color), (x, y))
 
 
-# ================================================================== indicadores
+def oscurecer(pantalla, rect, alfa):
+    velo = pygame.Surface(rect.size, pygame.SRCALPHA)
+    velo.fill((0, 0, 0, alfa))
+    pantalla.blit(velo, rect.topleft)
+
+
+def triangulo_pixelado(tam_celda):
+    """El triángulo de advertencia hecho con cuadritos, como un letrero de luces."""
+    forma = [
+        "..........##..........",
+        ".........####.........",
+        ".........####.........",
+        "........##..##........",
+        "........##..##........",
+        ".......##....##.......",
+        ".......##.##.##.......",
+        "......##..##..##......",
+        "......##..##..##......",
+        ".....##...##...##.....",
+        ".....##...##...##.....",
+        "....##....##....##....",
+        "....##..........##....",
+        "...##.....##.....##...",
+        "...##.....##.....##...",
+        "..##..............##..",
+        ".######################",
+        "######################",
+    ]
+    columnas = max(len(f) for f in forma)
+    sup = pygame.Surface((columnas * tam_celda, len(forma) * tam_celda), pygame.SRCALPHA)
+    lado = max(1, tam_celda - max(1, tam_celda // 5))     # espacio entre cuadritos
+    for fila, linea in enumerate(forma):
+        for col, c in enumerate(linea):
+            if c == "#":
+                pygame.draw.rect(sup, ROJO, (col * tam_celda, fila * tam_celda, lado, lado))
+    return sup
+
+
+# SUBTÍTULOS
+def dibujar_subtitulos(pantalla, rect, s, t, subtitulos):
+    f = fuente("subtitulo", 56 * s)
+    for empieza, termina, desaparece, texto in subtitulos:
+        if empieza <= t < desaparece:
+            n = letras_visibles(texto, t, empieza, termina)
+            escribir(pantalla, texto, n, f, BLANCO,
+                     (rect.x + rect.w // 2, rect.y + int(0.91 * rect.h)), sombra=True)
+
+
+# NOTIFICACIÓN DE CIVITAS
+def caja_alerta(s, tl, dur):
+    """Dibuja la ventana de alerta completa (sin efectos) en su tamaño final."""
+    ancho, alto = int(1360 * s), int(551 * s)
+    alto_barra = int(93 * s)
+    corte = int(22 * s)
+    borde = max(2, int(4 * s))
+    caja = pygame.Surface((ancho, alto), pygame.SRCALPHA)
+
+    # cuerpo negro con borde rojo
+    cuerpo = pygame.Rect(0, alto_barra - corte, ancho, alto - alto_barra + corte)
+    pygame.draw.rect(caja, (*NEGRO_ALERTA, 238), cuerpo, border_radius=int(20 * s))
+    pygame.draw.rect(caja, ROJO, cuerpo, width=borde, border_radius=int(20 * s))
+    # líneas de televisor vieja
+    paso = max(3, int(5 * s))
+    for y in range(alto_barra, alto - borde, paso):
+        pygame.draw.line(caja, (255, 255, 255, 9), (borde, y), (ancho - borde, y))
+
+    # barra roja de arriba con las esquinas cortadas
+    pygame.draw.polygon(caja, ROJO, [(corte, 0), (ancho - corte, 0), (ancho, corte),
+                                     (ancho, alto_barra), (0, alto_barra), (0, corte)])
+    f_barra = fuente("mono_negrita", 36 * s)
+    texto = f_barra.render("CIVITAS // ALERTA", True, TINTA_ALERTA)
+    caja.blit(texto, (int(42 * s), alto_barra // 2 - texto.get_height() // 2 + int(2 * s)))
+    lado = int(47 * s)
+    for i in range(3):
+        x = ancho - int(223 * s) + i * int(68 * s)
+        pygame.draw.rect(caja, TINTA_ALERTA, (x, int(25 * s), lado, lado), width=max(2, int(4 * s)))
+
+    # triángulo
+    tri = triangulo_pixelado(max(2, int(12 * s)))
+    caja.blit(tri, (int(199 * s) - tri.get_width() // 2, int(183 * s)))
+
+    # textos que se escriben solos (se borran justo antes de que se vaya)
+    if tl < dur - 0.35:
+        f_titulo = fuente("mono_negrita", 57 * s)
+        n = letras_visibles(ALERTA_TITULO, tl, 0.23, 2.0)
+        if n:
+            caja.blit(f_titulo.render(ALERTA_TITULO[:n], True, ROJO),
+                      (int(357 * s), int(181 * s) - f_titulo.get_height() // 2))
+        f_cuerpo = fuente("mono", 36 * s)
+        todo = sum(len(l) for l in ALERTA_LINEAS)
+        quedan = letras_visibles("x" * todo, tl, 0.15, 1.8)
+        for i, linea in enumerate(ALERTA_LINEAS):
+            parte = linea[:max(0, quedan)]
+            quedan -= len(linea)
+            if parte:
+                caja.blit(f_cuerpo.render(parte, True, (240, 236, 236)),
+                          (int(359 * s), int((280 + 50 * i) * s) - f_cuerpo.get_height() // 2))
+    return caja
+
+
+def dibujar_alerta(pantalla, rect, s, t, inicio, fin):
+    if not (inicio <= t < fin):
+        return
+    tl, dur = t - inicio, fin - inicio
+    entrada = min(1.0, tl / 0.30)
+    salida = min(1.0, (dur - tl) / 0.30)
+    k = min(entrada, salida)
+    k = 1 - (1 - k) ** 3                           # se abre rápido y frena
+    # interferencia fuerte al aparecer y al desaparecer
+    glitch = max(0.0, 1 - tl / 0.6) if tl < 0.6 else max(0.0, 1 - (dur - tl) / 0.4)
+
+    caja = caja_alerta(s, tl, dur)
+    ancho = max(4, int(caja.get_width() * (0.22 + 0.78 * k)))
+    alto = max(3, int(caja.get_height() * (0.08 + 0.92 * k)))
+    if (ancho, alto) != caja.get_size():
+        caja = pygame.transform.smoothscale(caja, (ancho, alto))
+
+    centro = (rect.x + int(968 * s), rect.y + int(512 * s))
+    destino = caja.get_rect(center=centro)
+
+    # brillo rojo alrededor
+    for i, a in ((18, 22), (10, 35), (4, 50)):
+        halo = pygame.Surface((ancho + 2 * int(i * s), alto + 2 * int(i * s)), pygame.SRCALPHA)
+        pygame.draw.rect(halo, (*ROJO, int(a * k)), halo.get_rect(), border_radius=int(30 * s))
+        pantalla.blit(halo, halo.get_rect(center=centro))
+
+    if glitch <= 0.02:
+        pantalla.blit(caja, destino)
+        return
+
+    azar = random.Random(int(t * 30))
+    # copias de color corridas (como una pantalla mal sintonizada)
+    corrimiento = int(10 * s * glitch)
+    for color, dx in (((255, 40, 40), corrimiento), ((40, 220, 255), -corrimiento)):
+        copia = caja.copy()
+        copia.fill((*color, 255), special_flags=pygame.BLEND_RGBA_MULT)
+        copia.set_alpha(int(45 * glitch))
+        pantalla.blit(copia, destino.move(dx, 0))
+    # franjas horizontales que se desplazan
+    franja = max(2, int(alto / 14))
+    for y in range(0, alto, franja):
+        dx = int(azar.uniform(-1, 1) * 28 * s * glitch) if azar.random() < 0.45 else 0
+        pantalla.blit(caja, (destino.x + dx, destino.y + y), pygame.Rect(0, y, ancho, franja))
+    # bandas oscuras que bajan
+    for _ in range(3):
+        y = azar.randint(0, alto)
+        banda = pygame.Surface((ancho, max(2, int(10 * s))), pygame.SRCALPHA)
+        banda.fill((0, 0, 0, int(120 * glitch)))
+        pantalla.blit(banda, (destino.x, destino.y + y))
+
+
+# PANTALLA DE LA PREGUNTA
+def dibujar_decision(pantalla, rect, s, tl, mouse):
+    """tl: segundos desde que salió la pregunta. Devuelve los botones en coordenadas de pantalla."""
+    oscurecer(pantalla, rect, OSCURIDAD)
+
+    def punto(x, y):
+        return rect.x + int(x * s), rect.y + int(y * s)
+
+    titulo = "DECISIÓN"
+    escribir(pantalla, titulo, letras_visibles(titulo, tl, 0.05, 1.25),
+             fuente("mono_negrita", 57 * s), ROJO, punto(942, 255))
+    pregunta = "¿Qué vas a hacer con el mensaje?"
+    escribir(pantalla, pregunta, letras_visibles(pregunta, tl, 0.0, 2.5),
+             fuente("mono", 57 * s), BLANCO, punto(960, 395))
+    pygame.draw.line(pantalla, ROJO, punto(620, 451), punto(1300, 451), max(2, int(4 * s)))
+
+    f_boton = fuente("mono", 54 * s)
+    zonas = {}
+    for opcion, (x, y, w, h) in BOTONES.items():
+        zona = pygame.Rect(*punto(x, y), int(w * s), int(h * s))
+        encima = zona.collidepoint(mouse)
+        radio = int(52 * s)
+        if encima:
+            brillo = pygame.Surface(zona.size, pygame.SRCALPHA)
+            pygame.draw.rect(brillo, (255, 255, 255, 38), brillo.get_rect(), border_radius=radio)
+            pantalla.blit(brillo, zona.topleft)
+        pygame.draw.rect(pantalla, BLANCO, zona, width=max(2, int(3 * s)), border_radius=radio)
+        texto = f_boton.render(opcion, True, BLANCO)
+        pantalla.blit(texto, texto.get_rect(center=zona.center))
+        zonas[opcion] = zona
+    return zonas
+
+
+# PANTALLA DE LA CONSECUENCIA
+def tiempo_consecuencia(datos):
+    """Cuánto tarda en escribirse todo el texto de la consecuencia."""
+    return max(1.25, len(datos["texto"]) / 48 + 0.1)
+
+
+def dibujar_consecuencia(pantalla, rect, s, tl, datos):
+    oscurecer(pantalla, rect, OSCURIDAD)
+
+    def punto(x, y):
+        return rect.x + int(x * s), rect.y + int(y * s)
+
+    titulo = "CONSECUENCIA"
+    escribir(pantalla, titulo, letras_visibles(titulo, tl, 0.0, 1.25),
+             fuente("mono_negrita", 57 * s), ROJO, punto(960, 255))
+    opcion = datos["opcion"]
+    escribir(pantalla, opcion, letras_visibles(opcion, tl, 0.0, len(opcion) / 9),
+             fuente("mono", 56 * s), BLANCO, punto(960, 355))
+    pygame.draw.line(pantalla, ROJO, punto(620, 417), punto(1300, 417), max(2, int(4 * s)))
+
+    f = fuente("mono", 58 * s)
+    lineas = datos["texto"].split("\n")
+    quedan = letras_visibles(datos["texto"].replace("\n", ""), tl, 0.0, tiempo_consecuencia(datos) - 0.1)
+    for i, linea in enumerate(lineas):
+        escribir(pantalla, linea, quedan, f, BLANCO, punto(960, 578 + 80 * i))
+        quedan -= len(linea)
+
+
+# INDICADORES
 class Indicadores:
-    """Confianza, Caos y Cohesion del grupo, de 0 a 100."""
+    """Confianza, Caos y Cohesión del grupo, de 0 a 100."""
 
     # True = subir es bueno (verde); False = subir es malo (rojo)
     SUBIR_ES_BUENO = {"Confianza": True, "Caos": False, "Cohesión": True}
@@ -229,40 +393,37 @@ class Indicadores:
         return dict(self.valores)
 
 
-VERDE = (76, 175, 80)
-
-
 def dibujar_indicadores(canvas, valores, cambios=None, alfa_cambios=255):
-    """Panel pequeno arriba a la izquierda con una barra por indicador.
-    valores: lo que se dibuja ahora (puede ir cambiando durante la animacion).
+    """Panel pequeño arriba a la izquierda con una barra por indicador.
+    valores: lo que se dibuja ahora (puede ir cambiando durante la animación).
     cambios: {"Caos": +20, ...} para mostrar el +/- en verde o rojo."""
     ancho_c, alto_c = canvas.get_size()
-    fuente = cargar_fuente(max(11, int(alto_c * 0.030)), negrita=True)
+    f = cargar_fuente(max(11, int(alto_c * 0.030)), negrita=True)
 
-    margen = 14
+    margen = int(alto_c * 0.025)
     ancho_panel = int(ancho_c * 0.27)
     alto_fila = int(alto_c * 0.085)
-    alto_panel = alto_fila * len(valores) + 16
+    alto_panel = alto_fila * len(valores) + int(alto_c * 0.03)
 
     panel = pygame.Surface((ancho_panel, alto_panel), pygame.SRCALPHA)
     pygame.draw.rect(panel, (0, 0, 0, 165), panel.get_rect(), border_radius=10)
     pygame.draw.rect(panel, (255, 255, 255, 60), panel.get_rect(), width=1, border_radius=10)
     canvas.blit(panel, (margen, margen))
 
-    x = margen + 12
-    ancho_barra = ancho_panel - 24
-    y = margen + 8
+    x = margen + int(ancho_panel * 0.05)
+    ancho_barra = ancho_panel - 2 * int(ancho_panel * 0.05)
+    y = margen + int(alto_c * 0.015)
     for nombre, valor in valores.items():
-        etiqueta = fuente.render(nombre.upper(), True, BLANCO)
+        etiqueta = f.render(nombre.upper(), True, BLANCO)
         canvas.blit(etiqueta, (x, y))
 
-        numero = fuente.render(str(int(round(valor))), True, BLANCO)
+        numero = f.render(str(int(round(valor))), True, BLANCO)
         canvas.blit(numero, numero.get_rect(topright=(x + ancho_barra, y)))
 
         if cambios and cambios.get(nombre):
             cambio = cambios[nombre]
             bueno = (cambio > 0) == Indicadores.SUBIR_ES_BUENO[nombre]
-            texto = fuente.render(f"{cambio:+d}", True, VERDE if bueno else ROJO)
+            texto = f.render(f"{cambio:+d}", True, VERDE if bueno else ROJO)
             texto.set_alpha(alfa_cambios)
             canvas.blit(texto, texto.get_rect(topright=(x + ancho_barra - numero.get_width() - 10, y)))
 
@@ -278,156 +439,160 @@ def dibujar_indicadores(canvas, valores, cambios=None, alfa_cambios=255):
 
 
 def valores_animados(antes, despues, inicio, espera=400, duracion=900):
-    """Mueve los valores de 'antes' a 'despues' poco a poco (despues de una pequena espera)."""
+    """Mueve los valores de 'antes' a 'despues' poco a poco (después de una pequeña espera)."""
     t = (pygame.time.get_ticks() - inicio - espera) / duracion
     t = max(0.0, min(1.0, t))
-    t = 1 - (1 - t) ** 3  # empieza rapido y frena al final
+    t = 1 - (1 - t) ** 3  # empieza rápido y frena al final
     return {k: antes[k] + (despues[k] - antes[k]) * t for k in antes}
 
 
-# ================================================================== pantallas
-def pantalla_decision(canvas, imagen, valores):
-    """Deja quieto el ultimo cuadro de la intro (que ya trae los 4 botones dibujados)
-    y convierte esas cajas en zonas clicables. Espera sin limite de tiempo."""
+# REPRODUCIR UNA ESCENA (video + todo lo que va encima)
+def rect_video(pantalla):
+    """El video lo más grande posible dentro de la ventana, sin deformarlo (16:9)."""
+    ancho, alto = pantalla.get_size()
+    escala = min(ancho / REF_ANCHO, alto / REF_ALTO)
+    rect = pygame.Rect(0, 0, int(REF_ANCHO * escala), int(REF_ALTO * escala))
+    rect.center = (ancho // 2, alto // 2)
+    return rect
+
+
+def escena(guion, modo, valores=None, antes=None, despues=None):
+    """Reproduce el video del guion con sus subtítulos, la alerta y la pantalla final.
+    modo = "decision": devuelve la opción que el jugador eligió.
+    modo = "consecuencia": termina cuando el jugador hace clic al final.
+    Para saltar el video: doble clic arriba a la derecha (va directo a la pregunta / consecuencia).
+    Todo se dibuja directo en la ventana, a su tamaño real, para que el texto se vea nítido."""
+    ruta = RUTA_VIDEOS / guion["video"]
+    video = cv2.VideoCapture(str(ruta))
+    fps = video.get(cv2.CAP_PROP_FPS) or 30
     reloj = pygame.time.Clock()
-    mouse = (-1, -1)
+    Metodos.MAPA_BLOQUEADO = True              # durante la escena no se abre el mapa
 
-    while True:
-        click, _ = leer_eventos()
-        rect_imagen = dibujar_ajustado(canvas, imagen)
-
-        for opcion, (x1, y1, x2, y2) in ZONAS_BOTONES.items():
-            zona = pygame.Rect(
-                rect_imagen.x + int(x1 * rect_imagen.w),
-                rect_imagen.y + int(y1 * rect_imagen.h),
-                int((x2 - x1) * rect_imagen.w),
-                int((y2 - y1) * rect_imagen.h),
-            )
-            encima = zona.collidepoint(mouse)
-
-            if encima:
-                # brillo suave dentro de la caja del video, para que se note el hover
-                brillo = pygame.Surface(zona.size, pygame.SRCALPHA)
-                pygame.draw.rect(brillo, (255, 255, 255, 40), brillo.get_rect(), border_radius=18)
-                canvas.blit(brillo, zona.topleft)
-            if MOSTRAR_ZONAS:
-                pygame.draw.rect(canvas, ROJO, zona, width=2)
-
-            if encima and click:
-                return opcion
-
-        dibujar_indicadores(canvas, valores)
-        mouse = mostrar(canvas)
-        reloj.tick(60)
-
-
-def esperar_clic(canvas, imagen, antes, despues, efectos):
-    """Deja quieto el ultimo cuadro del video, anima los indicadores
-    y espera a que el jugador haga clic."""
-    ancho, alto = canvas.get_size()
-    fuente_ayuda = cargar_fuente(int(alto * 0.032))
-    reloj = pygame.time.Clock()
-    inicio = pygame.time.get_ticks()
-
-    while True:
-        click, tecla = leer_eventos()
-        if click or tecla:
-            return
-
-        dibujar_ajustado(canvas, imagen)
-        dibujar_indicadores(canvas, valores_animados(antes, despues, inicio), efectos)
-        if (pygame.time.get_ticks() // 600) % 2 == 0:
-            ayuda = fuente_ayuda.render("Haz clic para continuar", True, GRIS)
-            fondo_ayuda = pygame.Surface((ayuda.get_width() + 24, ayuda.get_height() + 10), pygame.SRCALPHA)
-            fondo_ayuda.fill((0, 0, 0, 150))
-            centro = (ancho // 2, int(alto * 0.94))
-            canvas.blit(fondo_ayuda, fondo_ayuda.get_rect(center=centro))
-            canvas.blit(ayuda, ayuda.get_rect(center=centro))
-
-        mostrar(canvas)
-        reloj.tick(60)
-
-
-def pantalla_consecuencia(canvas, imagen_fondo, opcion, texto, antes, despues, efectos):
-    """Solo para opciones SIN video: CONSECUENCIA + opcion + texto letra por letra.
-    Un clic completa el texto; el siguiente clic continua."""
-    ancho, alto = canvas.get_size()
-    fuente_titulo = cargar_fuente(int(alto * 0.055), negrita=True)
-    fuente_opcion = cargar_fuente(int(alto * 0.05))
-    fuente_texto = cargar_fuente(int(alto * 0.058))
-    fuente_ayuda = cargar_fuente(int(alto * 0.032))
-
-    lineas = partir_texto(texto, fuente_texto, int(ancho * 0.70))
-    total_letras = sum(len(l) for l in lineas)
-    letras_por_segundo = 35
-
-    velo = pygame.Surface((ancho, alto), pygame.SRCALPHA)
-    velo.fill((0, 0, 0, 240))
+    ruta_audio = ruta.with_suffix(".mp3")
+    hay_audio = ruta_audio.exists()
+    if hay_audio:
+        if not pygame.mixer.get_init():
+            pygame.mixer.init()
+        pygame.mixer.music.load(str(ruta_audio))
+        pygame.mixer.music.play()
 
     inicio = pygame.time.get_ticks()
-    completo = False
-    reloj = pygame.time.Clock()
+    adelanto = 0.0                 # segundos que se saltaron
+    leidos = 0                     # cuadros leídos del video
+    cuadro = None                  # último cuadro (imagen de OpenCV)
+    imagen = None                  # ese cuadro ya escalado para la ventana
+    tam_imagen = None
+    video_terminado = False
+    ultimo_clic = -1000
+    fin_escritura = None           # cuándo terminó de escribirse la consecuencia
+    completar_texto = False
+    pantalla = pygame.display.get_surface()
 
     while True:
-        click, tecla = leer_eventos()
-        if click or tecla:
-            if completo:
-                return
-            completo = True
+        pantalla = pygame.display.get_surface()
+        rect = rect_video(pantalla)
+        s = rect.h / REF_ALTO
+        mouse = pygame.mouse.get_pos()
+        t = (pygame.time.get_ticks() - inicio) / 1000 + adelanto
+        tl = t - guion["pantalla"]                 # tiempo desde que sale la pantalla final
 
-        transcurrido = (pygame.time.get_ticks() - inicio) / 1000
-        visibles = total_letras if completo else int(transcurrido * letras_por_segundo)
-        if visibles >= total_letras:
-            completo = True
+        # 1. EVENTOS
+        clic = False
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                video.release()
+                pygame.quit()
+                sys.exit()
+            if evento.type == pygame.VIDEORESIZE:
+                pygame.display.set_mode((evento.w, evento.h), pygame.RESIZABLE)
+            if evento.type == pygame.KEYDOWN and evento.key in (pygame.K_SPACE, pygame.K_RETURN):
+                clic = True
+            if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
+                clic = True
+                zona_saltar = pygame.Rect(int(pantalla.get_width() * 0.80), 0,
+                                          int(pantalla.get_width() * 0.20), int(pantalla.get_height() * 0.20))
+                ahora = pygame.time.get_ticks()
+                if tl < 0 and zona_saltar.collidepoint(evento.pos):
+                    if ahora - ultimo_clic < 400:          # doble clic: saltar
+                        adelanto += guion["pantalla"] - t
+                        video.set(cv2.CAP_PROP_POS_FRAMES, int(guion["pantalla"] * fps))
+                        leidos = int(guion["pantalla"] * fps)
+                        if hay_audio:
+                            pygame.mixer.music.play(start=guion["pantalla"])
+                        clic = False
+                    ultimo_clic = ahora
 
-        dibujar_ajustado(canvas, imagen_fondo)
-        canvas.blit(velo, (0, 0))
+        # 2. EL CUADRO DEL VIDEO QUE TOCA EN ESTE SEGUNDO
+        objetivo = int(t * fps)
+        nuevo = False
+        while not video_terminado and leidos <= objetivo:
+            ok, siguiente = video.read()
+            if not ok:
+                video_terminado = True
+                break
+            cuadro, leidos, nuevo = siguiente, leidos + 1, True
+        if cuadro is not None and (nuevo or tam_imagen != rect.size):
+            pequeño = cv2.resize(cuadro, rect.size, interpolation=cv2.INTER_AREA)
+            pequeño = cv2.cvtColor(pequeño, cv2.COLOR_BGR2RGB)
+            imagen = pygame.image.frombuffer(pequeño.tobytes(), rect.size, "RGB")
+            tam_imagen = rect.size
 
-        y = int(alto * 0.20)
-        t = fuente_titulo.render("CONSECUENCIA", True, ROJO)
-        canvas.blit(t, t.get_rect(center=(ancho // 2, y)))
-        o = fuente_opcion.render(opcion, True, BLANCO)
-        rect_o = o.get_rect(center=(ancho // 2, y + fuente_titulo.get_height() + 4))
-        canvas.blit(o, rect_o)
-        y_linea = rect_o.bottom + 8
-        largo = int(ancho * 0.35)
-        pygame.draw.line(canvas, ROJO, (ancho // 2 - largo // 2, y_linea), (ancho // 2 + largo // 2, y_linea), 2)
+        # 3. DIBUJAR
+        pantalla.fill((0, 0, 0))
+        if imagen is not None:
+            pantalla.blit(imagen, rect)
+        dibujar_subtitulos(pantalla, rect, s, t, guion["subtitulos"])
+        if "alerta" in guion:
+            dibujar_alerta(pantalla, rect, s, t, *guion["alerta"])
 
-        y = y_linea + int(alto * 0.10)
-        restantes = visibles
-        for linea in lineas:
-            parte = linea[:max(restantes, 0)]
-            restantes -= len(linea)
-            if parte:
-                r = fuente_texto.render(parte, True, BLANCO)
-                canvas.blit(r, r.get_rect(midtop=(ancho // 2, y)))
-            y += fuente_texto.get_linesize() + 4
+        if tl >= 0 and modo == "decision":
+            zonas = dibujar_decision(pantalla, rect, s, tl, mouse)
+            dibujar_indicadores(pantalla.subsurface(rect), valores)
+            if clic and tl > 0.3:
+                for opcion, zona in zonas.items():
+                    if zona.collidepoint(mouse):
+                        video.release()
+                        if hay_audio:
+                            pygame.mixer.music.stop()
+                        Metodos.MAPA_BLOQUEADO = False
+                        return opcion
 
-        dibujar_indicadores(canvas, valores_animados(antes, despues, inicio), efectos)
+        if tl >= 0 and modo == "consecuencia":
+            duracion_texto = tiempo_consecuencia(guion)
+            if clic and fin_escritura is None:
+                completar_texto = True                 # un clic completa el texto de una vez
+                clic = False
+            tl_texto = duracion_texto if completar_texto else tl
+            dibujar_consecuencia(pantalla, rect, s, tl_texto, guion)
+            if tl_texto >= duracion_texto:
+                if fin_escritura is None:
+                    fin_escritura = pygame.time.get_ticks()
+                dibujar_indicadores(pantalla.subsurface(rect),
+                                    valores_animados(antes, despues, fin_escritura), guion["efectos"])
+                if (pygame.time.get_ticks() // 600) % 2 == 0:
+                    ayuda = fuente("mono", 30 * s).render("Haz clic para continuar", True, GRIS)
+                    pantalla.blit(ayuda, ayuda.get_rect(center=(rect.centerx, rect.y + int(0.93 * rect.h))))
+                if clic and pygame.time.get_ticks() - fin_escritura > 300:
+                    video.release()
+                    if hay_audio:
+                        pygame.mixer.music.stop()
+                    Metodos.MAPA_BLOQUEADO = False
+                    return None
 
-        if completo and (pygame.time.get_ticks() // 600) % 2 == 0:
-            ayuda = fuente_ayuda.render("Haz clic para continuar", True, GRIS)
-            canvas.blit(ayuda, ayuda.get_rect(center=(ancho // 2, int(alto * 0.92))))
-
-        mostrar(canvas)
+        pygame.display.update()
         reloj.tick(60)
 
 
-# ================================================================== evento completo
+# EVENTO COMPLETO
 def jugar(display, canvas, indicadores=None):
     """indicadores: los que vienen del evento anterior. Si no hay, empiezan en 50."""
     if indicadores is None:
         indicadores = Indicadores()
 
-    # 1. Intro (termina mostrando la pantalla de decision)
-    ruta_intro = RUTA_VIDEOS / "escena1_llegada.mp4"
-    reproducir(canvas, ruta_intro)
+    # 1. Intro: llegada, alerta de Civitas y la pregunta
+    eleccion = escena(INTRO, "decision", valores=indicadores.copia())
 
-    # 2. Decision: ultimo cuadro de la intro + zonas clicables sobre sus botones
-    cuadro_decision = ultimo_cuadro(ruta_intro)
-    eleccion = pantalla_decision(canvas, cuadro_decision, indicadores.copia())
-
-    # 3. Que paso
+    # 2. Qué pasó (si verifica, el juego decide al azar si el rumor era falso)
     if eleccion == "VERIFICAR":
         clave = "VERIFICAR_FALSO" if random.random() < PROBABILIDAD_FALSO else "VERIFICAR_VERDADERO"
     else:
@@ -438,15 +603,8 @@ def jugar(display, canvas, indicadores=None):
     indicadores.aplicar(datos["efectos"])
     despues = indicadores.copia()
 
-    if datos["video"]:
-        # El video ya trae los dialogos y el texto del narrador.
-        ruta = RUTA_VIDEOS / datos["video"]
-        reproducir(canvas, ruta)
-        esperar_clic(canvas, ultimo_cuadro(ruta), antes, despues, datos["efectos"])
-    else:
-        # Sin video (por ahora REPORTAR): se muestra el texto en pantalla.
-        pantalla_consecuencia(canvas, cuadro_decision, eleccion, datos["texto"],
-                              antes, despues, datos["efectos"])
+    # 3. Video de la consecuencia con su texto y los indicadores
+    escena(datos, "consecuencia", antes=antes, despues=despues)
 
     return {
         "opcion": eleccion,
