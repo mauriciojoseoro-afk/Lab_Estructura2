@@ -4,6 +4,7 @@ from pathlib import Path
 from Eventos import Periodista_Presidente
 from Eventos import Evento1_Pozo
 from Eventos import Evento_2
+from Eventos import Evento3_Oficina
 from Eventos import Mapa
 import Metodos
 
@@ -33,6 +34,16 @@ def Presidente():
     resultado_evento2 = Evento_2.Evento_2()
 
     # Evento 2 pone pantalla completa: volvemos a la ventana normal
+    display, canvas = Metodos.crear_ventana(ANCHO, ALTO, "My Game")
+    
+    # ---------- MAPA: X en el Campo Sembrado y se abre el camino al Almacén del Este ----------
+    Mapa.mostrar_mapa(display, mapa)
+
+    # EVENTO 3: la oficina (pistas, grafo social y el final) 
+    resultado_evento3 = Evento3_Oficina.jugar(display, canvas,
+                                              resultado_evento1["indicadores"],
+                                              resultado_evento1["resultado"],
+                                              "LÍDER")
     display, canvas = Metodos.crear_ventana(ANCHO, ALTO, "My Game")
     fondo = pygame.transform.smoothscale(fondo_original.convert(), (ANCHO, ALTO))
 
