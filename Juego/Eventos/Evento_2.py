@@ -1206,8 +1206,8 @@ def mostrar_tutorial(display, canvas, fondo, reloj):
 def Evento_2():
     pygame.init()
 
-    pantalla_completa = True
-    display = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+    pantalla_completa = False
+    display = pygame.display.set_mode((1280, 720), pygame.RESIZABLE)
     pygame.display.set_caption("The Leader Game - Campo Minado")
     canvas = pygame.Surface((ANCHO, ALTO))
 
