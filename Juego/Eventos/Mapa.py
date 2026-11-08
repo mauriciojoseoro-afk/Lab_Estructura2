@@ -57,23 +57,24 @@ class Grafo:
 
 
 LUGARES = {
-    "El Cruce del Pozo":     {"punto": (0.280, 0.731), "zona": (0.283, 0.794, 0.113, 0.122)},
+    "El Cruce del Pozo":     {"punto": (0.280, 0.731), "zona": (0.285, 0.760, 0.135, 0.170)},
     "Barrio Las Acacias":    {"punto": (0.128, 0.498), "zona": (0.128, 0.551, 0.116, 0.148)},
     "El Mercado Cubierto":   {"punto": (0.268, 0.233), "zona": (0.214, 0.280, 0.170, 0.130)},
     "La Torre de la Antena": {"punto": (0.512, 0.244), "zona": (0.512, 0.307, 0.137, 0.159)},
-    "El Campo Sembrado":     {"punto": (0.458, 0.551), "zona": (0.464, 0.593, 0.155, 0.138)},
-    "El Almacén del Este":   {"punto": (0.756, 0.487), "zona": (0.747, 0.551, 0.146, 0.159)},
-}
+    "El Campo Sembrado":     {"punto": (0.458, 0.551), "zona": (0.500, 0.580, 0.200, 0.190)},
+    "El Almacén del Este":   {"punto": (0.798, 0.244), "zona": (0.800, 0.310, 0.185, 0.215)},
+    "Central de Datos":      {"punto": (0.780, 0.646), "zona": (0.780, 0.700, 0.150, 0.200)},    }
 
 # Camino de cada personaje: lugar del Evento 1, Evento 2, Evento 3...
 RUTAS = {
-    "LÍDER":         ["El Cruce del Pozo", "El Campo Sembrado", "El Almacén del Este"],
-    "SOBREVIVIENTE": ["Barrio Las Acacias", "El Campo Sembrado", "El Almacén del Este"],
-    "CRONISTA":      ["El Mercado Cubierto", "El Campo Sembrado", "El Almacén del Este"],
-    "VOZ":           ["La Torre de la Antena", "El Campo Sembrado", "El Almacén del Este"],
+        "LÍDER":         ["El Cruce del Pozo", "El Campo Sembrado", "El Almacén del Este", "Central de Datos"],
+    "SOBREVIVIENTE": ["Barrio Las Acacias", "El Campo Sembrado", "El Almacén del Este", "Central de Datos"],
+    "CRONISTA":      ["El Mercado Cubierto", "El Campo Sembrado", "El Almacén del Este", "Central de Datos"],
+    "VOZ":           ["La Torre de la Antena", "El Campo Sembrado", "El Almacén del Este", "Central de Datos"],
 }
-PESOS = {("El Campo Sembrado", "El Almacén del Este"): 6}   # el resto pesa 8 (cruzar el campo)
 
+
+PESOS = {("El Campo Sembrado", "El Almacén del Este"): 6, ("El Almacén del Este", "Central de Datos"): 4}
 
 # NIEBLA (nubes que se mueven)
 import numpy as np
