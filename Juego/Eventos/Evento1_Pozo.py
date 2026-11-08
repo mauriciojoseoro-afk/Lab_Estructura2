@@ -29,6 +29,13 @@ OSCURIDAD = 125
 
 PROBABILIDAD_FALSO = 0.7
 
+# TIEMPO PARA DECIDIR
+# La barra roja debajo de la pregunta se encoge hasta desaparecer.
+# El conteo empieza cuando la pregunta termina de escribirse.
+TIEMPO_DECISION = 10          # segundos
+EMPIEZA_CONTEO = 2.5          # la pregunta tarda 2.5 s en escribirse
+SI_SE_ACABA = "IGNORAR"       # no decidir también es decidir: cuenta como ignorar
+
 
 # GUION DE CADA VIDEO
 # subtitulos: (empieza, termina de escribirse, desaparece, texto)   en segundos del video
@@ -314,6 +321,26 @@ def dibujar_alerta(pantalla, rect, s, t, inicio, fin):
         pantalla.blit(banda, (destino.x, destino.y + y))
 
 
+# BARRA DE TIEMPO
+def tiempo_restante(tl):
+    """Segundos que le quedan al jugador (de TIEMPO_DECISION a 0)."""
+    pasado = max(0, tl - EMPIEZA_CONTEO)
+    return max(0, TIEMPO_DECISION - pasado)
+
+
+def barra_tiempo(pantalla, s, punto, tl, x1, x2, y):
+    """Línea roja que se encoge desde los lados hacia el centro.
+    En los últimos 3 segundos parpadea para avisar."""
+    fraccion = tiempo_restante(tl) / TIEMPO_DECISION
+    if fraccion <= 0:
+        return
+    if tiempo_restante(tl) < 3 and (pygame.time.get_ticks() // 250) % 2 == 0:
+        return                                   # parpadeo
+    centro = (x1 + x2) / 2
+    mitad = (x2 - x1) / 2 * fraccion
+    pygame.draw.line(pantalla, ROJO, punto(centro - mitad, y), punto(centro + mitad, y), max(2, int(4 * s)))
+
+
 # PANTALLA DE LA PREGUNTA
 def dibujar_decision(pantalla, rect, s, tl, mouse):
     """tl: segundos desde que salió la pregunta. Devuelve los botones en coordenadas de pantalla."""
@@ -328,7 +355,7 @@ def dibujar_decision(pantalla, rect, s, tl, mouse):
     pregunta = "¿Qué vas a hacer con el mensaje?"
     escribir(pantalla, pregunta, letras_visibles(pregunta, tl, 0.0, 2.5),
              fuente("mono", 57 * s), BLANCO, punto(960, 395))
-    pygame.draw.line(pantalla, ROJO, punto(620, 451), punto(1300, 451), max(2, int(4 * s)))
+    barra_tiempo(pantalla, s, punto, tl, 620, 1300, 451)
 
     f_boton = fuente("mono", 54 * s)
     zonas = {}
@@ -548,6 +575,12 @@ def escena(guion, modo, valores=None, antes=None, despues=None):
         if tl >= 0 and modo == "decision":
             zonas = dibujar_decision(pantalla, rect, s, tl, mouse)
             dibujar_indicadores(pantalla.subsurface(rect), valores)
+            if tiempo_restante(tl) <= 0:               # se acabó el tiempo
+                video.release()
+                if hay_audio:
+                    pygame.mixer.music.stop()
+                Metodos.MAPA_BLOQUEADO = False
+                return SI_SE_ACABA
             if clic and tl > 0.3:
                 for opcion, zona in zonas.items():
                     if zona.collidepoint(mouse):
