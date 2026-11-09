@@ -15,7 +15,7 @@ RUTA_FUENTES = Path(__file__).resolve().parent.parent / "Assets" / "Fuentes"
 RUTA_VIDEOS = Path(__file__).resolve().parent.parent / "Assets" / "Videos"
 FONDO_OFICINA = "Oficina.jpg"
 IMAGEN_RADIO = "radio.png"
-FONDO_ALMACEN = "Almacen.jpg"     # opcional: si no está, se usa la oficina oscurecida
+FONDO_ALMACEN = "Central_Llegada.png"    
 
 # COLORES (los mismos tonos del Evento 2: papel, tinta, óxido y ámbar)
 PAPEL = (214, 199, 166)
@@ -420,15 +420,15 @@ LLEGADA = [
     ("texto", ["Llegaron al Almacén del Este. Había agua... pero no para todos.",
                "Esa noche, todos los dispositivos sonaron a la vez."]),
     ("alerta", None),
-    ("texto", ["Todo el grupo fue. El viejo edificio de Civitas, al lado del depósito, estaba a oscuras.",
+    ("texto", ["Todo el grupo fue. La Central de Datos, al lado del almacén, estaba a oscuras.",
                "Se separaron para buscar más rápido, piso por piso."]),
     ("pisos", ["PISO 1 ... Nadie.", "PISO 2 ... Nadie.", "PISO 3 ... Nadie."]),
     ("texto", ["Tú subiste solo al último piso.",
                "Al fondo del pasillo, una sola puerta tenía luz por debajo."]),
 ]
 MENSAJE_FALSO = ("por favor alguien que lea esto. soy Lucas, estoy con mi hermana y mi papá. "
-                 "él está herido, no puede caminar. estamos en el último piso de la vieja oficina "
-                 "de Civitas, al lado del depósito. no tenemos agua desde ayer. "
+                 "él está herido, no puede caminar. estamos en el último piso de la Central de Datos, "
+                 "al lado del almacén. no tenemos agua desde ayer. "
                  "POR FAVOR VENGAN RÁPIDO")
 
 # TUTORIAL (nota con instrucciones, como en el Evento 2)
@@ -706,6 +706,17 @@ class Oficina:
                     c.blit(oscuro, (0, 0))
                     self.dibujar_notificacion(c, seg)
                 self.esperar_pantalla(dibujar, 0.6 + len(MENSAJE_FALSO) / 45)
+                # MAPA: del Almacén del Este a la Central de Datos
+                if Metodos.MAPA is not None:
+                    from Eventos import Mapa
+                    Mapa.mostrar_mapa(pygame.display.get_surface(), Metodos.MAPA)
+                # desde aquí los textos van sobre fondo negro
+                oscuro = pygame.Surface((ANCHO, ALTO))
+                oscuro.fill(NEGRO)
+
+
+
+
 
     def dibujar_notificacion(self, c, seg):
         """La notificación de Civitas con el falso pedido de ayuda."""
