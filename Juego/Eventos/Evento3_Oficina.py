@@ -365,11 +365,10 @@ def tecla(eventos, *teclas):
 CONFRONTACION = {
     "video": "evento3_confrontacion.mp4",
     "subtitulos": [
-        (0.5, 2.2, 3.8, "Se escuchan pasos. El grupo entra y ve la pantalla."),
-        (4.1, 5.6, 7.0, 'ROSA: "¿Tú eras parte de Civitas?"'),
-        (7.3, 8.6, 10.0, 'SAMUEL: "¡Nos mentiste!"'),
-        (10.3, 12.0, 13.8, 'MARIE: "¿Cómo pudiste no decirnos?"'),
-        (14.1, 15.8, 18.5, "Todos te miran. Nadie dice nada más."),
+        (0.3, 1.6, 3.4, "Se escuchan pasos. El grupo entra y ve la pantalla."),
+        (6.1, 6.6, 7.4, 'ROSA: "¿Tú eras parte de Civitas?"'),
+        (8.0, 8.4, 9.5, 'SAMUEL: "¡Nos mentiste!"'),
+        (9.6, 10.1, 11.7, 'MARIE: "¿Cómo pudiste no decirnos?"'),
     ],
 }
 # LA PÁGINA QUE EXPLICA LO QUE PASÓ
@@ -388,8 +387,8 @@ FINALES = {
     "disuelto": {
         "video": "evento3_final_disuelto.mp4",
         "subtitulos": [
-            (0.5, 2.2, 4.2, "Uno a uno, se levantan y se van."),
-            (4.5, 6.5, 8.8, "Civitas no tuvo que mentir. Le bastó con la verdad."),
+            (0.5, 2.0, 3.8, "Uno a uno, te dan la espalda y se van."),
+            (4.0, 5.8, 7.9, "Civitas no tuvo que mentir. Le bastó con la verdad."),
         ],
         "titulo": "EL GRUPO SE DISUELVE",
         "color": ROJO,
@@ -398,22 +397,21 @@ FINALES = {
     "desconfianza": {
         "video": "evento3_final_desconfianza.mp4",
         "subtitulos": [
-            (0.5, 2.6, 4.6, 'ROSA: "Puedes quedarte... pero vas a tener que recuperar nuestra confianza."'),
-            (4.9, 6.7, 8.8, "Algunos te miran con duda. Otros ya no te miran."),
-        ],
-        "titulo": "PUEDES QUEDARTE",
+            (0.3, 1.8, 2.8, 'FABIO: "Puedes quedarte..."'),
+            (2.9, 5.7, 7.9, 'FABIO: "...pero vas a tener que recuperar nuestra confianza."'),        ],
+        "titulo": "QUÉDATE Y GÁNATELOS DE NUEVO",
         "color": AMBAR,
-        "cierre": "Mañana irán a la Torre Civitas. No todos confían en que los guíes.",
+        "cierre": "Mañana les contarás todo sobre Civitas. Ahora tienes que lograr que te crean.",
     },
     "confian": {
         "video": "evento3_final_confian.mp4",
         "subtitulos": [
-            (0.5, 2.6, 4.6, 'DON ELÍAS: "Lo que hiciste antes no te define. Lo que hiciste aquí, sí."'),
-            (4.9, 6.6, 8.8, "Esta vez, Civitas no logró separarlos."),
+            (1.3, 2.8, 3.6, 'ROSA: "Lo que hiciste antes no te define..."'),
+            (3.8, 5.3, 7.9, 'ROSA: "...lo que hiciste aquí, lo que hiciste por nosotros, sí."'),
         ],
         "titulo": "EL GRUPO CONFÍA EN TI",
         "color": AZUL,
-        "cierre": "Mañana irán juntos a la Torre Civitas. Van a seguirte.",
+        "cierre": "Civitas no logró separarlos. Mañana irán juntos a la Torre Civitas.",
     },
 }
 
@@ -1550,7 +1548,7 @@ class Oficina:
 
         def resultado(pantalla, rect, s, seg):
             velo = pygame.Surface(rect.size, pygame.SRCALPHA)
-            velo.fill((0, 0, 0, min(190, int(seg * 300))))
+            velo.fill((0, 0, 0, min(190, int(seg * 95))))
             pantalla.blit(velo, rect)
             escribir(pantalla, datos["titulo"], E1.fuente("mono_negrita", 70 * s), datos["color"],
                      (rect.centerx, rect.y + int(330 * s)), "midtop")
@@ -1626,9 +1624,20 @@ def jugar(display, canvas, indicadores=None, resultado_evento1="VERIFICAR_FALSO"
 
 
 if __name__ == "__main__":
+    # PRUEBA RÁPIDA DEL FINAL
+    # 1 = el grupo se disuelve, 2 = te dejan pero desconfían, 3 = confían en ti
+    # Enter sin número = jugar el Evento 3 completo
+    opcion = input("Final (1, 2, 3) o Enter para jugar todo: ").strip()
+
     pygame.init()
     pygame.display.set_mode((1280, 720), pygame.RESIZABLE)
     pygame.display.set_caption("The Leader - La oficina")
     from Eventos import Evento1_Pozo
-    print(jugar(None, None, Evento1_Pozo.Indicadores(), random.choice(
-        ["COMPARTIR", "IGNORAR", "REPORTAR", "VERIFICAR_FALSO", "VERIFICAR_VERDADERO"])))
+
+    if opcion in ("1", "2", "3"):
+        valores = {"1": (20, 80, 20), "2": (50, 50, 50), "3": (80, 20, 80)}[opcion]
+        indicadores = Evento1_Pozo.Indicadores(*valores)   # confianza, caos, cohesión
+        Oficina(indicadores, "VERIFICAR_FALSO").final()
+    else:
+        print(jugar(None, None, Evento1_Pozo.Indicadores(), random.choice(
+            ["COMPARTIR", "IGNORAR", "REPORTAR", "VERIFICAR_FALSO", "VERIFICAR_VERDADERO"])))
