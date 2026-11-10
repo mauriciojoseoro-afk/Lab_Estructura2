@@ -3,16 +3,16 @@ from Arbol.Arbol_AVL import ArbolAVL
 
 def preguntas_P():
     preguntas_periodista = {
-        1: "En las redes circula que usted quiere cerrar el colegio de Ciudad Nova. ¿Es cierto?",
-        2: "Se dice que el alcalde actual está robando dinero. ¿Usted qué opina?",
-        3: "Una publicación viral dice que mañana cerrarán todos los parques. La gente está alarmada. ¿Qué les dice?",
-        4: "Sus seguidores atacan a otros candidatos en los comentarios. ¿Qué piensa hacer?",
-        5: "Un influencer compartió una noticia falsa que lo favorece a usted. ¿Va a pronunciarse?",
-        6: "¿Cómo pueden los ciudadanos saber si una publicación sobre su campaña es real?",
-        7: "Se sospecha que hay cuentas falsas apoyando su campaña. ¿Qué responde?",
-        8: "Hubo una discusión fuerte entre vecinos por publicaciones políticas. ¿Qué propone?",
-        9: "Muchos jóvenes pasan demasiadas horas en Redes. ¿Tiene alguna propuesta?",
-        10: "Si pierde las elecciones, ¿qué les dirá a sus seguidores en redes?",
+        1: "Durante la crisis, muchos ciudadanos no tenían acceso a agua potable. ¿Cómo logró su gobierno responder a esta situación?",
+        2: "Algunos habitantes dicen que la solución fue temporal y que pronto volverá a faltar agua. ¿Qué les responde?",
+        3: "En CIVINET circulan publicaciones que aseguran que el agua entregada estaba contaminada. ¿Qué puede decirnos al respecto?",
+        4: "¿Cómo puede la ciudadanía comprobar que las cifras sobre la recuperación del suministro son reales?",
+        5: "¿Qué papel tuvieron los ciudadanos que colaboraron durante la emergencia?",
+        6: "Algunas publicaciones afirman que usted ocultó información durante los días más críticos. ¿Cómo responde a esas acusaciones?",
+        7: "¿Qué medidas tomará para evitar que Ciudad Nova vuelva a sufrir una crisis de agua?",
+        8: "¿Cómo piensa combatir los rumores y las noticias falsas que aparecen cada vez que ocurre una emergencia?",
+        9: "Si CIVINET publica información manipulada sobre su gestión, ¿cómo podrán los ciudadanos distinguir la verdad?",
+        10: "Después de lo ocurrido, ¿qué mensaje les daría a los habitantes de Ciudad Nova sobre la importancia de informarse antes de compartir una publicación?"
     }
     return preguntas_periodista
 
@@ -20,54 +20,54 @@ def preguntas_P():
 def respuestas_P():
     respuestas_presidente = {
         1: {
-            "muy_buena": "No es cierto. Publiqué mi propuesta completa de educación en mi perfil oficial y los invito a leerla y compararla antes de compartir cualquier publicación.",
-            "regular": "Eso no es verdad, la gente inventa muchas cosas en campaña.",
-            "mala": "Seguro ese rumor lo inventó el equipo del candidato Juan. Ellos son los que quieren cerrarlo.",
+            "muy_buena": "Organizamos equipos de distribución, priorizamos los sectores más afectados y trabajamos con voluntarios para garantizar que el agua llegara a quienes más la necesitaban.",
+            "regular": "Fue una situación difícil, pero hicimos todo lo posible para solucionar el problema y ayudar a la población.",
+            "mala": "La crisis fue culpa de quienes estaban antes en el poder. Nosotros simplemente hicimos lo que pudimos."
         },
         2: {
-            "muy_buena": "No tengo pruebas de eso y no voy a repetir una acusación sin verificar. Si alguien tiene evidencia, debe llevarla a los organismos de control.",
-            "regular": "No sé si es verdad, pero habría que investigar.",
-            "mala": "Todo el mundo lo sabe. Compartan esa información para que la ciudad despierte.",
+            "muy_buena": "Entiendo la preocupación. Por eso estamos trabajando en un plan de mantenimiento y vigilancia del suministro. Publicaremos informes periódicos para que todos puedan comprobar los avances.",
+            "regular": "Esperamos que no vuelva a ocurrir. Estamos intentando mantener el servicio funcionando.",
+            "mala": "No tienen motivos para preocuparse. Si vuelve a faltar agua, seguramente será culpa de quienes no apoyaron nuestra gestión."
         },
         3: {
-            "muy_buena": "Consulté con la Alcaldía y esa información es falsa. Les pido que no la compartan y que revisen siempre la fuente oficial antes de reaccionar.",
-            "regular": "No creo que sea cierto, pero no tengo más información.",
-            "mala": "Si es verdad, es culpa del gobierno actual. Por eso deben votar por mí.",
+            "muy_buena": "No debemos creer ni compartir esa publicación sin pruebas. Los resultados de los análisis deben consultarse en fuentes oficiales y verificables. Invitamos a todos a revisarlos.",
+            "regular": "No creo que el agua esté contaminada, pero sería bueno investigar un poco más.",
+            "mala": "Eso es completamente falso. Compartan esta entrevista para demostrar que quienes publican esas cosas solo quieren perjudicarnos."
         },
         4: {
-            "muy_buena": "No apoyo los ataques. Pido a mis seguidores debatir con respeto sobre las propuestas y voy a reportar los mensajes ofensivos, vengan de donde vengan.",
-            "regular": "Yo no puedo controlar lo que escribe cada persona.",
-            "mala": "Los otros candidatos se lo buscaron. La gente solo dice lo que piensa.",
+            "muy_buena": "Publicaremos los registros de distribución, los resultados de calidad del agua y las fechas de recuperación. La ciudadanía debe poder contrastar nuestras cifras con evidencias.",
+            "regular": "Vamos a publicar algunos datos para que las personas sepan cómo estamos avanzando.",
+            "mala": "Deben confiar en nosotros. No necesitamos demostrar cada cifra porque estamos trabajando por la ciudad."
         },
         5: {
-            "muy_buena": "Sí. Aunque me favorezca, es falsa. Ya le pedí que la corrija y aclaré en mis redes cuál es la información real.",
-            "regular": "No la compartí yo, así que no es mi responsabilidad.",
-            "mala": "Si la gente la cree y me ayuda, no veo el problema.",
+            "muy_buena": "Fueron fundamentales. Muchos vecinos organizaron puntos de ayuda, compartieron información verificada y colaboraron con la distribución. La recuperación fue un esfuerzo colectivo.",
+            "regular": "Algunas personas ayudaron bastante y estamos agradecidos por su colaboración.",
+            "mala": "La solución fue principalmente gracias a mi gobierno. Sin nosotros, los ciudadanos no habrían podido hacer nada."
         },
         6: {
-            "muy_buena": "Toda mi información sale de mi cuenta verificada, con fecha y fuente. Si ven algo raro, pueden consultarlo con medios confiables o preguntarnos directamente.",
-            "regular": "Deben confiar en lo que yo digo.",
-            "mala": "Si lo ven en muchas cuentas, seguramente es verdad.",
+            "muy_buena": "Entiendo que existan dudas. Por eso vamos a publicar los reportes y registros de lo ocurrido durante la emergencia. Si cometimos errores, debemos reconocerlos y explicarlos con transparencia.",
+            "regular": "No ocultamos información intencionalmente. Fueron días complicados y no siempre pudimos comunicar todo a tiempo.",
+            "mala": "Eso es una mentira inventada por quienes quieren destruir mi reputación. No pierdan el tiempo investigando esas publicaciones."
         },
         7: {
-            "muy_buena": "No uso cuentas falsas. Pediré a mi equipo revisar esas cuentas y, si se comprueba algo, lo reportaré públicamente.",
-            "regular": "No sé nada de eso, no manejo esas cosas.",
-            "mala": "Todos los candidatos lo hacen. Es parte de la campaña.",
+            "muy_buena": "Crearemos un sistema de monitoreo, planes de mantenimiento y reservas de emergencia. También informaremos a los ciudadanos sobre cualquier interrupción del servicio.",
+            "regular": "Intentaremos mejorar la infraestructura y estar más preparados si ocurre otra emergencia.",
+            "mala": "Mientras yo esté al mando, no volverá a faltar agua. No hay necesidad de preocuparse por eso."
         },
         8: {
-            "muy_buena": "Propongo una campaña de convivencia digital: debatir ideas sin insultar, bloquear o reportar el acoso y recordar que el vecino no es un enemigo.",
-            "regular": "Es normal que haya discusiones en elecciones.",
-            "mala": "Quien no apoye mis propuestas no quiere el bien de la ciudad.",
+            "muy_buena": "Debemos verificar las fuentes, consultar los canales oficiales y evitar compartir información sin pruebas. También impulsaremos talleres de alfabetización digital para toda la comunidad.",
+            "regular": "Las personas deben tener más cuidado con lo que comparten y consultar las noticias antes de creerlas.",
+            "mala": "La mejor forma de combatir esos rumores es compartir nuestras publicaciones para que tengan más alcance que las demás."
         },
         9: {
-            "muy_buena": "Sí: talleres en el colegio sobre bienestar digital, espacios en los parques para desconectarse y guías para familias sobre uso responsable.",
-            "regular": "Cada familia debe encargarse de eso.",
-            "mala": "Mientras más tiempo estén conectados, más gente ve mis publicaciones.",
+            "muy_buena": "Comparando cada publicación con la entrevista original y los comunicados oficiales. También habilitaremos un canal donde los ciudadanos puedan reportar contenido manipulado y consultar las aclaraciones.",
+            "regular": "Podrán consultar nuestras redes oficiales para saber qué información es verdadera.",
+            "mala": "Si ven publicaciones que nos critican, no les presten atención. Lo importante es que sigan apoyando nuestro trabajo."
         },
         10: {
-            "muy_buena": "Que respeten el resultado, eviten difundir teorías sin pruebas y sigan participando con responsabilidad por el bien de Ciudad Nova.",
-            "regular": "Veremos qué pasa cuando lleguen los resultados.",
-            "mala": "Si pierdo, es porque hubo fraude. Estén atentos y compartan todo lo que encuentren.",
+            "muy_buena": "La crisis nos enseñó que debemos estar preparados y comunicarnos con responsabilidad. Les pido verificar la información en fuentes confiables antes de compartirla.",
+            "regular": "Es importante que todos estén informados y que consulten las fuentes oficiales.",
+            "mala": "La gente debe compartir lo que encuentre para que todos sepan lo que está pasando."
         },
     }
     return respuestas_presidente
