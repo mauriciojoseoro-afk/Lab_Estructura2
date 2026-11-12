@@ -9,6 +9,10 @@ Todos llevan la clave "tipo". Ejemplos:
     servidor -> todos    : {"tipo": "ROLES", "ocupados": {"CIUDADANO": "Isaac"}}
     cliente  -> servidor : {"tipo": "RESULTADO", "evento": "Evento 1", "indicadores": {...}, "decision": "VERIFICAR"}
     servidor -> todos    : {"tipo": "JUGADORES", "lista": [{"nombre", "rol", "progreso", "indicadores"}, ...]}
+    cliente  -> servidor : {"tipo": "CAMPO?"}            (campo minado compartido)
+    servidor -> cliente  : {"tipo": "CAMPO", "semilla": 1234, "pisadas": {"37": "Ana"}}
+    cliente  -> servidor : {"tipo": "PISE", "indice": 37}
+    servidor -> todos    : {"tipo": "MINA", "indice": 37, "por": "Ana"}
 """
 import json
 from pathlib import Path

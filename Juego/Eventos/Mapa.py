@@ -474,6 +474,11 @@ def mostrar_mapa(display, mapa, terminar=True):
 
         mapa.actualizar(dt)
         mapa.dibujar(canvas)
+        try:                                      # MULTIJUGADOR: panel del grupo (solo si hay servidor)
+            from Red import cliente, panel
+            panel.dibujar_panel_grupo(canvas, cliente.actual())
+        except ImportError:
+            pass
 
         if listo:
             lugar = mapa.ruta[mapa.paso]

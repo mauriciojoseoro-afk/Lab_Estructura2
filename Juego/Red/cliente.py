@@ -25,6 +25,8 @@ class Conexion:
         self.rol = None                      # rol que el servidor nos confirmo
         self.ocupados = {}                   # {rol: nombre} (lo actualiza el hilo)
         self.jugadores = []                  # [{nombre, rol, progreso, indicadores, decision}]
+        self.minas_pisadas = {}              # {indice de mina: nombre} del campo compartido
+        self._campo = queue.Queue()
         self.conectado = True
         self._respuestas = queue.Queue()     # respuestas a ELEGIR
         self._candado = threading.Lock()
@@ -50,6 +52,11 @@ class Conexion:
                 self._respuestas.put(msg)
             elif tipo == "JUGADORES":
                 self.jugadores = msg.get("lista", [])
+            elif tipo == "CAMPO":
+                self.minas_pisadas = {int(i): n for i, n in msg.get("pisadas", {}).items()}
+                self._campo.put(msg.get("semilla"))
+            elif tipo == "MINA":
+                self.minas_pisadas[int(msg["indice"])] = msg.get("por", "")
         self.conectado = False
         self._respuestas.put({"tipo": "OCUPADO", "por": "se perdio la conexion"})
 
@@ -82,6 +89,22 @@ class Conexion:
         """Avisa al grupo que termine un evento (y con que indicadores)."""
         self._enviar({"tipo": "RESULTADO", "evento": evento,
                       "indicadores": indicadores, "decision": decision})
+
+    def pedir_campo(self, espera=2.0):
+        """Semilla del campo minado compartido (None si el servidor no responde)."""
+        while not self._campo.empty():
+            self._campo.get_nowait()
+        self._enviar({"tipo": "CAMPO?"})
+        try:
+            return self._campo.get(timeout=espera)
+        except queue.Empty:
+            return None
+
+    def pisar(self, indice):
+        """Avisa que pise una mina: se revela en el campo de todos."""
+        if indice not in self.minas_pisadas:
+            self.minas_pisadas[indice] = self.nombre
+            self._enviar({"tipo": "PISE", "indice": indice})
 
     def soltar(self):
         """Libera nuestro rol (por ejemplo, al volver a la seleccion)."""

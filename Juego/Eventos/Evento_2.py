@@ -96,6 +96,11 @@ PAREJAS = [
     [("Periodista", (80, 220, 120), WASD), ("Ciudadano", (255, 220, 70), FLECHAS)],   # Ciudadano (Estella) = amarillo
 ]
 
+# MULTIJUGADOR: rol elegido en la selección -> nombre del personaje en el campo minado
+NOMBRE_POR_ROL = {"PRESIDENTE": "Presidente", "CIUDADANO": "Ciudadano",
+                  "PERIODISTA": "Periodista", "INFLUENCER": "Influencer"}
+MIN_JUGADORES_RED = 2       # con menos jugadores conectados se juega el modo clásico (dos parejas)
+
 ESTADOS_MOVIMIENTO = ["arriba", "abajo", "izquierda", "derecha", "corriendo"]
 ESTADOS_QUIETO = ["quieto", "quieto_arriba", "quieto_abajo", "quieto_izquierda", "quieto_derecha"]
 
@@ -230,14 +235,16 @@ def actualizar_animacion(jugador, dt):
 
 # ---------------------------------------------------------------- mundo
 
-def crear_minas():
+def crear_minas(semilla=None):
+    """semilla: en multijugador la manda el servidor, así todos tienen exactamente las mismas minas."""
+    azar = random.Random(semilla) if semilla is not None else random
     minas = []
     celdas = {}
     intentos = 0
     while len(minas) < NUM_MINAS and intentos < 60000:
         intentos += 1
-        x = random.randint(35, ANCHO - 35)
-        y = random.randint(ALTO_META + 35, ALTO_MUNDO - ALTO_INICIO - 35)
+        x = azar.randint(35, ANCHO - 35)
+        y = azar.randint(ALTO_META + 35, ALTO_MUNDO - ALTO_INICIO - 35)
         cx, cy = x // DISTANCIA_MINIMA, y // DISTANCIA_MINIMA
 
         libre = True
@@ -282,9 +289,11 @@ def crear_jugadores(pareja):
 
 
 def mover(jugador, presionadas, dt):
-    arriba, abajo, izquierda, derecha = jugador["teclas"]
-    dx = presionadas[derecha] - presionadas[izquierda]
-    dy = presionadas[abajo] - presionadas[arriba]
+    dx = dy = 0
+    for arriba, abajo, izquierda, derecha in [jugador["teclas"]] + jugador.get("teclas_extra", []):
+        dx += presionadas[derecha] - presionadas[izquierda]
+        dy += presionadas[abajo] - presionadas[arriba]
+    dx, dy = max(-1, min(1, dx)), max(-1, min(1, dy))
 
     if dx > 0:
         jugador["estado"] = "derecha"
@@ -921,7 +930,9 @@ def dibujar_ruta_juego(canvas, jugadores):
 
 def dibujar_resultado(canvas, jugadores, siguiente):
     llegaron = [j for j in jugadores if j["llego"]]
-    if len(llegaron) == len(jugadores):
+    if len(jugadores) == 1:
+        titulo = "Llegaste al depósito" if llegaron else "No llegaste al depósito"
+    elif len(llegaron) == len(jugadores):
         titulo = "Los dos llegaron al depósito"
     elif llegaron:
         titulo = f"{llegaron[0]['nombre']} llegó al depósito"
@@ -1222,8 +1233,29 @@ def mostrar_tutorial(display, canvas, fondo, reloj):
 # ---------------------------------------------------------------- evento
 
 def Evento_2(rol=None):
-    """rol: personaje elegido (por ahora no cambia nada: se juega el modo clásico de dos parejas)."""
+    """rol: el personaje elegido ("CIUDADANO", ...). Si hay servidor y al menos 2 jugadores,
+    cada uno cruza solo con su personaje, en el MISMO campo, y las minas pisadas se revelan
+    para todos. Si no, se juega el modo clásico de siempre (dos parejas en un teclado)."""
     pygame.init()
+
+    # ---------- MULTIJUGADOR ----------
+    red, semilla = None, None
+    if rol in NOMBRE_POR_ROL:
+        try:
+            from Red import cliente
+            red = cliente.actual()
+        except ImportError:
+            red = None
+        if red is not None and red.conectados() >= MIN_JUGADORES_RED:
+            semilla = red.pedir_campo()
+        if semilla is None:
+            red = None                          # sin servidor o solo: modo clásico
+    if red is not None:
+        nombre_pj = NOMBRE_POR_ROL[rol]
+        color_pj = next(c for pareja in PAREJAS for n, c, _ in pareja if n == nombre_pj)
+        parejas = [[(nombre_pj, color_pj, WASD)]]  # solo mi personaje (WASD o flechas)
+    else:
+        parejas = PAREJAS
 
     pantalla_completa = False
     display = pygame.display.set_mode((1280, 720), pygame.RESIZABLE)
@@ -1263,8 +1295,12 @@ def Evento_2(rol=None):
     resultados = {}
     indice_pareja = 0
     duo_actual = 0                  # pareja que está jugando ahora (para la imagen de arriba)
-    jugadores = crear_jugadores(PAREJAS[0])
-    minas = crear_minas()
+    jugadores = crear_jugadores(parejas[0])
+    if red is not None:
+        jugadores[0]["teclas_extra"] = [FLECHAS]
+        jugadores[0]["x"] = ANCHO // 2
+        jugadores[0]["inicio"] = (ANCHO // 2, jugadores[0]["y"])
+    minas = crear_minas(semilla)
     poder_activo = 0.0
     poder_espera = 0.0
     camara = ALTO_MUNDO - ALTO
@@ -1323,9 +1359,11 @@ def Evento_2(rol=None):
 
                 # --- COLISIONES USANDO RADIO_HITBOX (en los pies) ---
                 if j["invulnerable"] <= 0:
-                    for mx, my in minas:
+                    for indice_mina, (mx, my) in enumerate(minas):
                         if abs(my - j["y"]) < RADIO_HITBOX + RADIO_MINA and \
                                 math.hypot(j["x"] - mx, j["y"] - my) < RADIO_HITBOX + RADIO_MINA:
+                            if red is not None:
+                                red.pisar(indice_mina)      # se revela en el campo de los demás
                             crear_explosion(particulas_explosion, ondas_explosion, mx, my)
                             destello_dano = DURACION_DESTELLO
                             sacudida = DURACION_SACUDIDA
@@ -1350,7 +1388,7 @@ def Evento_2(rol=None):
                     resultados[j["nombre"]] = {"llego": j["llego"], "vidas": j["vidas"]}
 
                 indice_pareja += 1
-                if indice_pareja < len(PAREJAS):
+                if indice_pareja < len(parejas):
                     minas = crear_minas()
                 fase = "pausa"
                 pausa = PAUSA_ENTRE_PAREJAS
@@ -1358,9 +1396,9 @@ def Evento_2(rol=None):
         elif fase == "pausa":
             pausa -= dt
             if pausa <= 0:
-                if indice_pareja < len(PAREJAS):
+                if indice_pareja < len(parejas):
                     duo_actual = indice_pareja
-                    jugadores = crear_jugadores(PAREJAS[indice_pareja])
+                    jugadores = crear_jugadores(parejas[indice_pareja])
                     camara = ALTO_MUNDO - ALTO
                     poder_activo = 0.0
                     poder_espera = 0.0
@@ -1380,6 +1418,16 @@ def Evento_2(rol=None):
                 sy = my - cam
                 if -RADIO_MINA <= sy <= ALTO + RADIO_MINA:
                     pygame.draw.circle(canvas_mundo, COL_MINA, (mx, sy), RADIO_MINA)
+
+        # MULTIJUGADOR: las minas que ya pisó alguien del grupo quedan marcadas para todos
+        if red is not None:
+            for indice_mina in list(red.minas_pisadas):
+                if 0 <= indice_mina < len(minas):
+                    mx, my = minas[indice_mina]
+                    sy = my - cam
+                    if -20 <= sy <= ALTO + 20:
+                        pygame.draw.circle(canvas_mundo, COL_MINA, (mx, sy), RADIO_MINA)
+                        pygame.draw.circle(canvas_mundo, COL_AMBAR, (mx, sy), RADIO_MINA + 6, 2)
 
         for j in jugadores:
             sy = int(j["y"]) - cam
@@ -1435,11 +1483,14 @@ def Evento_2(rol=None):
             desplazamiento_x = desplazamiento_y = 0
         canvas.blit(canvas_mundo, (int(desplazamiento_x), int(desplazamiento_y)))
 
-        retrato = duos[duo_actual] if duo_actual < len(duos) else None
+        retrato = duos[duo_actual] if duo_actual < len(duos) and red is None else None
         dibujar_hud(canvas, jugadores, retrato, poder_espera, poder_activo, tiempo_mundo)
         dibujar_ruta_juego(canvas, jugadores)
+        if red is not None:
+            aviso = f"CAMPO COMPARTIDO · {red.conectados()} jugadores · {len(red.minas_pisadas)} minas descubiertas por el grupo"
+            escribir(canvas, aviso, FUENTES["nota"], COL_AMBAR, (ANCHO // 2, ALTO - 22), "center")
         if fase == "pausa":
-            dibujar_resultado(canvas, jugadores, indice_pareja if indice_pareja < len(PAREJAS) else None)
+            dibujar_resultado(canvas, jugadores, indice_pareja if indice_pareja < len(parejas) else None)
 
         Metodos.mostrar_canvas(display, canvas)
         pygame.display.update()

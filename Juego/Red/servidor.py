@@ -6,8 +6,10 @@ Se ejecuta UNA vez, en el PC que hace de servidor, desde la carpeta Juego:
 Mantiene y sincroniza el estado compartido:
   - jugadores conectados y que rol usa cada uno (un rol solo puede tenerlo una persona)
   - progreso e indicadores de cada jugador (para el panel del grupo)
+  - el campo minado compartido: la misma semilla para todos y las minas que ya se pisaron
 Cuando un jugador se desconecta, su rol queda libre.
 """
+import random
 import socket
 import threading
 
@@ -24,6 +26,9 @@ class Servidor:
         self.jugadores = {}              # id -> {"nombre", "rol", "sock", "progreso", "indicadores", "decision"}
         self.roles = {r: None for r in ROLES}   # rol -> id del jugador que lo usa (o None)
         self.siguiente_id = 1
+        # CAMPO MINADO COMPARTIDO: con la misma semilla todos generan las mismas minas
+        self.semilla = random.randint(1, 10 ** 9)
+        self.minas_pisadas = {}          # indice de la mina -> nombre de quien la piso
 
     # ---------- estado ----------
     def ocupados(self):
@@ -112,6 +117,17 @@ class Servidor:
                             datos["decision"] = msg["decision"]
                         print(f"    {datos['nombre']}: {datos['progreso']} {datos['indicadores'] or ''}")
                         self.avisar_jugadores()
+
+                    elif tipo == "CAMPO?":
+                        enviar(sock, {"tipo": "CAMPO", "semilla": self.semilla,
+                                      "pisadas": {str(i): n for i, n in self.minas_pisadas.items()}})
+
+                    elif tipo == "PISE":
+                        indice = msg.get("indice")
+                        if isinstance(indice, int) and indice not in self.minas_pisadas:
+                            nombre = self.jugadores[jid]["nombre"]
+                            self.minas_pisadas[indice] = nombre
+                            self.difundir({"tipo": "MINA", "indice": indice, "por": nombre})
         finally:
             with self.candado:
                 nombre = self.jugadores[jid]["nombre"]
