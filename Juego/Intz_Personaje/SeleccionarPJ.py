@@ -9,7 +9,7 @@ from pathlib import Path
 import pygame
 import Metodos
 from Intz_Personaje import Intz_Ciudadano, Intz_Influencer, Intz_Periodista, Intz_Presidente
-
+from Eventos.Evento1_Periodista import Evento1Periodista
 ANCHO, ALTO = 800, 600
 IMAGENES = Path(__file__).resolve().parent.parent / 'Assets' / 'Interfaz' / 'SeleccionNovia'
 # Orden exacto de los expedientes en 3.png (de izquierda a derecha).
@@ -59,7 +59,8 @@ def abrir_rol(nombre):
     if nombre == 'CIUDADANO':
         return Intz_Ciudadano.Ciudadano()
     if nombre == 'PERIODISTA':
-        return Intz_Periodista.Periodista()
+
+        return Evento1Periodista()
     # Mantener la cinemática original de la influencer y su género.
     Metodos.ReproducirVideo('Video_Influencer_F.mp4')
     Intz_Influencer.Influencer('Femenino')
@@ -80,6 +81,22 @@ def SeleccionarPJ():
             imagenes[nombre] = pygame.transform.smoothscale(imagenes[nombre], (ANCHO, ALTO))
 
     seleccionado = None
+    fotogramas = []
+    indice_animacion = 0
+    tiempo_animacion = 0.0
+    FPS_DETALLES = 8
+
+    def cargar_animacion(indice):
+        """Carga solo el personaje seleccionado, no los 4 videos en RAM."""
+        carpeta = IMAGENES / 'Animaciones' / ROLES[indice][0]
+        cuadros = []
+        for ruta in sorted(carpeta.glob('frame_*.jpg')):
+            imagen = pygame.image.load(str(ruta)).convert()
+            if imagen.get_size() != (ANCHO, ALTO):
+                imagen = pygame.transform.smoothscale(imagen, (ANCHO, ALTO))
+            cuadros.append(imagen)
+        return cuadros
+
     fuente_pregunta = pygame.font.SysFont('timesnewroman', 14, bold=True)
     fuente_boton = pygame.font.SysFont('timesnewroman', 15, bold=True)
     tiempo = 0.0
@@ -105,7 +122,13 @@ def SeleccionarPJ():
             canvas.blit(label, label.get_rect(center=rect.center))
 
     while True:
-        tiempo += min(reloj.tick(60) / 1000.0, 0.1)
+        dt = min(reloj.tick(60) / 1000.0, 0.1)
+        tiempo += dt
+        if seleccionado is not None and fotogramas:
+            tiempo_animacion += dt
+            while tiempo_animacion >= 1.0 / FPS_DETALLES:
+                tiempo_animacion -= 1.0 / FPS_DETALLES
+                indice_animacion = (indice_animacion + 1) % len(fotogramas)
         accion = None
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
@@ -133,6 +156,9 @@ def SeleccionarPJ():
                     for i, (_, _, area) in enumerate(ROLES):
                         if area.collidepoint(punto):
                             seleccionado = i
+                            fotogramas = cargar_animacion(i)
+                            indice_animacion = 0
+                            tiempo_animacion = 0.0
                             break
                     # La flecha inferior izquierda del tablero original:
                     # se conserva su comportamiento de salida.
@@ -147,8 +173,17 @@ def SeleccionarPJ():
                     # Los demás clics sobre la ficha no hacen nada.
         if accion is not None:
             return abrir_rol(ROLES[accion][0])
+        # Se muestran fotogramas del video original solo al abrir la ficha.
+        # Al volver al tablero, liberamos la animación de la RAM.
+        if seleccionado is None and fotogramas:
+            fotogramas = []
+            indice_animacion = 0
+            tiempo_animacion = 0.0
         archivo = '3.png' if seleccionado is None else ROLES[seleccionado][1]
-        canvas.blit(imagenes[archivo], (0, 0))
+        if seleccionado is not None and fotogramas:
+            canvas.blit(fotogramas[indice_animacion], (0, 0))
+        else:
+            canvas.blit(imagenes[archivo], (0, 0))
         if seleccionado is None:
             mouse = posicion_en_canvas(display, pygame.mouse.get_pos())
             for _, _, area in ROLES:
