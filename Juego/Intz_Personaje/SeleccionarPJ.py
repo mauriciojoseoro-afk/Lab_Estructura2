@@ -9,6 +9,7 @@ from pathlib import Path
 import pygame
 import Metodos
 from Intz_Personaje import Intz_Ciudadano, Intz_Influencer, Intz_Periodista, Intz_Presidente
+from Red import cliente      # multijugador: bloqueo de roles (si no hay servidor, se juega solo)
 
 ANCHO, ALTO = 800, 600
 IMAGENES = Path(__file__).resolve().parent.parent / 'Assets' / 'Interfaz' / 'SeleccionNovia'
@@ -53,6 +54,33 @@ def posicion_en_canvas(display, pos):
     return ((pos[0] - ox) / escala, (pos[1] - oy) / escala)
 
 
+def dibujar_ocupado(canvas, area, quien, fuente_sello, fuente_nombre):
+    """Expediente ya elegido por otro jugador: oscuro, con sello EN USO y su nombre."""
+    velo = pygame.Surface(area.size, pygame.SRCALPHA)
+    velo.fill((12, 10, 9, 170))
+    canvas.blit(velo, area.topleft)
+    sello = fuente_sello.render('EN USO', True, (205, 52, 44))
+    caja = pygame.Surface((sello.get_width() + 16, sello.get_height() + 6), pygame.SRCALPHA)
+    pygame.draw.rect(caja, (205, 52, 44), caja.get_rect(), 3, border_radius=4)
+    caja.blit(sello, (8, 3))
+    caja = pygame.transform.rotate(caja, 14)
+    canvas.blit(caja, caja.get_rect(center=(area.centerx, area.centery - 20)))
+    texto = fuente_nombre.render(quien, True, (240, 225, 200))
+    canvas.blit(texto, texto.get_rect(center=(area.centerx, area.centery + 32)))
+
+
+def dibujar_aviso(canvas, mensaje, fuente):
+    """Mensaje corto en la parte de abajo (rol ocupado, etc.)."""
+    texto = fuente.render(mensaje, True, (250, 226, 190))
+    fondo = pygame.Rect(0, 0, texto.get_width() + 30, texto.get_height() + 14)
+    fondo.center = (ANCHO // 2, 470)
+    capa = pygame.Surface(fondo.size, pygame.SRCALPHA)
+    capa.fill((25, 12, 10, 230))
+    canvas.blit(capa, fondo.topleft)
+    pygame.draw.rect(canvas, (205, 52, 44), fondo, 2, border_radius=4)
+    canvas.blit(texto, texto.get_rect(center=fondo.center))
+
+
 def abrir_rol(nombre):
     if nombre == 'PRESIDENTE':
         return Intz_Presidente.Presidente()
@@ -78,6 +106,17 @@ def SeleccionarPJ():
         imagenes[nombre] = pygame.image.load(str(ruta)).convert()
         if imagenes[nombre].get_size() != (ANCHO, ALTO):
             imagenes[nombre] = pygame.transform.smoothscale(imagenes[nombre], (ANCHO, ALTO))
+
+    # ---- MULTIJUGADOR: conexión con el servidor (None = modo un jugador) ----
+    red = cliente.conectar()
+    if red is not None:
+        red.soltar()                  # al volver a esta pantalla, el rol anterior queda libre
+    fuente_sello = pygame.font.SysFont('timesnewroman', 26, bold=True)
+    fuente_estado = pygame.font.SysFont('timesnewroman', 13, bold=True)
+    aviso, aviso_hasta = None, 0.0
+
+    def ocupado(rol):
+        return red.ocupado_por_otro(rol) if red is not None else None
 
     seleccionado = None
     fuente_pregunta = pygame.font.SysFont('timesnewroman', 14, bold=True)
@@ -130,9 +169,13 @@ def SeleccionarPJ():
                 punto = posicion_en_canvas(display, evento.pos)
                 if seleccionado is None:
                     # Solo el clic (no hover) abre la ficha de detalles.
-                    for i, (_, _, area) in enumerate(ROLES):
+                    for i, (rol, _, area) in enumerate(ROLES):
                         if area.collidepoint(punto):
-                            seleccionado = i
+                            quien = ocupado(rol)
+                            if quien:
+                                aviso, aviso_hasta = f'{rol.title()} ya lo eligió {quien}', tiempo + 2.5
+                            else:
+                                seleccionado = i
                             break
                     # La flecha inferior izquierda del tablero original:
                     # se conserva su comportamiento de salida.
@@ -146,16 +189,32 @@ def SeleccionarPJ():
                         seleccionado = None
                     # Los demás clics sobre la ficha no hacen nada.
         if accion is not None:
-            return abrir_rol(ROLES[accion][0])
+            rol = ROLES[accion][0]
+            if red is not None and red.conectado:
+                ok, quien = red.elegir(rol)       # el servidor decide: el primero que lo pide se lo queda
+                if not ok:
+                    aviso, aviso_hasta = f'{rol.title()} ya lo eligió {quien}', tiempo + 2.5
+                    seleccionado = None
+                    accion = None
+            if accion is not None:
+                return abrir_rol(rol)
         archivo = '3.png' if seleccionado is None else ROLES[seleccionado][1]
         canvas.blit(imagenes[archivo], (0, 0))
         if seleccionado is None:
             mouse = posicion_en_canvas(display, pygame.mouse.get_pos())
-            for _, _, area in ROLES:
-                if area.collidepoint(mouse):
+            for rol, _, area in ROLES:
+                quien = ocupado(rol)
+                if quien:
+                    dibujar_ocupado(canvas, area, quien, fuente_sello, fuente_pregunta)
+                elif area.collidepoint(mouse):
                     dibujar_brillo(canvas, area, tiempo)
-                    break
         else:
             dibujar_pregunta(seleccionado)
+        if aviso and tiempo < aviso_hasta:
+            dibujar_aviso(canvas, aviso, fuente_boton)
+        if red is not None:
+            estado = 'EN LÍNEA' if red.conectado else 'SIN CONEXIÓN'
+            color = (120, 220, 130) if red.conectado else (220, 90, 80)
+            canvas.blit(fuente_estado.render('● MULTIJUGADOR · ' + estado, True, color), (ANCHO - 215, 8))
         Metodos.mostrar_canvas(display, canvas)
         pygame.display.flip()
