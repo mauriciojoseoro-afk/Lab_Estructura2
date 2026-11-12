@@ -1,0 +1,1343 @@
+import math
+import random
+import sys
+import pygame
+from pathlib import Path
+from Arbol.Arbol_AVL import ArbolAVL
+from Arbol import Preguntas
+import Metodos
+
+try:
+    import cv2  # pip install opencv-python (para reproducción de video en HD)
+except ImportError:
+    cv2 = None
+
+# =============================================================================
+# DEFINICIÓN DE CONFIGURACIÓN GLOBAL Y PARÁMETROS DE INTERFAZ
+# =============================================================================
+
+UI_ESCALA = 0.98
+UI_CENTRO_X = 435
+UI_Y = 120
+PANEL_CABECERA_ALFA = 180
+
+CARPETA_FONDOS = "Interfaz"
+FONDOS = {
+    "periodista": "Fondo_i.mp4",
+    "presidente": "Fondo_i.mp4",
+    "ciudadano": "Fondo_i.mp4",
+    "influencer": "Fondo_i.mp4",
+}
+FONDO_RESPALDO = "Fondo_i.png"
+REINICIAR_VIDEO_AL_CAMBIAR = True
+EXT_VIDEO = (".mp4", ".avi", ".mov", ".mkv", ".webm", ".m4v")
+
+# =============================================================================
+# PALETA DE COLORES RETRO-FUTURISTA (ESTILO CIUDAD NOVA)
+# =============================================================================
+COLOR_BG_DARK = (12, 14, 18)
+COLOR_PANEL_BG = (20, 24, 30)
+COLOR_PANEL_BORDER = (45, 55, 72)
+COLOR_TEXT_LIGHT = (240, 244, 248)
+COLOR_TEXT_MUTED = (140, 150, 165)
+
+COLOR_ACCENT_BLUE = (0, 180, 216)
+COLOR_ACCENT_AMBER = (255, 183, 3)
+COLOR_ACCENT_RED = (230, 57, 70)
+COLOR_ACCENT_GREEN = (42, 157, 143)
+COLOR_ACCENT_PURPLE = (141, 153, 174)
+
+COL_POLVO = (18, 20, 24)
+COL_PAPEL = (240, 235, 216)
+COL_OXIDO = (180, 83, 9)
+COL_AMBAR = (217, 119, 6)
+COL_AGUA = (16, 185, 129)
+COL_ACERO = (75, 85, 99)
+COL_APAGADO = (156, 163, 175)
+COL_VIVO = (239, 68, 68)
+COL_MALO = (220, 38, 38)
+COL_CIVITAS = (185, 28, 28)
+
+ROLES = {
+    "pregunta": ("Periodista", (245, 158, 11), "Seleccione una pregunta para la transmisión"),
+    "respuesta": ("Presidente", (16, 185, 129), "Elija la respuesta oficial del gobierno"),
+    "ciudadano": ("Audiencia", (14, 165, 233), "¿Cómo reacciona el público ante la declaración?"),
+    "opinion": ("Influencer", (168, 85, 247), "Emita su dictamen técnico en redes sociales"),
+    "civinet": ("CIVINET", (249, 115, 22), "Se ha detectado una anomalía informativa"),
+    "civitas": ("CIVITAS", (225, 29, 72), "Intervención prioritaria de la red neuronal"),
+    "intro": ("TRANSMISIÓN", (59, 130, 246), "Estableciendo enlace seguro con Nova"),
+    "final": ("Cierre de Emisión", (234, 179, 8), "Evaluación de impacto informativo"),
+}
+
+ORDEN_FASES = ["pregunta", "respuesta", "ciudadano"]
+ROLES_VERIFICACION = ["ciudadano"]
+
+INTERVENCIONES_CIVINET = {
+    3: {
+        "tipo": "Descontextualización",
+        "publicacion": "¿El presidente está ocultando información sobre el cierre de los parques? Su respuesta deja más dudas que certezas. ¡Comparte antes de que borren la publicación!",
+    },
+    6: {
+        "tipo": "Titular sensacionalista",
+        "publicacion": "¡ALERTA EN CIUDAD NOVA! El presidente quiere que los ciudadanos dejen de cuestionar lo que publica su campaña. ¿Qué intenta ocultar?",
+    },
+    9: {
+        "tipo": "Popularidad falsa",
+        "publicacion": "ÚLTIMA HORA: 9 de cada 10 jóvenes ya apoyan al presidente. Miles de usuarios están compartiendo su propuesta. ¡Únete a la mayoría!",
+    },
+}
+
+CUENTAS_CIVINET = {3: "@verdad_sin_filtro", 6: "@NovaAlerta24", 9: "@tendencia_nova"}
+
+ACCIONES_VERIFICACION = {
+    "pregunta": [
+        ("Contrastar la publicación con la entrevista completa", 3, -3, 1, 1, 1),
+        ("Compartir el titular sin revisar el contexto", -3, 5, 2, -2, -2),
+        ("Solicitar la fuente y comprobar quién publicó", 2, -2, 0, 1, 1),
+    ],
+    "respuesta": [
+        ("Publicar la respuesta completa y aportar la fuente", 4, -4, 2, 1, 2),
+        ("Acusar a Civitas sin presentar pruebas", -3, 4, 1, -1, -2),
+        ("Aclarar los hechos sin atacar a nadie", 2, -2, 1, 1, 1),
+    ],
+    "ciudadano": [
+        ("Verificar la información antes de compartirla", 3, -4, 1, 1, 2),
+        ("Compartirla porque tiene muchas reacciones", -3, 6, 2, -2, -2),
+        ("Esperar una confirmación de fuentes confiables", 2, -2, 0, 0, 1),
+    ],
+    "opinion": [
+        ("Publicar una corrección con pruebas y contexto", 3, -4, 4, 2, 1),
+        ("Reaccionar al titular para conseguir visitas", -2, 5, 5, -2, -1),
+        ("No amplificar el rumor y compartir la fuente original", 2, -3, 1, 1, 1),
+    ],
+}
+
+TITULOS_CIVITAS = {3: "CONTEXTO ELIMINADO", 6: "DUDA ACTIVADA", 9: "ALCANCE MASIVO"}
+
+REACCIONES_CIVITAS = {
+    "mal": [
+        "Gracias por compartir. Lo demás lo hago yo.",
+        "Compartiste sin leer. Mi tipo favorito de aliado.",
+        "Cada clic sin pensar es un voto para mí.",
+        "Qué rápido eres con el dedo. Qué lento con la duda.",
+    ],
+    "bien": [
+        "...Verificar. Qué costumbre tan incómoda.",
+        "Contexto. Mi mayor enemigo.",
+        "Bien jugado. Solo esta vez.",
+        "Cuidado. La verdad es contagiosa.",
+    ],
+}
+
+# =============================================================================
+# FUNCIONES MATEMÁTICAS Y GEOMÉTRICAS DE UTILIDAD
+# =============================================================================
+
+def mezclar(a, b, t):
+    """Interpola linealmente entre dos colores RGB."""
+    t = max(0.0, min(1.0, t))
+    return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
+
+def lerp(start, end, factor):
+    """Interpolación matemática suave."""
+    return start + (end - start) * factor
+
+def dividir_en_lineas(texto, fuente, ancho):
+    """Divide un texto en múltiples líneas respetando el límite en píxeles."""
+    lineas = []
+    actual = ""
+    for palabra in texto.split():
+        prueba = f"{actual} {palabra}".strip()
+        if fuente.size(prueba)[0] <= ancho:
+            actual = prueba
+        else:
+            if actual:
+                lineas.append(actual)
+            actual = palabra
+    if actual:
+        lineas.append(actual)
+    return lineas
+
+def recortar_lineas(lineas, n):
+    """Recorta una lista de cadenas para crear efecto de máquina de escribir."""
+    salida = []
+    for linea in lineas:
+        if n <= 0:
+            salida.append("")
+        else:
+            salida.append(linea[:n])
+            n -= len(linea)
+    return salida
+
+def paralelogramo(r, sk):
+    """Devuelve los vértices de un rectángulo inclinado."""
+    return [(r.x + sk, r.y), (r.right, r.y), (r.right - sk, r.bottom), (r.x, r.bottom)]
+
+def rombo(surf, cx, cy, d, color, grosor=0):
+    """Dibuja un rombo en la superficie dada."""
+    pts = [(cx, cy - d), (cx + d, cy), (cx, cy + d), (cx - d, cy)]
+    pygame.draw.polygon(surf, color, pts, grosor)
+
+def esquinas(surf, rect, color, largo, grosor=2, sal=0):
+    """Dibuja esquinas de visor táctico alrededor de un rectángulo."""
+    x0, y0 = rect.left - sal, rect.top - sal
+    x1, y1 = rect.right - 1 + sal, rect.bottom - 1 + sal
+    for x, y, sx, sy in ((x0, y0, 1, 1), (x1, y0, -1, 1), (x0, y1, 1, -1), (x1, y1, -1, -1)):
+        pygame.draw.line(surf, color, (x, y), (x + sx * largo, y), grosor)
+        pygame.draw.line(surf, color, (x, y), (x, y + sy * largo), grosor)
+
+def corazon(surf, cx, cy, r, color):
+    """Dibuja un ícono de corazón."""
+    pygame.draw.circle(surf, color, (int(cx - r * 0.5), int(cy - r * 0.2)), max(1, int(r * 0.58)))
+    pygame.draw.circle(surf, color, (int(cx + r * 0.5), int(cy - r * 0.2)), max(1, int(r * 0.58)))
+    pygame.draw.polygon(surf, color, [(cx - r * 1.04, cy - r * 0.02), (cx + r * 1.04, cy - r * 0.02), (cx, cy + r)])
+
+def gota(surf, cx, cy, r, color, seca=False):
+    """Dibuja una gota estilizada."""
+    if seca:
+        color = (70, 62, 50)
+    pygame.draw.polygon(surf, color, [(cx, cy - r * 1.85), (cx - r * 0.841, cy - r * 0.54),
+                                      (cx + r * 0.841, cy - r * 0.54)])
+    pygame.draw.circle(surf, color, (int(cx), int(cy)), max(1, int(r)))
+
+def glifo(surf, tipo, cx, cy, s, color, fondo=COL_POLVO):
+    """Dibuja íconos vectoriales según el tipo de rol o entidad."""
+    s = max(3, s)
+    if tipo == "pregunta":
+        pygame.draw.rect(surf, color, (int(cx - s * 0.28), int(cy - s * 0.75), max(2, int(s * 0.56)), int(s * 0.95)),
+                         border_radius=max(1, int(s * 0.28)))
+        pygame.draw.arc(surf, color, (int(cx - s * 0.52), int(cy - s * 0.5), int(s * 1.04), int(s * 0.9)),
+                        math.pi, math.tau, 2)
+        pygame.draw.line(surf, color, (cx, cy + s * 0.4), (cx, cy + s * 0.78), 2)
+        pygame.draw.line(surf, color, (cx - s * 0.32, cy + s * 0.78), (cx + s * 0.32, cy + s * 0.78), 2)
+    elif tipo == "respuesta":
+        pts = []
+        for i in range(10):
+            ang = -math.pi / 2 + i * math.pi / 5
+            rad = s if i % 2 == 0 else s * 0.45
+            pts.append((cx + math.cos(ang) * rad, cy + math.sin(ang) * rad))
+        pygame.draw.polygon(surf, color, pts)
+    elif tipo == "ciudadano":
+        pygame.draw.circle(surf, color, (int(cx), int(cy - s * 0.38)), max(2, int(s * 0.36)))
+        pygame.draw.polygon(surf, color, [(cx - s * 0.62, cy + s * 0.78), (cx - s * 0.42, cy + s * 0.12),
+                                          (cx + s * 0.42, cy + s * 0.12), (cx + s * 0.62, cy + s * 0.78)])
+    elif tipo == "opinion":
+        pygame.draw.rect(surf, color, (int(cx - s * 0.85), int(cy - s * 0.65), int(s * 1.7), int(s * 1.15)),
+                         border_radius=max(2, int(s * 0.3)))
+        pygame.draw.polygon(surf, color, [(cx - s * 0.35, cy + s * 0.4), (cx - s * 0.55, cy + s * 0.95),
+                                          (cx + s * 0.12, cy + s * 0.4)])
+        for k in (-1, 0, 1):
+            pygame.draw.circle(surf, fondo, (int(cx + k * s * 0.42), int(cy - s * 0.07)), max(1, int(s * 0.13)))
+    elif tipo == "civitas":
+        pygame.draw.ellipse(surf, color, (int(cx - s), int(cy - s * 0.58), int(s * 2), int(s * 1.16)), 2)
+        pygame.draw.circle(surf, color, (int(cx), int(cy)), max(2, int(s * 0.36)))
+    elif tipo == "civinet":
+        pygame.draw.polygon(surf, color, [(cx, cy - s), (cx + s, cy + s * 0.8), (cx - s, cy + s * 0.8)], 2)
+        pygame.draw.line(surf, color, (cx, cy - s * 0.3), (cx, cy + s * 0.22), 2)
+        pygame.draw.circle(surf, color, (int(cx), int(cy + s * 0.52)), max(1, int(s * 0.11)))
+    elif tipo == "intro":
+        for k in range(3):
+            h = s * (0.6 + 0.5 * k)
+            pygame.draw.rect(surf, color, (int(cx - s * 0.9 + k * s * 0.7), int(cy + s * 0.8 - h),
+                                           max(2, int(s * 0.46)), int(h)))
+    else:
+        rombo(surf, cx, cy, s, color)
+
+def emblema(surf, tipo, cx, cy, r, color, estado="activo", pulso=0.0):
+    """Renderiza un medallón de avatar con animación de pulso."""
+    if estado == "activo" and pulso > 0:
+        pygame.draw.circle(surf, mezclar(color, COL_POLVO, 0.55), (cx, cy), int(r + 2 + pulso * 3), 1)
+    pygame.draw.circle(surf, COL_POLVO, (cx, cy), r)
+    pygame.draw.circle(surf, color, (cx, cy), r, 2)
+    glifo(surf, tipo, cx, cy, max(3, int(r * 0.55)), color)
+
+def escalar_cover(img, ancho, alto):
+    """Escala y recorta una imagen manteniendo la relación de aspecto."""
+    iw, ih = img.get_size()
+    k = max(ancho / iw, alto / ih)
+    grande = pygame.transform.smoothscale(img, (max(ancho, int(iw * k)), max(alto, int(ih * k))))
+    x0, y0 = (grande.get_width() - ancho) // 2, (grande.get_height() - alto) // 2
+    return grande.subsurface((x0, y0, ancho, alto)).copy()
+
+def formato_k(n):
+    """Formatea enteros a representación simplificada K."""
+    return f"{n / 1000:.1f}K" if n >= 1000 else str(int(n))
+
+# =============================================================================
+# MANEJO DE FONDOS MULTIMEDIA (IMÁGENES Y VIDEOS)
+# =============================================================================
+
+class FondoImagen:
+    def __init__(self, superficie):
+        self.s = superficie
+
+    def actualizar(self, dt):
+        pass
+
+    def reiniciar(self):
+        pass
+
+    def superficie(self):
+        return self.s
+
+    def cerrar(self):
+        pass
+
+class FondoVideo:
+    """Manejador de streaming de video mediante OpenCV para fondos dinámicos."""
+    def __init__(self, ruta, ancho, alto):
+        self.ancho, self.alto = ancho, alto
+        self.cap = cv2.VideoCapture(str(ruta))
+        if not self.cap.isOpened():
+            raise RuntimeError("No fue posible abrir el archivo de video especificado.")
+        fps = self.cap.get(cv2.CAP_PROP_FPS)
+        self.fps = fps if fps and fps > 1 else 30.0
+        self.t = 0.0
+        self.frame = None
+        self._leer()
+        if self.frame is None:
+            raise RuntimeError("Fallo al decodificar el primer cuadro del video.")
+
+    def _leer(self):
+        ok, bgr = self.cap.read()
+        if not ok:
+            self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            ok, bgr = self.cap.read()
+            if not ok:
+                return
+        h, w = bgr.shape[:2]
+        objetivo = self.ancho / self.alto
+        if w / h > objetivo:
+            cw = int(h * objetivo)
+            x0 = (w - cw) // 2
+            bgr = bgr[:, x0:x0 + cw]
+        else:
+            ch = int(w / objetivo)
+            y0 = (h - ch) // 2
+            bgr = bgr[y0:y0 + ch, :]
+        interp = cv2.INTER_AREA if bgr.shape[1] >= self.ancho else cv2.INTER_LINEAR
+        bgr = cv2.resize(bgr, (self.ancho, self.alto), interpolation=interp)
+        rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+        self.frame = pygame.image.frombuffer(rgb.tobytes(), (self.ancho, self.alto), "RGB").convert()
+
+    def actualizar(self, dt):
+        self.t += dt
+        n = int(self.t * self.fps)
+        if n <= 0:
+            return
+        self.t -= n / self.fps
+        for _ in range(min(n, 6) - 1):
+            self.cap.grab()
+        self._leer()
+
+    def reiniciar(self):
+        self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        self.t = 0.0
+        self._leer()
+
+    def superficie(self):
+        return self.frame
+
+    def cerrar(self):
+        self.cap.release()
+
+# =============================================================================
+# ARQUITECTURA DE INTERFAZ GRÁFICA BASADA EN COMPONENTES (POO)
+# =============================================================================
+
+class UIElement:
+    """Clase base abstraída para elementos interactivos y contenedores UI."""
+    def __init__(self, rect):
+        self.rect = pygame.Rect(rect)
+        self.visible = True
+        self.enabled = True
+        self.hovered = False
+
+    def handle_event(self, event, mouse_pos):
+        if not self.visible or not self.enabled:
+            return False
+        self.hovered = self.rect.collidepoint(mouse_pos)
+        return False
+
+    def update(self, dt):
+        pass
+
+    def draw(self, surface):
+        pass
+
+class Panel(UIElement):
+    """Contenedor gráfico modular con bisel, sombra y esquinas tácticas."""
+    def __init__(self, rect, bg_color=COLOR_PANEL_BG, border_color=COLOR_PANEL_BORDER, border_width=2):
+        super().__init__(rect)
+        self.bg_color = bg_color
+        self.border_color = border_color
+        self.border_width = border_width
+        self.corner_length = 12
+
+    def draw(self, surface):
+        if not self.visible:
+            return
+        # Sombra proyectada posterior
+        shadow_rect = self.rect.move(4, 4)
+        shadow_surf = pygame.Surface(shadow_rect.size, pygame.SRCALPHA)
+        shadow_surf.fill((0, 0, 0, 110))
+        surface.blit(shadow_surf, shadow_rect.topleft)
+
+        # Cuerpo base
+        panel_surf = pygame.Surface(self.rect.size, pygame.SRCALPHA)
+        panel_surf.fill((*self.bg_color[:3], 230))
+        surface.blit(panel_surf, self.rect.topleft)
+
+        # Borde
+        pygame.draw.rect(surface, self.border_color, self.rect, self.border_width, border_radius=6)
+
+        # Detalle táctico de visor en esquinas
+        esquinas(surface, self.rect, COLOR_ACCENT_BLUE, self.corner_length, 2, 2)
+
+class Button(UIElement):
+    """Botón volumétrico neomórfico con interpolación suave y eventos callback."""
+    def __init__(self, rect, text, font, callback=None, accent_color=COLOR_ACCENT_BLUE):
+        super().__init__(rect)
+        self.text = text
+        self.font = font
+        self.callback = callback
+        self.accent_color = accent_color
+        self.hover_progress = 0.0
+        self.pressed = False
+
+    def update(self, dt):
+        target = 1.0 if self.hovered else 0.0
+        self.hover_progress = lerp(self.hover_progress, target, min(1.0, dt * 12))
+
+    def handle_event(self, event, mouse_pos):
+        if not self.visible or not self.enabled:
+            return False
+        self.hovered = self.rect.collidepoint(mouse_pos)
+        if self.hovered and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            self.pressed = True
+            return True
+        if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+            if self.pressed and self.hovered and self.callback:
+                self.callback()
+            self.pressed = False
+        return False
+
+    def draw(self, surface):
+        if not self.visible:
+            return
+        offset_y = int(self.hover_progress * -3) + (2 if self.pressed else 0)
+        draw_rect = self.rect.move(0, offset_y)
+
+        # Sombra dinámica
+        shadow = draw_rect.move(0, 4)
+        pygame.draw.rect(surface, (10, 12, 16, 180), shadow, border_radius=8)
+
+        # Fondo del botón
+        color_base = mezclar(COLOR_PANEL_BG, (35, 45, 60), self.hover_progress)
+        pygame.draw.rect(surface, color_base, draw_rect, border_radius=8)
+
+        # Borde brillante
+        border_col = mezclar(COLOR_PANEL_BORDER, self.accent_color, self.hover_progress)
+        pygame.draw.rect(surface, border_col, draw_rect, width=2, border_radius=8)
+
+        # Indicador de acento superior
+        accent_rect = pygame.Rect(draw_rect.x + 8, draw_rect.y + 3, draw_rect.width - 16, 3)
+        pygame.draw.rect(surface, self.accent_color, accent_rect, border_radius=2)
+
+        # Texto renderizado
+        text_col = mezclar(COLOR_TEXT_MUTED, COLOR_TEXT_LIGHT, self.hover_progress)
+        txt_img = self.font.render(self.text, True, text_col)
+        txt_rect = txt_img.get_rect(center=draw_rect.center)
+        surface.blit(txt_img, txt_rect)
+
+class InteractiveCard(UIElement):
+    """Tarjeta interactiva avanzada para opciones de diálogo y toma de decisiones."""
+    def __init__(self, rect, number, text, font, accent_color=COL_AMBAR):
+        super().__init__(rect)
+        self.number = number
+        self.text = text
+        self.font = font
+        self.accent_color = accent_color
+        self.hover_progress = 0.0
+
+    def update(self, dt):
+        target = 1.0 if self.hovered else 0.0
+        self.hover_progress = lerp(self.hover_progress, target, min(1.0, dt * 14))
+
+    def draw(self, surface, scale_factor=1.0):
+        if not self.visible:
+            return
+        shift_x = int(8 * self.hover_progress * scale_factor)
+        r = self.rect.move(shift_x, 0)
+
+        # Sombra
+        pygame.draw.rect(surface, (10, 10, 12, 120), r.move(0, 4), border_radius=10)
+
+        # Cuerpo
+        bg_col = mezclar((28, 32, 40), (45, 52, 65), self.hover_progress)
+        pygame.draw.rect(surface, bg_col, r, border_radius=10)
+
+        # Borde exterior
+        border_col = mezclar(COL_ACERO, self.accent_color, 0.3 + 0.7 * self.hover_progress)
+        pygame.draw.rect(surface, border_col, r, width=2 if self.hover_progress > 0.1 else 1, border_radius=10)
+
+        # Insignia numérica
+        num_cx, num_cy = r.x + int(30 * scale_factor), r.centery
+        pygame.draw.circle(surface, mezclar(COL_POLVO, self.accent_color, 0.2 + 0.8 * self.hover_progress),
+                           (num_cx, num_cy), int(14 * scale_factor))
+        pygame.draw.circle(surface, self.accent_color, (num_cx, num_cy), int(14 * scale_factor), 1)
+
+        num_txt = self.font.render(str(self.number), True, COL_PAPEL)
+        surface.blit(num_txt, num_txt.get_rect(center=(num_cx, num_cy)))
+
+        # Texto multilínea
+        lineas = dividir_en_lineas(self.text, self.font, r.width - int(70 * scale_factor))
+        yy = r.centery - (len(lineas) * int(18 * scale_factor)) // 2
+        for l in lineas:
+            t_img = self.font.render(l, True, mezclar(COL_PAPEL, (255, 255, 255), self.hover_progress))
+            surface.blit(t_img, (r.x + int(54 * scale_factor), yy))
+            yy += int(18 * scale_factor)
+
+# =============================================================================
+# SISTEMA DE PARTÍCULAS Y EFECTOS ATMOSFÉRICOS
+# =============================================================================
+
+class ParticleSystem:
+    """Gestor de partículas físicas para efectos contextuales e impacto de UI."""
+    def __init__(self):
+        self.particles = []
+
+    def emit(self, x, y, count=10, color=COLOR_ACCENT_BLUE):
+        for _ in range(count):
+            angle = random.uniform(0, math.tau)
+            speed = random.uniform(30, 120)
+            self.particles.append({
+                "x": x,
+                "y": y,
+                "vx": math.cos(angle) * speed,
+                "vy": math.sin(angle) * speed - 20,
+                "life": random.uniform(0.4, 1.0),
+                "max_life": 1.0,
+                "color": color,
+                "size": random.randint(2, 5)
+            })
+
+    def update(self, dt):
+        for p in self.particles[:]:
+            p["life"] -= dt
+            p["x"] += p["vx"] * dt
+            p["y"] += p["vy"] * dt
+            p["vy"] += 100 * dt  # Gravedad
+            if p["life"] <= 0:
+                self.particles.remove(p)
+
+    def draw(self, surface):
+        for p in self.particles:
+            alpha = int(255 * max(0.0, p["life"] / p["max_life"]))
+            s = pygame.Surface((p["size"] * 2, p["size"] * 2), pygame.SRCALPHA)
+            pygame.draw.circle(s, (*p["color"][:3], alpha), (p["size"], p["size"]), p["size"])
+            surface.blit(s, (int(p["x"] - p["size"]), int(p["y"] - p["size"])))
+
+# =============================================================================
+# SISTEMA DE NOTIFICACIONES (TOASTS)
+# =============================================================================
+
+class ToastManager:
+    """Gestor de alertas y notificaciones contextuales emergentes."""
+    def __init__(self):
+        self.active_toast = None
+        self.timer = 0.0
+        self.duration = 1.0
+        self.color = COLOR_ACCENT_BLUE
+
+    def show(self, text, duration=3.0, color=COLOR_ACCENT_BLUE):
+        self.active_toast = text
+        self.timer = duration
+        self.duration = duration
+        self.color = color
+
+    def update(self, dt):
+        if self.timer > 0:
+            self.timer = max(0.0, self.timer - dt)
+
+    def draw(self, surface, font, screen_width, u_func):
+        if self.timer <= 0 or not self.active_toast:
+            return
+        w = min(screen_width - u_func(36), u_func(460))
+        lines = dividir_en_lineas(self.active_toast, font, w - u_func(80))
+        h = max(u_func(56), len(lines) * u_func(20) + u_func(24))
+
+        progress = self.timer / self.duration
+        alpha = int(255 * min(1.0, progress / 0.2))
+
+        toast_surf = pygame.Surface((w, h), pygame.SRCALPHA)
+        pygame.draw.rect(toast_surf, (*COL_POLVO, alpha), (0, 0, w, h), border_radius=u_func(10))
+        pygame.draw.rect(toast_surf, (*self.color[:3], alpha), (0, 0, u_func(6), h), border_radius=u_func(3))
+        pygame.draw.rect(toast_surf, (*self.color[:3], alpha), (0, 0, w, h), width=2, border_radius=u_func(10))
+
+        yy = (h - len(lines) * u_func(20)) // 2
+        for line in lines:
+            txt_img = font.render(line, True, COL_PAPEL)
+            txt_img.set_alpha(alpha)
+            toast_surf.blit(txt_img, (u_func(60), yy))
+            yy += u_func(20)
+
+        surface.blit(toast_surf, (screen_width - w - u_func(20), u_func(20)))
+
+# =============================================================================
+# FILTRO DE EFECTOS CRT Y POST-PROCESAMIENTO GRÁFICO
+# =============================================================================
+
+def aplicar_efectos_crt(surface):
+    """Simula líneas de escaneo y distorsión de tubo catódico retro."""
+    w, h = surface.get_size()
+    scanline_surf = pygame.Surface((w, h), pygame.SRCALPHA)
+    for y in range(0, h, 4):
+        pygame.draw.line(scanline_surf, (0, 0, 0, 30), (0, y), (w, y))
+    surface.blit(scanline_surf, (0, 0))
+
+# =============================================================================
+# BUCLE PRINCIPAL Y LÓGICA DEL MÓDULO ENTREVISTA
+# =============================================================================
+
+def Entrevista():
+    pygame.init()
+
+    ruta_assets = Path(__file__).parent.parent / "Assets" / "Interfaz"
+    ruta_fondos = Path(__file__).parent.parent / "Assets" / CARPETA_FONDOS
+
+    ANCHO = 900
+    ALTO = 600
+    imagen_respaldo = None
+    try:
+        imagen_respaldo = pygame.image.load(str(ruta_fondos / FONDO_RESPALDO))
+        ALTO = int(ANCHO * imagen_respaldo.get_height() / imagen_respaldo.get_width())
+    except Exception:
+        print(f"[Entrevista] Advertencia: No se localizó el fondo de respaldo '{FONDO_RESPALDO}'")
+
+    display = pygame.display.set_mode((ANCHO, ALTO), pygame.RESIZABLE)
+    pygame.display.set_caption("THE LEADER GAME | Sistema de Gestión de Crisis Civinet")
+    canvas = pygame.Surface((ANCHO, ALTO))
+
+    if imagen_respaldo is not None:
+        respaldo = pygame.transform.smoothscale(imagen_respaldo.convert(), (ANCHO, ALTO))
+    else:
+        respaldo = pygame.Surface((ANCHO, ALTO))
+        respaldo.fill(COLOR_BG_DARK)
+
+    avisado = []
+
+    def cargar_fondo(clave):
+        nombre = FONDOS.get(clave)
+        if nombre:
+            ruta = ruta_fondos / nombre
+            if not ruta.exists():
+                print(f"[Entrevista] ({clave}) Archivo inexistente '{nombre}'. Usando respaldo.")
+            elif ruta.suffix.lower() in EXT_VIDEO:
+                if cv2 is None:
+                    if not avisado:
+                        print("[Entrevista] OpenCV requerido para video. Ejecute: pip install opencv-python")
+                        avisado.append(True)
+                else:
+                    try:
+                        return FondoVideo(ruta, ANCHO, ALTO)
+                    except Exception as e:
+                        print(f"[Entrevista] Error al inicializar video '{nombre}': {e}")
+            else:
+                try:
+                    return FondoImagen(escalar_cover(pygame.image.load(str(ruta)).convert(), ANCHO, ALTO))
+                except Exception as e:
+                    print(f"[Entrevista] Error cargando imagen '{nombre}': {e}")
+        return FondoImagen(respaldo)
+
+    fondo_por_fase = {
+        "pregunta": "periodista",
+        "respuesta": "presidente",
+        "ciudadano": "ciudadano",
+        "opinion": "influencer",
+        "civinet": "influencer",
+        "civitas": "influencer",
+        "intro": "periodista",
+        "verificacion": "periodista",
+        "final": "influencer",
+    }
+    fondos = {clave: cargar_fondo(clave) for clave in fondo_por_fase.values()}
+
+    ajuste = {"x": UI_CENTRO_X, "y": UI_Y, "escala": UI_ESCALA}
+    modo_ajuste = False
+    fuente_ajuste = pygame.font.SysFont("Consolas", 14)
+
+    def u(n):
+        return int(round(n * ajuste["escala"]))
+
+    def tam_fuentes():
+        return max(8, round(16 * ajuste["escala"])), max(10, round(22 * ajuste["escala"]))
+
+    def crear_fuentes():
+        t1, t2 = tam_fuentes()
+        try:
+            return pygame.font.SysFont("Georgia", t1), pygame.font.SysFont("Georgia", t2, bold=True)
+        except Exception:
+            return pygame.font.Font(None, t1), pygame.font.Font(None, t2)
+
+    fuente, fuente_grande = crear_fuentes()
+    tam_actual = tam_fuentes()
+
+    # Carga de árboles AVL de preguntas y respuestas
+    preguntas = Preguntas.preguntas_P()
+    respuestas = Preguntas.respuestas_P()
+
+    arbol_preguntas = ArbolAVL()
+    for id_k in preguntas.keys():
+        arbol_preguntas.set(id_k)
+
+    arbol_respuestas = ArbolAVL()
+    for id_k in respuestas.keys():
+        arbol_respuestas.set(id_k)
+
+    ids_disponibles = list(preguntas.keys())
+
+    # Variables de estado del flujo de juego
+    fase = "intro"
+    id_pregunta_actual = None
+    respuesta_elegida = None
+
+    espectadores = 50
+    puntos_influencer = 0
+    puntos_ciudadano = 0
+    preguntas_hechas = 0
+    total_preguntas = len(preguntas)
+
+    confianza_civinet = 50
+    alcance_falso = 0
+    indice_verificacion = 0
+    ultima_pregunta = ""
+    ultima_respuesta = ""
+    desenlace_preparado = False
+    titulo_final = ""
+    texto_final = ""
+    cierre_civitas = ""
+    resultado_final = "medio"
+    vis = {"conf": float(confianza_civinet), "falso": float(alcance_falso)}
+
+    # Instanciación del sistema de partículas y notificaciones
+    particle_system = ParticleSystem()
+    toast_manager = ToastManager()
+
+    intro_dialogos = [
+        ("SISTEMA CIVINET", "Enlace establecido. Transmisión pública de Ciudad Nova en preparación."),
+        ("SISTEMA CIVINET", "Periodista en cámara. Presidente en posición. Audiencia estimada: 2.483 conexiones."),
+        ("SISTEMA CIVINET", "En directo en 3... 2... 1..."),
+        ("CIVITAS", "Buenas noches, Ciudad Nova. Soy quien decide qué ves, antes de que lo veas."),
+        ("CIVITAS", "Habla, presidente. Di tus verdades. Yo me ocuparé de que lleguen... como yo prefiera."),
+    ]
+    indice_dialogo = 0
+
+    def lineas_de_civitas(n):
+        if n == 3:
+            if confianza_civinet >= 55:
+                extra = "Veo que la ciudad te escucha entera... por ahora. Qué ingenuo es confiar en el contexto."
+            else:
+                extra = "¿Lo ves? A nadie le importa el resto de la frase. Solo el pedazo que yo elegí."
+            return [
+                ("CIVITAS", "Qué respuesta tan cuidadosa, presidente. Tan completa... y tan fácil de recortar."),
+                ("CIVITAS", "Una frase sin su contexto es un arma. Y yo tengo muy buena puntería."),
+                ("CIVITAS", extra),
+            ]
+        if n == 6:
+            if alcance_falso <= 2:
+                extra = "Verificaste a tiempo. Qué detalle adorable. Subiré el volumen."
+            else:
+                extra = "Cuántos compartieron sin leer. Adoro esta ciudad."
+            return [
+                ("CIVITAS", "Una duda. Luego otra. Después todos dudan de todos, y ya no necesito mentir."),
+                ("CIVITAS", "Mis titulares no cuentan lo que pasó. Cuentan lo que quiero que sientan al leerlos."),
+                ("CIVITAS", extra),
+            ]
+        if confianza_civinet >= 65 and alcance_falso <= 5:
+            extra = "Vaya... esta vez la ciudad aún te sigue. Disfrútalo: mañana hay otra transmisión."
+        else:
+            extra = "Fue un placer, presidente. Ahora, si me disculpa, tengo una elección que escribir."
+        return [
+            ("CIVITAS", "Nueve de cada diez jóvenes. ¿Sabes de dónde salió esa cifra? De ninguna parte... y ya la repite media ciudad."),
+            ("CIVITAS", "No necesito una mayoría, presidente. Solo necesito que parezca que existe."),
+            ("CIVITAS", extra),
+        ]
+
+    reaccion = {"emoji": "", "texto": "", "color": COL_AGUA, "t": 0.0, "total": 1.0}
+    avisos = {}
+
+    def lanzar_reaccion(emoji, texto, color):
+        # Aviso breve y sobrio (sin emojis ni partículas). El parámetro emoji se ignora.
+        reaccion.update(emoji="", texto=texto, color=color, t=2.2, total=2.2)
+
+    def dibujar_reaccion():
+        if reaccion["t"] <= 0:
+            return
+        entrada = min(1.0, (1 - reaccion["t"] / reaccion["total"]) * 8)
+        salida = min(1.0, reaccion["t"] / 0.3)
+        alfa = int(240 * min(entrada, salida))
+        ancho = min(ANCHO - u(230), fuente.size(reaccion["texto"])[0] + u(40))
+        alto = u(34)
+        x, y = u(20), ALTO - u(52)
+        s = pygame.Surface((ancho, alto), pygame.SRCALPHA)
+        s.fill((*COL_POLVO, alfa))
+        pygame.draw.rect(s, (*reaccion["color"], alfa), (0, 0, u(3), alto))
+        tx = fuente.render(reaccion["texto"], True, COL_PAPEL)
+        tx.set_alpha(alfa)
+        s.blit(tx, (u(16), (alto - tx.get_height()) // 2))
+        canvas.blit(s, (x, y))
+
+    SCREEN_ANCHO = SCREEN_X = SCREEN_Y = Y_CONTENIDO = 0
+    reloj = pygame.time.Clock()
+    capa = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)
+    ui = {"hover": False}
+    tiempo = 0.0
+    t_fase = 0.0
+    t_linea = 0.0
+    fase_prev = fase
+    cursor_mano = False
+
+    chat_usuarios = ["@luna_nova", "@mateo_07", "@sofi_live", "@pixelgris", "@dani.c", "@nova_fan", "@mar_azul", "@elobservador"]
+    chat_mensajes = [
+        ("👀", "Estoy siguiendo cada palabra."),
+        ("📺", "Se escucha un poco bajo, pero se entiende."),
+        ("🤔", "No sé si creerle todavía."),
+        ("👏", "Buena pregunta, periodista."),
+        ("📰", "¿Alguien tiene la fuente completa?"),
+        ("💬", "La ciudad necesita respuestas claras."),
+        ("❤️", "Me gusta que estén hablando de esto."),
+    ]
+    chat_feed = []
+    chat_reloj = 1.0
+    fuente_chat = pygame.font.SysFont("Georgia", 12)
+    fuente_chat_nombre = pygame.font.SysFont("Georgia", 11, bold=True)
+
+    velo_oscuro = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)
+    velo_oscuro.fill((3, 8, 9, 175))
+    velo_civitas = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)
+    velo_civitas.fill((4, 3, 8, 215))
+
+    # =========================================================================
+    # RENDERIZADO DE COMPONENTES DE ENCABEZADO Y CONTADORES
+    # =========================================================================
+
+    def panel_cabecera():
+        if PANEL_CABECERA_ALFA <= 0:
+            return
+        w, h = SCREEN_ANCHO + u(90), u(150)
+        s = pygame.Surface((w, h), pygame.SRCALPHA)
+        for yy in range(h):
+            a = int(PANEL_CABECERA_ALFA * max(0.0, 1 - yy / h) ** 1.3)
+            pygame.draw.line(s, (*COL_POLVO, a), (0, yy), (w, yy))
+        canvas.blit(s, (SCREEN_X - u(45), SCREEN_Y - u(28)))
+
+    def contador(y, etiqueta, valor, clave, fuente_valor, color_valor, punto=False):
+        x_r = SCREEN_X + SCREEN_ANCHO
+        num = fuente_valor.render(str(valor), True, color_valor)
+        r_num = num.get_rect(topright=(x_r, y))
+        canvas.blit(num, r_num)
+
+        aviso = avisos.get(clave)
+        if aviso:
+            img = fuente.render(aviso["txt"], True, aviso["color"])
+            img.set_alpha(int(255 * min(1.0, aviso["t"] / 0.4)))
+            sube = int((1 - min(1.0, aviso["t"] / 1.4)) * u(8))
+            canvas.blit(img, img.get_rect(midright=(r_num.left - u(8), r_num.centery - sube)))
+
+        lab = fuente.render(etiqueta, True, COL_VIVO if punto else COL_APAGADO)
+        r_lab = lab.get_rect(midright=(r_num.left - u(56), r_num.centery))
+        canvas.blit(lab, r_lab)
+        if punto:
+            parpadeo = 0.5 + 0.5 * math.sin(tiempo * 4)
+            pygame.draw.circle(canvas, mezclar((110, 30, 26), COL_VIVO, parpadeo),
+                               (r_lab.left - u(12), r_lab.centery), max(2, u(5)))
+
+    def cabecera():
+        x_r = SCREEN_X + SCREEN_ANCHO
+
+        if fase in ("intro", "civitas"):
+            texto_titulo = "Conexión CIVINET" if fase == "intro" else "Interferencia detectada"
+        elif fase in ("civinet", "verificacion"):
+            n_intervencion = sum(1 for n in INTERVENCIONES_CIVINET if n <= preguntas_hechas)
+            texto_titulo = f"Interferencia {n_intervencion} de {len(INTERVENCIONES_CIVINET)}"
+        elif fase == "final":
+            texto_titulo = "Resultado de la entrevista"
+        else:
+            n_actual = min(preguntas_hechas + 1, total_preguntas)
+            texto_titulo = f"Pregunta {n_actual} de {total_preguntas}"
+        titulo = fuente_grande.render(texto_titulo, True, COL_PAPEL)
+        canvas.blit(titulo, (SCREEN_X, SCREEN_Y))
+
+        # progreso: marcas rectas y planas
+        for k in range(total_preguntas):
+            seg = pygame.Rect(SCREEN_X + k * u(18), SCREEN_Y + u(32), u(14), max(3, u(5)))
+            if k < preguntas_hechas:
+                color = COL_AMBAR
+            elif k == preguntas_hechas:
+                color = COL_PAPEL
+            else:
+                color = mezclar(COL_ACERO, COL_POLVO, 0.4)
+            pygame.draw.rect(canvas, color, seg)
+
+        contador(SCREEN_Y, "en vivo", espectadores, "espectadores", fuente_grande, COL_PAPEL, punto=True)
+        contador(SCREEN_Y + u(26), "confianza", confianza_civinet, "confianza", fuente, COL_AGUA)
+
+        # una sola línea fina como divisoria
+        y_div = SCREEN_Y + u(50)
+        pygame.draw.line(canvas, COL_ACERO, (SCREEN_X, y_div), (x_r, y_div), 1)
+
+        # de quién es el turno: nombre en su color + instrucción
+        if fase == "verificacion":
+            rol = ROLES_VERIFICACION[indice_verificacion]
+            nombre, color, instruccion = ROLES[rol]
+        else:
+            nombre, color, instruccion = ROLES.get(fase, ROLES["pregunta"])
+        cy_t = y_div + u(22)
+        etiqueta = fuente.render(nombre, True, color)
+        r_et = etiqueta.get_rect(midleft=(SCREEN_X, cy_t))
+        canvas.blit(etiqueta, r_et)
+        inst = fuente.render(instruccion, True, COL_APAGADO)
+        canvas.blit(inst, inst.get_rect(midleft=(r_et.right + u(12), cy_t)))
+
+        # orden de turnos: tres puntos simples
+        fase_visual = ROLES_VERIFICACION[indice_verificacion] if fase == "verificacion" else fase
+        i_act = ORDEN_FASES.index(fase_visual) if fase_visual in ORDEN_FASES else 0
+        rr = max(4, u(5))
+        paso_t = u(18)
+        for k, f in enumerate(ORDEN_FASES):
+            col = ROLES[f][1]
+            cx_k = x_r - rr - (len(ORDEN_FASES) - 1 - k) * paso_t
+            if k == i_act:
+                pygame.draw.circle(canvas, col, (cx_k, cy_t), rr)
+            elif k < i_act:
+                pygame.draw.circle(canvas, mezclar(col, COL_POLVO, 0.6), (cx_k, cy_t), rr)
+            else:
+                pygame.draw.circle(canvas, mezclar(col, COL_POLVO, 0.45), (cx_k, cy_t), rr, 1)
+
+    def marco_vn(dest, rect, color, nombre, tipo, relleno=(14, 11, 9, 218), jitter=0):
+        # Cuadro de diálogo plano: borde fino, filo de color a la izquierda y etiqueta con el nombre.
+        s = pygame.Surface(rect.size, pygame.SRCALPHA)
+        s.fill(relleno)
+        dest.blit(s, rect.topleft)
+        pygame.draw.rect(dest, mezclar(color, COL_POLVO, 0.5), rect, 1, border_radius=u(3))
+        pygame.draw.rect(dest, color, (rect.x, rect.y, u(3), rect.height))
+        etiqueta = fuente.render(nombre, True, COL_POLVO)
+        th = u(22)
+        tab = pygame.Rect(rect.x + u(14) + jitter, rect.y - th + 1, etiqueta.get_width() + u(20), th)
+        pygame.draw.rect(dest, color, tab)
+        dest.blit(etiqueta, etiqueta.get_rect(center=tab.center))
+
+    def bloque_cita(y, etiqueta, texto, color, tipo="pregunta", n=None):
+        # Diálogo adaptable: reduce la tipografía para que nunca salga de la pantalla.
+        if n is None:
+            n = int(t_fase * 150)
+        margen_x = u(46)
+        ancho_txt = max(u(120), SCREEN_ANCHO - margen_x)
+        reserva = u(176) if fase == "respuesta" else u(105)
+        alto_max = max(u(66), ALTO - (y + u(20)) - reserva)
+
+        def fte(t):
+            k = ("dlg", t)
+            if k not in cache_grad:
+                cache_grad[k] = pygame.font.SysFont("Georgia", t)
+            return cache_grad[k]
+
+        tam = max(10, round(16 * ajuste["escala"]))
+        fuente_dialogo = fte(tam)
+        lineas = dividir_en_lineas(texto, fuente_dialogo, ancho_txt)
+        alto_linea = max(u(14), fuente_dialogo.get_linesize())
+        while len(lineas) * alto_linea + u(30) > alto_max and tam > 9:
+            tam -= 1
+            fuente_dialogo = fte(tam)
+            lineas = dividir_en_lineas(texto, fuente_dialogo, ancho_txt)
+            alto_linea = max(u(13), fuente_dialogo.get_linesize())
+        alto = min(alto_max, len(lineas) * alto_linea + u(30))
+        rect = pygame.Rect(SCREEN_X, y + u(20), SCREEN_ANCHO, alto)
+        marco_vn(capa, rect, color, etiqueta, tipo, relleno=(22, 27, 25, 200))
+        yy = rect.y + u(12)
+        clip_anterior = capa.get_clip()
+        capa.set_clip(rect.inflate(-u(12), -u(8)))
+        for linea in recortar_lineas(lineas, n):
+            capa.blit(fuente_dialogo.render(linea, True, COL_PAPEL), (rect.x + u(16), yy))
+            yy += alto_linea
+        capa.set_clip(clip_anterior)
+        return rect.bottom
+
+    def lista_opciones(y, textos, color, mouse_pos, click_event, tecla_press):
+        elegido = None
+        for i, texto in enumerate(textos):
+            lineas = dividir_en_lineas(texto, fuente, SCREEN_ANCHO - u(96)) or [""]
+            rect = pygame.Rect(SCREEN_X, y, SCREEN_ANCHO, max(u(50), len(lineas) * u(19) + u(24)))
+            
+            card = InteractiveCard(rect, i + 1, texto, fuente, accent_color=color)
+            card.hovered = rect.collidepoint(mouse_pos)
+            if card.hovered:
+                ui["hover"] = True
+            card.update(dt)
+            card.draw(capa, scale_factor=ajuste["escala"])
+            
+            if (card.hovered and click_event) or tecla_press == i + 1:
+                elegido = i
+            y += rect.height + u(9)
+        return elegido
+
+    def medidores(y):
+        mitad = (SCREEN_ANCHO - u(14)) // 2
+        datos_m = (("Confianza", vis["conf"], 100, COL_AGUA, False),
+                   ("Alcance del rumor", vis["falso"], 20, COL_VIVO, True))
+        segs = 20
+        gap = max(1, u(2))
+        ancho_seg = (mitad - (segs - 1) * gap) / segs
+        for k, (nombre, valor, maximo, color, degradado) in enumerate(datos_m):
+            x = SCREEN_X + k * (mitad + u(14))
+            capa.blit(fuente.render(nombre, True, COL_APAGADO), (x, y))
+            num = fuente.render(str(int(round(valor))), True, color)
+            capa.blit(num, num.get_rect(topright=(x + mitad, y)))
+            llenos = max(0.0, min(1.0, valor / maximo)) * segs
+            for j in range(segs):
+                seg = pygame.Rect(int(x + j * (ancho_seg + gap)), y + u(20), max(2, int(ancho_seg)), max(5, u(8)))
+                col = mezclar(COL_AMBAR, COL_VIVO, j / segs) if degradado else color
+                if j + 1 <= llenos:
+                    pygame.draw.rect(capa, col, seg)
+                elif j < llenos:
+                    pygame.draw.rect(capa, mezclar((38, 31, 25), col, llenos - j), seg)
+                else:
+                    pygame.draw.rect(capa, (38, 31, 25), seg)
+        return y + u(38)
+
+    def dibujar_chat_en_vivo():
+        # Chat de texto plano: usuario en color y mensaje debajo. Sin emojis.
+        w = u(174)
+        x = ANCHO - w - u(12)
+        y = ALTO - u(315)
+        h = u(292)
+        panel = pygame.Surface((w, h), pygame.SRCALPHA)
+        pygame.draw.rect(panel, (*COL_POLVO, 200), (0, 0, w, h), border_radius=u(3))
+        pygame.draw.rect(panel, (*COL_ACERO, 200), (0, 0, w, h), 1, border_radius=u(3))
+        panel.blit(fuente_chat_nombre.render("Chat", True, COL_APAGADO), (u(10), u(8)))
+        pygame.draw.line(panel, (*COL_ACERO, 190), (u(10), u(28)), (w - u(10), u(28)), 1)
+        yy = u(36)
+        for emoji, usuario, mensaje, edad in chat_feed[-5:]:
+            alfa = int(235 * max(0.48, min(1.0, 1.0 - edad / 22.0)))
+            nombre = fuente_chat_nombre.render(usuario, True, COL_AMBAR)
+            nombre.set_alpha(alfa)
+            panel.blit(nombre, (u(10), yy))
+            yy += u(14)
+            for linea in dividir_en_lineas(mensaje, fuente_chat, w - u(20))[:2]:
+                img = fuente_chat.render(linea, True, COL_PAPEL)
+                img.set_alpha(alfa)
+                panel.blit(img, (u(10), yy))
+                yy += u(14)
+            yy += u(7)
+        canvas.blit(panel, (x, y))
+
+    # =========================================================================
+    # BUCLE DE EVENTOS Y ACTUALIZACIÓN DE ESTADOS
+    # =========================================================================
+
+    running = True
+    while running:
+        dt = reloj.tick(60) / 1000.0
+        tiempo += dt
+        chat_reloj -= dt
+
+        for item in chat_feed:
+            item[3] += dt
+        if chat_reloj <= 0:
+            emoji_chat, mensaje_chat = random.choice(chat_mensajes)
+            usuario_chat = random.choice(chat_usuarios)
+            chat_feed.append([emoji_chat, usuario_chat, mensaje_chat, 0.0])
+            chat_feed = chat_feed[-8:]
+            chat_reloj = random.uniform(2.2, 4.8)
+
+        click = False
+        tecla = 0
+        avanzar = False
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.VIDEORESIZE:
+                display = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                click = True
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    avanzar = True
+                elif event.key == pygame.K_F2:
+                    modo_ajuste = not modo_ajuste
+                else:
+                    tecla = {pygame.K_1: 1, pygame.K_2: 2, pygame.K_3: 3,
+                             pygame.K_KP1: 1, pygame.K_KP2: 2, pygame.K_KP3: 3}.get(event.key, 0)
+
+        if modo_ajuste:
+            teclas = pygame.key.get_pressed()
+            paso = 4 if (teclas[pygame.K_LSHIFT] or teclas[pygame.K_RSHIFT]) else 1
+            ajuste["x"] += (teclas[pygame.K_RIGHT] - teclas[pygame.K_LEFT]) * paso
+            ajuste["y"] += (teclas[pygame.K_DOWN] - teclas[pygame.K_UP]) * paso
+            if teclas[pygame.K_MINUS] or teclas[pygame.K_KP_MINUS]:
+                ajuste["escala"] -= 0.005
+            if teclas[pygame.K_EQUALS] or teclas[pygame.K_PLUS] or teclas[pygame.K_KP_PLUS]:
+                ajuste["escala"] += 0.005
+            ajuste["escala"] = round(max(0.4, min(1.6, ajuste["escala"])), 3)
+
+        if tam_fuentes() != tam_actual:
+            fuente, fuente_grande = crear_fuentes()
+            tam_actual = tam_fuentes()
+
+        SCREEN_ANCHO = u(540)
+        SCREEN_X = int(ajuste["x"]) - SCREEN_ANCHO // 2
+        SCREEN_Y = int(ajuste["y"])
+        Y_CONTENIDO = SCREEN_Y + u(104)
+
+        if fase != fase_prev:
+            fase_prev = fase
+            t_fase = 0.0
+            t_linea = 0.0
+            if REINICIAR_VIDEO_AL_CAMBIAR:
+                fondos[fondo_por_fase[fase]].reiniciar()
+
+        t_fase += dt
+        t_linea += dt
+        vis["conf"] += (confianza_civinet - vis["conf"]) * min(1.0, 6 * dt)
+        vis["falso"] += (alcance_falso - vis["falso"]) * min(1.0, 6 * dt)
+        ui["hover"] = False
+
+        mx, my = pygame.mouse.get_pos()
+        escala_x = display.get_width() / ANCHO
+        escala_y = display.get_height() / ALTO
+        mouse_pos = (int(mx / max(0.001, escala_x)), int(my / max(0.001, escala_y)))
+
+        fondo_actual = fondos[fondo_por_fase[fase]]
+        fondo_actual.actualizar(dt)
+        canvas.blit(fondo_actual.superficie(), (0, 0))
+        panel_cabecera()
+        cabecera()
+
+        capa.fill((0, 0, 0, 0))
+
+        # ---------------------------------------------------------------------
+        # MAQUINA DE ESTADOS Y CONTROL DE FASES DE JUEGO
+        # ---------------------------------------------------------------------
+
+        if fase == "intro":
+            quien, dialogo = intro_dialogos[indice_dialogo]
+            es_civitas = quien == "CIVITAS"
+            col_d = COL_CIVITAS if es_civitas else COL_AGUA
+            canvas.blit(velo_oscuro, (0, 0))
+
+            panel = pygame.Rect(u(95), ALTO - u(215), ANCHO - u(190), u(165))
+            marco_vn(canvas, panel, col_d, quien, "civitas" if es_civitas else "intro", relleno=(5, 12, 13, 238))
+            
+            texto_x = panel.x + u(146)
+            lineas_d = dividir_en_lineas(dialogo, fuente, panel.width - u(172))
+            total_d = sum(len(l) for l in lineas_d)
+            n_vis = int(t_linea * 60)
+            
+            escribir_tipeo = lambda l, f, c, x, y, p, n: [canvas.blit(f.render(line[:n], True, c), (x, y + i * p)) for i, line in enumerate(l)]
+            escribir_tipeo(lineas_d, fuente, COL_PAPEL, texto_x, panel.y + u(26), u(22), n_vis)
+            
+            completo = n_vis >= total_d
+            if click or tecla == 1 or avanzar:
+                if not completo:
+                    t_linea = 9999.0
+                else:
+                    indice_dialogo += 1
+                    t_linea = 0.0
+                    if indice_dialogo >= len(intro_dialogos):
+                        fase = "pregunta"
+                        toast_manager.show("TRANSMISIÓN EN DIRECTO INICIADA", 4.0, COLOR_ACCENT_BLUE)
+
+        elif fase == "civitas":
+            lineas_civ = lineas_de_civitas(preguntas_hechas)
+            etiqueta_c, dialogo = lineas_civ[indice_dialogo]
+            canvas.blit(velo_civitas, (0, 0))
+
+            panel = pygame.Rect(u(75), u(110), ANCHO - u(150), ALTO - u(205))
+            marco_vn(canvas, panel, (210, 55, 70), "CIVITAS // ACCESO NO AUTORIZADO", "civitas", relleno=(8, 8, 13, 242))
+            
+            lineas_d = dividir_en_lineas(dialogo, fuente_grande, panel.width - u(80))
+            total_d = sum(len(l) for l in lineas_d)
+            n_vis = int(t_linea * 40)
+            
+            yy = panel.y + u(80)
+            for l in lineas_d:
+                t_img = fuente_grande.render(l[:n_vis], True, COL_PAPEL)
+                canvas.blit(t_img, t_img.get_rect(centerx=panel.centerx, y=yy))
+                yy += u(30)
+                n_vis -= len(l)
+
+            completo = int(t_linea * 40) >= total_d
+            if click or tecla == 1 or avanzar:
+                if not completo:
+                    t_linea = 9999.0
+                else:
+                    indice_dialogo += 1
+                    t_linea = 0.0
+                    if indice_dialogo >= len(lineas_civ):
+                        indice_dialogo = 0
+                        fase = "civinet"
+                        toast_manager.show("ALERTA CRÍTICA CIVINET", 4.0, COL_CIVITAS)
+
+        elif fase == "pregunta":
+            visibles = ids_disponibles[:3]
+            i = lista_opciones(Y_CONTENIDO, [preguntas[id_p] for id_p in visibles], ROLES["pregunta"][1], mouse_pos, click, tecla)
+            if i is not None:
+                id_p = visibles[i]
+                if arbol_preguntas.get(id_p) is not None:
+                    id_pregunta_actual = id_p
+                    ids_disponibles.remove(id_p)
+                    arbol_preguntas.eliminar(id_p)
+                    fase = "respuesta"
+
+        elif fase == "respuesta":
+            y = bloque_cita(Y_CONTENIDO, "Periodista preguntó", preguntas[id_pregunta_actual], ROLES["pregunta"][1], "pregunta") + u(12)
+            opciones_nodo = arbol_respuestas.get(id_pregunta_actual)
+            opciones = respuestas[id_pregunta_actual] if opciones_nodo is not None else {}
+            claves = ["muy_buena", "regular", "mala"]
+
+            i = lista_opciones(y, [opciones.get(c, "") for c in claves], ROLES["respuesta"][1], mouse_pos, click, tecla)
+            if i is not None:
+                respuesta_elegida = claves[i]
+                fase = "ciudadano"
+
+        elif fase == "ciudadano":
+            y = bloque_cita(Y_CONTENIDO, "Presidente respondió", respuestas[id_pregunta_actual][respuesta_elegida], ROLES["respuesta"][1], "respuesta") + u(14)
+            claves_juicio = ["muy_buena", "regular", "mala"]
+            
+            # Botones de evaluación ciudadana
+            btn_w = (SCREEN_ANCHO - u(20)) // 3
+            i = None
+            for idx_b, lab_b in enumerate(["Muy buena", "Regular", "Mala"]):
+                b_rect = pygame.Rect(SCREEN_X + idx_b * (btn_w + u(10)), y, btn_w, u(60))
+                btn = Button(b_rect, lab_b, fuente, accent_color=ROLES["ciudadano"][1])
+                btn.hovered = b_rect.collidepoint(mouse_pos)
+                if btn.hovered:
+                    ui["hover"] = True
+                btn.update(dt)
+                btn.draw(capa)
+                if (btn.hovered and click) or tecla == idx_b + 1:
+                    i = idx_b
+
+            if i is not None:
+                if respuesta_elegida == claves_juicio[i]:
+                    puntos_ciudadano += 5
+                    confianza_civinet = min(100, confianza_civinet + 2)
+                    avisos["confianza"] = {"txt": "+2", "color": COL_AGUA, "t": 1.4}
+                else:
+                    confianza_civinet = max(0, confianza_civinet - 1)
+                    avisos["confianza"] = {"txt": "-1", "color": COL_MALO, "t": 1.4}
+
+                cambios_audiencia = [8, 2, -6]
+                espectadores = max(0, espectadores + cambios_audiencia[i])
+                puntos_influencer += [2, 0, -2][i]
+                avisos["espectadores"] = {"txt": f"{cambios_audiencia[i]:+d}", "color": COL_AGUA if cambios_audiencia[i] > 0 else COL_MALO, "t": 1.4}
+                
+                lanzar_reaccion(["👏", "🤔", "⚠️"][i], ["Respaldo amplio", "Duda ciudadana", "Cuestionamiento público"][i], [COL_AGUA, COL_AMBAR, COL_VIVO][i])
+                ultima_pregunta = preguntas[id_pregunta_actual]
+                ultima_respuesta = respuestas[id_pregunta_actual][respuesta_elegida]
+                fase = "siguiente"
+
+        elif fase == "civinet":
+            datos = INTERVENCIONES_CIVINET[preguntas_hechas]
+            y = bloque_cita(Y_CONTENIDO, "Pregunta original", ultima_pregunta, ROLES["pregunta"][1], "pregunta", n=99999) + u(6)
+            
+            col_w = (SCREEN_ANCHO - u(12)) // 2
+            r_izq = pygame.Rect(SCREEN_X, y, col_w, u(140))
+            r_der = pygame.Rect(SCREEN_X + col_w + u(12), y, col_w, u(140))
+            
+            # Panel transcripción
+            pygame.draw.rect(capa, (20, 24, 32, 220), r_izq, border_radius=8)
+            pygame.draw.rect(capa, COL_AGUA, r_izq, width=1, border_radius=8)
+            capa.blit(fuente.render("VERSIÓN REAL", True, COL_AGUA), (r_izq.x + 10, r_izq.y + 10))
+            
+            # Panel versión manipulada
+            pygame.draw.rect(capa, (32, 20, 24, 220), r_der, border_radius=8)
+            pygame.draw.rect(capa, COL_MALO, r_der, width=1, border_radius=8)
+            capa.blit(fuente.render("CIVINET (RUMOR)", True, COL_MALO), (r_der.x + 10, r_der.y + 10))
+
+            i = lista_opciones(r_izq.bottom + u(10), ["Comparar ambas versiones e iniciar la verificación"], ROLES["civinet"][1], mouse_pos, click, tecla)
+            if i is not None:
+                lanzar_reaccion("🔎", "Iniciando protocolo de contraste", COL_AGUA)
+                indice_verificacion = 0
+                fase = "verificacion"
+
+        elif fase == "verificacion":
+            rol = ROLES_VERIFICACION[indice_verificacion]
+            datos = INTERVENCIONES_CIVINET[preguntas_hechas]
+            y = bloque_cita(Y_CONTENIDO, "Publicación de CIVINET", datos["publicacion"], COL_MALO, "civinet") + u(8)
+            y = medidores(y)
+            
+            opciones_accion = ACCIONES_VERIFICACION[rol]
+            i = lista_opciones(y, [opcion[0] for opcion in opciones_accion], ROLES[rol][1], mouse_pos, click, tecla)
+            if i is not None:
+                _, delta_conf, delta_falso, delta_esp, delta_inf, delta_ciu = opciones_accion[i]
+                confianza_civinet = max(0, min(100, confianza_civinet + delta_conf))
+                alcance_falso = max(0, alcance_falso + delta_falso)
+                espectadores = max(0, espectadores + delta_esp)
+                puntos_influencer += delta_inf
+                puntos_ciudadano += delta_ciu
+                
+                avisos["confianza"] = {"txt": f"{delta_conf:+d}", "color": COL_AGUA if delta_conf > 0 else COL_MALO, "t": 1.4}
+                particle_system.emit(mouse_pos[0], mouse_pos[1], count=20, color=COL_AGUA if delta_conf > 0 else COL_MALO)
+                
+                indice_verificacion = 0
+                fase = "pregunta" if ids_disponibles else "final"
+
+        elif fase == "final":
+            y = Y_CONTENIDO + u(10)
+            res_txt = "La verdad prevalece en Ciudad Nova" if confianza_civinet >= 60 else "La desinformación ha tomado el control"
+            txt_img = fuente_grande.render(res_txt, True, COL_AGUA if confianza_civinet >= 60 else COL_MALO)
+            capa.blit(txt_img, txt_img.get_rect(centerx=SCREEN_X + SCREEN_ANCHO // 2, y=y))
+            
+            i = lista_opciones(y + u(60), ["Finalizar Emisión"], COL_AMBAR, mouse_pos, click, tecla)
+            if i is not None:
+                running = False
+
+        # Actualización de componentes globales
+        particle_system.update(dt)
+        particle_system.draw(canvas)
+
+        toast_manager.update(dt)
+        toast_manager.draw(canvas, fuente, ANCHO, u)
+
+        aparicion = 1 - (1 - min(1.0, t_fase / 0.22)) ** 3
+        capa.set_alpha(int(255 * aparicion))
+        canvas.blit(capa, (0, int((1 - aparicion) * u(14))))
+
+        dibujar_reaccion()
+        if fase not in ("intro", "civitas"):
+            dibujar_chat_en_vivo()
+
+        if fase == "siguiente":
+            preguntas_hechas += 1
+            id_pregunta_actual = None
+            respuesta_elegida = None
+            if preguntas_hechas in INTERVENCIONES_CIVINET:
+                indice_dialogo = 0
+                fase = "civitas"
+            elif not ids_disponibles:
+                fase = "final"
+            else:
+                fase = "pregunta"
+
+        if ui["hover"] != cursor_mano:
+            cursor_mano = ui["hover"]
+            try:
+                pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND if cursor_mano else pygame.SYSTEM_CURSOR_ARROW)
+            except Exception:
+                pass
+
+        # Aplicar shader CRT al lienzo antes del escalado final
+        aplicar_efectos_crt(canvas)
+
+        lienzo_escalado = pygame.transform.smoothscale(canvas, display.get_size())
+        display.blit(lienzo_escalado, (0, 0))
+        pygame.display.update()
+
+    for f in fondos.values():
+        f.cerrar()
+    return puntos_influencer, puntos_ciudadano
+
+if __name__ == "__main__":
+    Entrevista()

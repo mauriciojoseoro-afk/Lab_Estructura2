@@ -66,11 +66,13 @@ LUGARES = {
     "Central de Datos":      {"punto": (0.780, 0.646), "zona": (0.780, 0.700, 0.150, 0.200)},    }
 
 # Camino de cada personaje: lugar del Evento 1, Evento 2, Evento 3...
+# Tres misiones compartidas: minas -> entrevista -> oficina.
+# Cada rol conserva su identificador para el mapa y para la oficina.
 RUTAS = {
-        "LÍDER":         ["El Cruce del Pozo", "El Campo Sembrado", "El Almacén del Este", "Central de Datos"],
-    "SOBREVIVIENTE": ["Barrio Las Acacias", "El Campo Sembrado", "El Almacén del Este", "Central de Datos"],
-    "CRONISTA":      ["El Mercado Cubierto", "El Campo Sembrado", "El Almacén del Este", "Central de Datos"],
-    "VOZ":           ["La Torre de la Antena", "El Campo Sembrado", "El Almacén del Este", "Central de Datos"],
+    "LÍDER": ["El Campo Sembrado", "El Almacén del Este", "Central de Datos"],
+    "SOBREVIVIENTE": ["El Campo Sembrado", "El Almacén del Este", "Central de Datos"],
+    "CRONISTA": ["El Campo Sembrado", "El Almacén del Este", "Central de Datos"],
+    "VOZ": ["El Campo Sembrado", "El Almacén del Este", "Central de Datos"],
 }
 
 
