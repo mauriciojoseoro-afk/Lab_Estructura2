@@ -13,6 +13,9 @@ Todos llevan la clave "tipo". Ejemplos:
     servidor -> cliente  : {"tipo": "CAMPO", "semilla": 1234, "pisadas": {"37": "Ana"}}
     cliente  -> servidor : {"tipo": "PISE", "indice": 37}
     servidor -> todos    : {"tipo": "MINA", "indice": 37, "por": "Ana"}
+    cliente  -> servidor : {"tipo": "TERMINE", "indicadores": {...}, "puntaje": 85}
+    servidor -> todos    : {"tipo": "ESPERA", "listos": ["Ana"], "faltan": ["Beto"]}
+    servidor -> todos    : {"tipo": "FINAL", "promedio": {...}, "puntaje": 72, "tabla": [{nombre, rol, indicadores, puntaje}]}
 """
 import json
 from pathlib import Path

@@ -7,6 +7,8 @@ Mantiene y sincroniza el estado compartido:
   - jugadores conectados y que rol usa cada uno (un rol solo puede tenerlo una persona)
   - progreso e indicadores de cada jugador (para el panel del grupo)
   - el campo minado compartido: la misma semilla para todos y las minas que ya se pisaron
+  - el FINAL DEL GRUPO: espera a que todos terminen, promedia sus indicadores y puntajes
+    y envia a todos la misma tabla y el mismo puntaje del grupo
 Cuando un jugador se desconecta, su rol queda libre.
 """
 import random
@@ -55,6 +57,34 @@ class Servidor:
     def avisar_jugadores(self):
         self.difundir({"tipo": "JUGADORES", "lista": self.lista_jugadores()})
 
+    # ---------- final del grupo ----------
+    def participantes(self):
+        """Jugadores que estan jugando (tienen rol)."""
+        return [d for d in self.jugadores.values() if d["rol"] is not None]
+
+    def revisar_final(self):
+        """Avisa quien falta; si ya terminaron todos, calcula el promedio y lo envia."""
+        jugando = self.participantes()
+        listos = [d["nombre"] for d in jugando if d["termino"]]
+        faltan = [d["nombre"] for d in jugando if not d["termino"]]
+        if not listos:
+            return
+        self.difundir({"tipo": "ESPERA", "listos": listos, "faltan": faltan})
+        if faltan:
+            return
+        terminados = [d for d in jugando if d["termino"]]
+        claves = ("Confianza", "Caos", "Cohesión")
+        promedio = {k: round(sum(d["indicadores"].get(k, 0) for d in terminados) / len(terminados), 1)
+                    for k in claves}
+        puntaje = round(sum(d["puntaje"] for d in terminados) / len(terminados))
+        tabla = sorted(({"nombre": d["nombre"], "rol": d["rol"], "indicadores": d["indicadores"],
+                         "puntaje": d["puntaje"]} for d in terminados),
+                       key=lambda fila: fila["puntaje"], reverse=True)
+        self.difundir({"tipo": "FINAL", "promedio": promedio, "puntaje": puntaje, "tabla": tabla})
+        print(f"    FINAL DEL GRUPO: puntaje {puntaje}  promedio {promedio}")
+        for d in terminados:                 # listo para otra partida
+            d["termino"] = False
+
     def soltar_rol(self, jid):
         rol = self.jugadores[jid]["rol"]
         if rol is not None:
@@ -68,7 +98,8 @@ class Servidor:
             jid = self.siguiente_id
             self.siguiente_id += 1
             self.jugadores[jid] = {"nombre": f"Jugador {jid}", "rol": None, "sock": sock,
-                                   "progreso": "Eligiendo personaje", "indicadores": None, "decision": None}
+                                   "progreso": "Eligiendo personaje", "indicadores": None, "decision": None,
+                                   "termino": False, "puntaje": None}
         print(f"[+] Conectado jugador {jid} desde {direccion[0]}")
         try:
             for msg in lineas(sock):
@@ -107,6 +138,18 @@ class Servidor:
                     elif tipo == "ROLES?":
                         enviar(sock, {"tipo": "ROLES", "ocupados": self.ocupados()})
 
+                    elif tipo == "TERMINE":
+                        # Termino la partida: guarda sus indicadores y puntaje y espera a los demas
+                        datos = self.jugadores[jid]
+                        if isinstance(msg.get("indicadores"), dict) and isinstance(msg.get("puntaje"), (int, float)):
+                            datos["indicadores"] = msg["indicadores"]
+                            datos["puntaje"] = msg["puntaje"]
+                            datos["termino"] = True
+                            datos["progreso"] = "Esperando al grupo"
+                            print(f"    {datos['nombre']} termino con puntaje {datos['puntaje']}")
+                            self.avisar_jugadores()
+                            self.revisar_final()
+
                     elif tipo == "RESULTADO":
                         # Un jugador termino un evento: se guarda y se reparte a todos
                         datos = self.jugadores[jid]
@@ -134,6 +177,7 @@ class Servidor:
                 rol = self.soltar_rol(jid)
                 del self.jugadores[jid]
                 self.avisar_roles()
+                self.revisar_final()             # si los demas lo estaban esperando, ya no
             sock.close()
             print(f"[-] {nombre} se desconecto" + (f" (libera {rol})" if rol else ""))
 
