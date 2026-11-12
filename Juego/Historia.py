@@ -4,6 +4,7 @@ import pygame
 import cv2
 from pathlib import Path
 import Metodos
+import random
 from Intz_Personaje import SeleccionarPJ
 
 ANCHO, ALTO, FPS = 900, 600, 60
@@ -380,6 +381,57 @@ def reproducir_escena_inicial(pantalla, canvas, reloj):
         video_intro.release()
 
 
+
+
+
+_MARCO_CACHE = {}
+
+def crear_carcasa(w, h):
+    p = 3
+    cw, ch = w // p, h // p
+    c = pygame.Surface((cw, ch), pygame.SRCALPHA)
+    pygame.draw.rect(c, (30, 26, 20), (0, 0, cw, ch), border_radius=12)
+    for y in range(1, ch - 1):
+        t = y / ch
+        col = (int(214 - 60 * t), int(203 - 60 * t), int(165 - 55 * t))
+        pygame.draw.line(c, col, (2, y), (cw - 3, y))
+    pygame.draw.rect(c, (30, 26, 20), (0, 0, cw, ch), 2, border_radius=12)
+    pygame.draw.line(c, (236, 228, 196), (10, 3), (cw - 10, 3))
+    random.seed(7)
+    for _ in range(500):
+        c.set_at((random.randint(4, cw - 5), random.randint(4, ch - 5)), (120, 108, 78))
+    bx, by, bw, bh = 12, 10, cw - 24, ch - 34
+    pygame.draw.rect(c, (118, 108, 80), (bx - 3, by - 3, bw + 6, bh + 6), border_radius=8)
+    pygame.draw.rect(c, (70, 62, 46), (bx - 3, by - 3, bw + 6, bh + 6), 1, border_radius=8)
+    pygame.draw.rect(c, (10, 12, 14), (bx, by, bw, bh), border_radius=6)
+    pygame.draw.rect(c, (70, 230, 100), (cw - 34, ch - 14, 3, 3))
+    pygame.draw.rect(c, (70, 230, 100), (cw - 26, ch - 14, 3, 3))
+    return pygame.transform.scale(c, (cw * p, ch * p)), (bx * p, by * p, bw * p, bh * p)
+
+def poner_marco_pc(canvas):
+    w, h = canvas.get_size()
+    if (w, h) not in _MARCO_CACHE:
+        carcasa, (bx, by, bw, bh) = crear_carcasa(w, h)
+        sx, sy, sw, sh = bx + 12, by + 10, bw - 24, bh - 20
+        efecto = pygame.Surface((sw, sh), pygame.SRCALPHA)
+        for y in range(0, sh, 3):
+            pygame.draw.line(efecto, (0, 0, 0, 50), (0, y), (sw, y))
+        for i in range(22):
+            pygame.draw.rect(efecto, (0, 0, 0, 12), (i, i, sw - 2 * i, sh - 2 * i), 2, border_radius=20)
+        pygame.draw.ellipse(efecto, (255, 255, 255, 12), (-sw * 0.1, -sh * 0.5, sw * 0.8, sh * 0.8))
+        mascara = pygame.Surface((sw, sh), pygame.SRCALPHA)
+        pygame.draw.rect(mascara, (255, 255, 255, 255), (0, 0, sw, sh), border_radius=18)
+        _MARCO_CACHE[(w, h)] = (carcasa, efecto, mascara, (sx, sy, sw, sh))
+    carcasa, efecto, mascara, (sx, sy, sw, sh) = _MARCO_CACHE[(w, h)]
+    marco = pygame.Surface((w, h))
+    marco.fill((8, 8, 9))
+    marco.blit(carcasa, (0, 0))
+    pantalla = pygame.transform.smoothscale(canvas, (sw, sh)).convert_alpha()
+    pantalla.blit(efecto, (0, 0))
+    pantalla.blit(mascara, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
+    marco.blit(pantalla, (sx, sy))
+    return marco
+
 def Historia():
     pygame.init()
     pantalla, canvas = Metodos.crear_ventana(ANCHO, ALTO, "CRÓNICA - Historia")
@@ -458,7 +510,7 @@ def Historia():
             interfaz(canvas, recursos, fuente, fuente_peq, fuente_titulo, indice,
                      pagina_actual, len(paginas), visible,
                      int(caracteres) >= len(texto_actual), tiempo, entrada)
-            Metodos.mostrar_canvas(pantalla, canvas)
+            Metodos.mostrar_canvas(pantalla, poner_marco_pc(canvas))
             pygame.display.flip()
     finally:
         if video is not None: video.release()
