@@ -1,3 +1,4 @@
+import Accesibilidad
 
 
 import pygame
@@ -25,7 +26,7 @@ def boton_inv(display, rect, mouse_pos, click):
     return rect.collidepoint(mouse_pos) and click
 
 def crear_ventana(ancho_logico, alto_logico, titulo="My Game"):
-    display = pygame.display.set_mode((ancho_logico, alto_logico), pygame.RESIZABLE)
+    display = Accesibilidad.window()
     pygame.display.set_caption(titulo)
     canvas = pygame.Surface((ancho_logico, alto_logico))
     return display, canvas
@@ -78,7 +79,7 @@ def mostrar_canvas(display, canvas):
     if MAPA is not None and not MAPA_BLOQUEADO:
         _icono_mapa(display, canvas, escala, offset_x, offset_y)
 
-    canvas_escalado = pygame.transform.smoothscale(canvas, (nuevo_ancho, nuevo_alto))
+    canvas_escalado = pygame.transform.smoothscale(Accesibilidad.filter_surface(canvas), (nuevo_ancho, nuevo_alto))
 
     display.fill((0, 0, 0))
     display.blit(canvas_escalado, (offset_x, offset_y))

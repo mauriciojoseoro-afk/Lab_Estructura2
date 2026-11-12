@@ -81,6 +81,8 @@ def jugar_secuencia(rol):
         display,canvas=Metodos.crear_ventana(900,675,'The Leader')
         Mapa.mostrar_mapa(display,mapa,terminar=True)
         # 2: entrevista. El retorno son dos puntuaciones, no indicadores del pozo.
+        # Misma escena de apertura que ve el Presidente, para que todos la vean antes de la entrevista.
+        Evento3_Oficina.reproducir_escena(Evento3_Oficina.ESCENA_ENTREVISTA)
         resultado_entrevista = Periodista_Presidente.Entrevista()
         cliente.reportar("Terminó la entrevista")
         display,canvas=Metodos.crear_ventana(900,675,'The Leader')

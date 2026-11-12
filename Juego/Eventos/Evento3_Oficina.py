@@ -1,3 +1,4 @@
+import Accesibilidad
 import math
 import random
 import sys
@@ -339,7 +340,7 @@ class Ventana:
                 pygame.quit()
                 sys.exit()
             if e.type == pygame.VIDEORESIZE:
-                pygame.display.set_mode((e.w, e.h), pygame.RESIZABLE)
+                Accesibilidad.window((e.w, e.h))
             lista.append(e)
         return lista
 
@@ -1826,7 +1827,7 @@ if __name__ == "__main__":
     opcion = input("Final (1, 2, 3) o Enter para jugar todo: ").strip()
 
     pygame.init()
-    pygame.display.set_mode((1280, 720), pygame.RESIZABLE)
+    Accesibilidad.window()
     pygame.display.set_caption("The Leader - La oficina")
     from Eventos import Evento1_Pozo
     if opcion == "4":
