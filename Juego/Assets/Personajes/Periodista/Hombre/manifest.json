@@ -1,0 +1,19 @@
+{
+  "personaje": "periodista",
+  "genero": "hombre",
+  "tamano_original": [
+    300,
+    400
+  ],
+  "animaciones": {
+    "abajo": 8,
+    "arriba": 8,
+    "derecha": 8,
+    "izquierda": 8,
+    "quieto_abajo": 1,
+    "quieto_arriba": 1,
+    "quieto_derecha": 1,
+    "quieto_izquierda": 1
+  },
+  "fps_sugeridos": 8
+}

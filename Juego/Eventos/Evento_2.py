@@ -111,7 +111,11 @@ def cargar_frames(carpeta):
     originales = []
     idx = 1
     while True:
-        archivo = carpeta / f"frame_{idx}.png"
+        archivo = carpeta / f"frame_{idx:02d}.png"
+        if not archivo.exists():
+            archivo = carpeta / f"frame_{idx:02d}.PNG"
+        if not archivo.exists():
+            archivo = carpeta / f"frame_{idx}.png"
         if not archivo.exists():
             archivo = carpeta / f"frame_{idx}.PNG"
         if not archivo.exists():
@@ -153,13 +157,18 @@ def cargar_animaciones():
     for pareja in PAREJAS:
         for nombre, color, teclas in pareja:
             ANIMACIONES[nombre] = {}
-            ruta_personaje = ruta_base / nombre
+            ruta_personaje = ruta_base / nombre / "Hombre" if nombre == "Periodista" else ruta_base / nombre
             if not ruta_personaje.exists():
+                if nombre == "Periodista":
+                    print(f"[Evento_2] No se encuentra el periodista hombre en: {ruta_personaje}")
                 continue
 
             for estado in ESTADOS_MOVIMIENTO + ESTADOS_QUIETO:
                 ruta_estado = ruta_personaje / estado
                 ANIMACIONES[nombre][estado] = cargar_frames(ruta_estado) if ruta_estado.exists() else []
+            if nombre == "Periodista":
+                cantidad = sum(len(v) for v in ANIMACIONES[nombre].values())
+                print(f"[Evento_2] Periodista hombre: {cantidad} fotogramas cargados")
 
             # si falta una animación de movimiento, usa otra de movimiento que sí exista
             respaldo = next((ANIMACIONES[nombre][e] for e in ESTADOS_MOVIMIENTO if ANIMACIONES[nombre][e]), [])
