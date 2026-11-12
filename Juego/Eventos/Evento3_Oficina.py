@@ -466,11 +466,29 @@ TUTORIAL = [
 
 # FICHAS DEL PERSONAL DE CIVITAS (el giro: los 4 personajes estuvieron metidos)
 FICHAS = [
-    ("LÍDER", "Ingeniero/a principal", "Diseñó el algoritmo que decide a quién le llega cada mensaje."),
-    ("PERIODISTA", "Periodista asociado/a", "Publicó la primera alerta de Civitas sin verificarla."),
-    ("INFLUENCER", "Creador/a de contenido", "Recibía pagos por repetir los mensajes de Civitas."),
-    ("CIUDADANO", "Usuario de prueba #001", "Compartió cada mensaje que recibió, sin leerlo."),
+    ("LÍDER", "Analista de moderación · Nivel 3",
+     "Revisaba los mensajes que los usuarios reportaban. Marcó el primer rumor como FALSO 47 minutos "
+     "antes del colapso. Su alerta fue archivada sin leer. Después de esa noche, borró su nombre del "
+     "sistema y nunca se lo contó a nadie."),
+    ("PERIODISTA", "Corresponsal externo · Acceso temporal",
+     "Llegó a Nova para investigar cómo Civitas manejaba la información. Tenía la prueba que "
+     "desmentía el rumor. Decidió esperar una hora más para confirmarla. En esa hora, la ciudad cayó."),
+    ("INFLUENCER", "Socia de contenido · Alcance prioritario",
+     "La cuenta más seguida de Nova. Civitas le enviaba titulares antes que a nadie. Publicó el rumor "
+     "a las 19:43 sin verificarlo. Fue la primera chispa. Ella todavía cree que solo fue una más."),
+    ("CIUDADANO", "Usuario de prueba #001 · Perfil de alta difusión",
+     "Elegido por Civitas para medir qué tan rápido se esparce un mensaje. Compartió el rumor en "
+     "segundos, sin leerlo completo. Sus contactos hicieron lo mismo. Huyó esa noche y no ha vuelto."),
 ]
+
+
+# DATOS EXTRA DE CADA EXPEDIENTE: nombre, código, edad, área, estado
+DATOS_FICHA = {
+    "LÍDER": ("HÉCTOR", "CVT-0317", "32", "Moderación de reportes", "Baja voluntaria · Nombre borrado"),
+    "PERIODISTA": ("OSAMU KUGA", "EXT-1142", "27", "Prensa acreditada", "Acceso revocado"),
+    "INFLUENCER": ("JENNY", "SOC-0009", "24", "Difusión prioritaria", "Contrato activo"),
+    "CIUDADANO": ("ESTELLA", "TST-0001", "28", "Pruebas de propagación", "Desaparecida"),
+}
 
 # EL EVENTO
 class Oficina:
@@ -1410,19 +1428,23 @@ class Oficina:
         return self._fotos[rol]
 
     def dibujar_personal(self, c, marco, ta, mouse, eventos):
-        """Las 4 fichas. Devuelve True cuando el jugador hace clic en la suya."""
-        escribir(c, "PERSONAL_CIVITAS · ACCESO RESTRINGIDO", fuente("mono_negrita", 30), CRT,
-                 (marco.x + 40, marco.y + 24), sombra=False)
-        escribir(c, "Haz clic en una ficha para abrirla.", fuente("mono", 18), CRT_OSCURO,
-                 (marco.x + 40, marco.y + 64), sombra=False)
+        """Las 4 fichas. Al hacer clic se abre el expediente. Devuelve True al terminar el propio."""
         if not hasattr(self, "fichas_abiertas"):
             self.fichas_abiertas = set()
+            self.ficha_vista = None
+        if ta < 0.1:
+            self.ficha_vista = None
+        if self.ficha_vista is not None:
+            return self.dibujar_expediente(c, marco, mouse, eventos)
+        escribir(c, "PERSONAL_CIVITAS · ACCESO RESTRINGIDO", fuente("mono_negrita", 30), CRT,
+                 (marco.x + 40, marco.y + 24), sombra=False)
+        escribir(c, "Haz clic en una ficha para abrir el expediente.", fuente("mono", 18), CRT_OSCURO,
+                 (marco.x + 40, marco.y + 64), sombra=False)
         ancho = (marco.w - 80) // 4
         for i, (rol, puesto, desc) in enumerate(FICHAS):
             if ta < 0.3 + i * 0.4:
                 continue
             r = pygame.Rect(marco.x + 40 + i * ancho, marco.y + 100, ancho - 20, marco.h - 210)
-            abierta = rol in self.fichas_abiertas
             encima = r.collidepoint(mouse)
             pygame.draw.rect(c, (40, 26, 10) if encima else (30, 20, 10), r, border_radius=8)
             pygame.draw.rect(c, CRT if encima else CRT_OSCURO, r, 2, border_radius=8)
@@ -1430,23 +1452,80 @@ class Oficina:
             img = self.foto_ficha(rol, foto.size)
             if img is not None:
                 c.blit(img, foto)
-            else:
-                pygame.draw.rect(c, (60, 45, 28), foto, border_radius=6)
-                pygame.draw.circle(c, (25, 18, 10), (foto.centerx, foto.y + 70), 34)
-                pygame.draw.ellipse(c, (25, 18, 10), (foto.centerx - 60, foto.y + 110, 120, 90))
-                pygame.draw.rect(c, (30, 20, 10), (foto.x, foto.bottom, foto.w, 24))
             pygame.draw.rect(c, CRT_OSCURO, foto, 2)
-            escribir(c, f"EMPLEADO #{i + 1:03d}", fuente("mono_negrita", 18), CRT, (r.x + 20, r.y + 226), sombra=False)
-            if abierta or encima:
-                parrafo(c, puesto.upper(), fuente("mono_negrita", 18), CRT, r.x + 20, r.y + 258, r.w - 40)
-                parrafo(c, desc, fuente("mono", 17), PAPEL, r.x + 20, r.y + 314, r.w - 40)
-            else:
-                escribir(c, "[ clic para abrir ]", fuente("mono", 17), CRT_OSCURO, (r.x + 20, r.y + 262), sombra=False)
+            nombre, codigo = DATOS_FICHA[rol][0], DATOS_FICHA[rol][1]
+            escribir(c, nombre, fuente("mono_negrita", 18), CRT, (r.x + 20, r.y + 226), sombra=False)
+            escribir(c, "EXP. " + codigo, fuente("mono", 15), CRT_OSCURO, (r.x + 20, r.y + 254), sombra=False)
+            parrafo(c, puesto.upper(), fuente("mono", 14), PAPEL, r.x + 20, r.y + 282, r.w - 40)
+            aviso = "[ REVISADO ]" if rol in self.fichas_abiertas else "[ abrir expediente ]"
+            escribir(c, aviso, fuente("mono", 14), CRT if encima else CRT_OSCURO,
+                     (r.x + 20, r.bottom - 34), sombra=False)
             if encima and clic(eventos):
                 self.fichas_abiertas.add(rol)
+                self.ficha_vista = rol
+                self.inicio_ficha = pygame.time.get_ticks()
                 sonar(self.sonidos, "tecla")
-                if rol == self.personaje:
-                    return True
+        return False
+
+    def dibujar_expediente(self, c, marco, mouse, eventos):
+        """El expediente completo: foto a la izquierda, datos a la derecha."""
+        rol = self.ficha_vista
+        puesto, desc = next((p, d) for r, p, d in FICHAS if r == rol)
+        nombre, codigo, edad, area, estado = DATOS_FICHA[rol]
+        seg = (pygame.time.get_ticks() - self.inicio_ficha) / 1000
+        escribir(c, "EXPEDIENTE " + codigo + " · CONFIDENCIAL", fuente("mono_negrita", 28), CRT,
+                 (marco.x + 40, marco.y + 24), sombra=False)
+        # FOTO GRANDE
+        foto = pygame.Rect(marco.x + 40, marco.y + 90, int(marco.w * 0.32), int(marco.h * 0.62))
+        if not hasattr(self, "_fotos_grandes"):
+            self._fotos_grandes = {}
+        if rol not in self._fotos_grandes:
+            archivo = {"LÍDER": "lider", "PERIODISTA": "periodista", "INFLUENCER": "influencer",
+                       "CIUDADANO": "ciudadano"}[rol]
+            try:
+                img = pygame.image.load(str(RUTA_INTERFAZ / f"ficha_{archivo}.png")).convert()
+                esc = min(foto.w / img.get_width(), foto.h / img.get_height())
+                self._fotos_grandes[rol] = pygame.transform.smoothscale(
+                    img, (int(img.get_width() * esc), int(img.get_height() * esc)))
+            except (FileNotFoundError, pygame.error):
+                self._fotos_grandes[rol] = None
+        pygame.draw.rect(c, NEGRO, foto)
+        img = self._fotos_grandes[rol]
+        if img is not None:
+            c.blit(img, img.get_rect(center=foto.center))
+        pygame.draw.rect(c, CRT_OSCURO, foto, 2)
+        # SELLO
+        if seg > 0.4:
+            sello = fuente("mono_negrita", 26).render("CONFIDENCIAL", True, ROJO)
+            sello = pygame.transform.rotate(sello, 14)
+            c.blit(sello, sello.get_rect(center=(foto.centerx, foto.bottom - 50)))
+        # DATOS
+        x = foto.right + 40
+        y = marco.y + 90
+        filas = [("NOMBRE", nombre), ("EDAD", edad + " años"), ("CARGO", puesto),
+                 ("ÁREA", area), ("ESTADO", estado)]
+        for k, (campo, valor) in enumerate(filas):
+            if seg < 0.3 + k * 0.25:
+                break
+            escribir(c, campo, fuente("mono", 16), CRT_OSCURO, (x, y), sombra=False)
+            escribir(c, valor, fuente("mono_negrita", 18), ROJO if campo == "ESTADO" else CRT,
+                     (x + 120, y), sombra=False)
+            y += 34
+        if seg > 1.7:
+            pygame.draw.line(c, CRT_OSCURO, (x, y + 6), (marco.right - 40, y + 6), 1)
+            escribir(c, "OBSERVACIONES", fuente("mono_negrita", 16), CRT, (x, y + 20), sombra=False)
+            fin = parrafo(c, desc, fuente("mono", 17), PAPEL, x, y + 50, marco.right - 40 - x,
+                          letras=int((seg - 1.9) * 70))
+            if rol == self.personaje and seg > 1.9 + len(desc) / 70 + 0.5:
+                escribir(c, "Este expediente es el tuyo.", fuente("mono_negrita", 20), ROJO,
+                         (x, fin + 20), sombra=False)
+        # BOTÓN
+        propio = rol == self.personaje
+        b = pygame.Rect(marco.right - 260, marco.bottom - 76, 220, 50)
+        if boton(c, b, "Continuar" if propio else "< Fichas", mouse) and clic(eventos):
+            if propio:
+                return True
+            self.ficha_vista = None
         return False
 
     def ultimo_alcanzado(self):
@@ -1671,7 +1750,11 @@ if __name__ == "__main__":
     pygame.display.set_mode((1280, 720), pygame.RESIZABLE)
     pygame.display.set_caption("The Leader - La oficina")
     from Eventos import Evento1_Pozo
-
+    if opcion == "4":
+        o = Oficina(Evento1_Pozo.Indicadores(), "VERIFICAR_FALSO", "LÍDER")
+        o.computador_abierto = True
+        o.pantalla_computador()
+        raise SystemExit
     if opcion in ("1", "2", "3"):
         valores = {"1": (20, 80, 20), "2": (50, 50, 50), "3": (80, 20, 80)}[opcion]
         indicadores = Evento1_Pozo.Indicadores(*valores)   # confianza, caos, cohesión
