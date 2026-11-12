@@ -1,0 +1,21 @@
+PERIODISTA HOMBRE — ASSETS ORDENADOS
+
+COPIA la carpeta Assets del ZIP dentro de Juego/ y fusiona las carpetas.
+Ruta final: Juego/Assets/Personajes/Periodista/Hombre/
+
+Direcciones: abajo, arriba, derecha, izquierda (8 frames cada una).
+Reposo: quieto_abajo, quieto_arriba, quieto_derecha, quieto_izquierda (1 frame cada una).
+Total: 36 PNG. Orden: frame_01.png ... frame_08.png.
+Se preservaron los PNG originales (300x400, RGBA), sin recortes ni deformaciones.
+No se incluyeron las poses de mujer, hojas de sprites de referencia ni logos de facciones.
+
+USO (después de pygame.init() y de crear la pantalla):
+from pathlib import Path
+from cargar_periodista_hombre import cargar_periodista_hombre, frame_actual
+animaciones = cargar_periodista_hombre(Path(__file__).resolve().parent / "Assets", tamano=(75,100))
+# En el bucle del juego, con tiempo_segundos acumulado:
+imagen = frame_actual(animaciones, "derecha", tiempo_segundos, fps=8)
+canvas.blit(imagen, (x, y))
+
+El cargador es independiente: no modifica Evento_2.py ni otros módulos.
+El código Python fue compilado para verificar sintaxis.
