@@ -24,6 +24,7 @@ class Conexion:
         self.id = None
         self.rol = None                      # rol que el servidor nos confirmo
         self.ocupados = {}                   # {rol: nombre} (lo actualiza el hilo)
+        self.jugadores = []                  # [{nombre, rol, progreso, indicadores, decision}]
         self.conectado = True
         self._respuestas = queue.Queue()     # respuestas a ELEGIR
         self._candado = threading.Lock()
@@ -47,6 +48,8 @@ class Conexion:
                 self.ocupados = msg.get("ocupados", {})
             elif tipo in ("ELEGIDO", "OCUPADO"):
                 self._respuestas.put(msg)
+            elif tipo == "JUGADORES":
+                self.jugadores = msg.get("lista", [])
         self.conectado = False
         self._respuestas.put({"tipo": "OCUPADO", "por": "se perdio la conexion"})
 
@@ -70,6 +73,15 @@ class Conexion:
             self.rol = rol
             return True, None
         return False, r.get("por")
+
+    def conectados(self):
+        """Cuantos jugadores hay en la partida (contandome)."""
+        return max(1, len(self.jugadores))
+
+    def enviar_resultado(self, evento, indicadores=None, decision=None):
+        """Avisa al grupo que termine un evento (y con que indicadores)."""
+        self._enviar({"tipo": "RESULTADO", "evento": evento,
+                      "indicadores": indicadores, "decision": decision})
 
     def soltar(self):
         """Libera nuestro rol (por ejemplo, al volver a la seleccion)."""
@@ -102,3 +114,12 @@ def conectar(nombre=None, espera=1.0):
 def actual():
     """La conexion activa (o None en modo un jugador)."""
     return _conexion if _conexion is not None and _conexion.conectado else None
+
+
+def reportar(evento, indicadores=None, decision=None):
+    """Atajo para el juego: envia el resultado si hay servidor; si no, no hace nada."""
+    red = actual()
+    if red is not None:
+        if indicadores is not None and hasattr(indicadores, "copia"):
+            indicadores = indicadores.copia()
+        red.enviar_resultado(evento, indicadores, decision)

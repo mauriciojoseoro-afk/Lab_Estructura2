@@ -5,6 +5,7 @@ import pygame
 import Metodos
 from Eventos import Mapa, Evento_2, Periodista_Presidente, Evento3_Oficina, Evento1_Pozo
 from Eventos.Evento1_Pozo import Indicadores
+from Red import cliente      # multijugador: avisa al grupo al terminar cada evento
 
 BASE = Path(__file__).resolve().parent.parent
 INTRO_MINAS = BASE / "Assets" / "Videos" / "minas_intro.mp4"
@@ -63,21 +64,25 @@ def jugar_secuencia(rol):
     Metodos.MAPA = mapa
     try:
         # 1: primer lugar visible, sin marcar misión terminada.
+        cliente.reportar("Empezando", Indicadores())
         Mapa.mostrar_mapa(display,mapa,terminar=False)
         # 1b: si el personaje tiene escena propia en el Evento 1 (hoy: SOBREVIVIENTE = el mercado),
         # se juega aquí y sus indicadores/decisión pasan a la oficina.
         resultado_evento1 = None
         if mapa_rol in Evento1_Pozo.GUIONES and mapa_rol != "LÍDER":
             resultado_evento1 = Evento1_Pozo.jugar(display, canvas, personaje=mapa_rol)
+            cliente.reportar("Terminó el Evento 1", resultado_evento1["indicadores"], resultado_evento1["resultado"])
             display,canvas=Metodos.crear_ventana(900,675,'The Leader')
             Mapa.mostrar_mapa(display,mapa,terminar=True)
         cinematica_minas()
-        resultado_minas = Evento_2.Evento_2()
+        resultado_minas = Evento_2.Evento_2(rol)
+        cliente.reportar("Cruzó el campo minado")
         # Evento_2 modifica el display, por eso recreamos la ventana.
         display,canvas=Metodos.crear_ventana(900,675,'The Leader')
         Mapa.mostrar_mapa(display,mapa,terminar=True)
         # 2: entrevista. El retorno son dos puntuaciones, no indicadores del pozo.
         resultado_entrevista = Periodista_Presidente.Entrevista()
+        cliente.reportar("Terminó la entrevista")
         display,canvas=Metodos.crear_ventana(900,675,'The Leader')
         Mapa.mostrar_mapa(display,mapa,terminar=True)
         # 3: oficina. El evento 1 del pozo ya no se juega, por tanto
@@ -91,6 +96,7 @@ def jugar_secuencia(rol):
             decision = resultado_evento1["resultado"]
         resultado_oficina = Evento3_Oficina.jugar(display,canvas,indicadores,
                                                   decision,oficina_rol)
+        cliente.reportar("Terminó la partida", indicadores)
         return {'evento1':resultado_evento1,'minas':resultado_minas,'entrevista':resultado_entrevista,
                 'oficina':resultado_oficina,'personaje':rol}
     finally:

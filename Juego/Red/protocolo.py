@@ -7,6 +7,8 @@ Todos llevan la clave "tipo". Ejemplos:
     servidor -> cliente  : {"tipo": "ELEGIDO", "rol": "CIUDADANO"}
     servidor -> cliente  : {"tipo": "OCUPADO", "rol": "CIUDADANO", "por": "Ana"}
     servidor -> todos    : {"tipo": "ROLES", "ocupados": {"CIUDADANO": "Isaac"}}
+    cliente  -> servidor : {"tipo": "RESULTADO", "evento": "Evento 1", "indicadores": {...}, "decision": "VERIFICAR"}
+    servidor -> todos    : {"tipo": "JUGADORES", "lista": [{"nombre", "rol", "progreso", "indicadores"}, ...]}
 """
 import json
 from pathlib import Path

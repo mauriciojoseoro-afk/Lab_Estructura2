@@ -3,9 +3,9 @@
 Se ejecuta UNA vez, en el PC que hace de servidor, desde la carpeta Juego:
     python -m Red.servidor
 
-Mantiene y sincroniza el estado compartido. Por ahora:
-  - jugadores conectados
-  - que rol usa cada jugador (un rol solo puede tenerlo una persona)
+Mantiene y sincroniza el estado compartido:
+  - jugadores conectados y que rol usa cada uno (un rol solo puede tenerlo una persona)
+  - progreso e indicadores de cada jugador (para el panel del grupo)
 Cuando un jugador se desconecta, su rol queda libre.
 """
 import socket
@@ -21,7 +21,7 @@ class Servidor:
     def __init__(self, puerto):
         self.puerto = puerto
         self.candado = threading.Lock()  # protege el estado: dos hilos no lo cambian a la vez
-        self.jugadores = {}              # id -> {"nombre", "rol", "sock"}
+        self.jugadores = {}              # id -> {"nombre", "rol", "sock", "progreso", "indicadores", "decision"}
         self.roles = {r: None for r in ROLES}   # rol -> id del jugador que lo usa (o None)
         self.siguiente_id = 1
 
@@ -29,6 +29,11 @@ class Servidor:
     def ocupados(self):
         """{rol: nombre} de los roles en uso (llamar con el candado tomado)."""
         return {r: self.jugadores[j]["nombre"] for r, j in self.roles.items() if j is not None}
+
+    def lista_jugadores(self):
+        return [{"nombre": d["nombre"], "rol": d["rol"], "progreso": d["progreso"],
+                 "indicadores": d["indicadores"], "decision": d["decision"]}
+                for _, d in sorted(self.jugadores.items())]
 
     def difundir(self, mensaje):
         """Envia un mensaje a todos los jugadores conectados."""
@@ -40,6 +45,10 @@ class Servidor:
 
     def avisar_roles(self):
         self.difundir({"tipo": "ROLES", "ocupados": self.ocupados()})
+        self.avisar_jugadores()
+
+    def avisar_jugadores(self):
+        self.difundir({"tipo": "JUGADORES", "lista": self.lista_jugadores()})
 
     def soltar_rol(self, jid):
         rol = self.jugadores[jid]["rol"]
@@ -53,7 +62,8 @@ class Servidor:
         with self.candado:
             jid = self.siguiente_id
             self.siguiente_id += 1
-            self.jugadores[jid] = {"nombre": f"Jugador {jid}", "rol": None, "sock": sock}
+            self.jugadores[jid] = {"nombre": f"Jugador {jid}", "rol": None, "sock": sock,
+                                   "progreso": "Eligiendo personaje", "indicadores": None, "decision": None}
         print(f"[+] Conectado jugador {jid} desde {direccion[0]}")
         try:
             for msg in lineas(sock):
@@ -64,6 +74,7 @@ class Servidor:
                         if nombre:
                             self.jugadores[jid]["nombre"] = nombre
                         enviar(sock, {"tipo": "BIENVENIDO", "id": jid, "ocupados": self.ocupados()})
+                        self.avisar_jugadores()
 
                     elif tipo == "ELEGIR":
                         rol = msg.get("rol")
@@ -78,16 +89,29 @@ class Servidor:
                         self.soltar_rol(jid)               # si tenia otro, lo libera
                         self.roles[rol] = jid
                         self.jugadores[jid]["rol"] = rol
+                        self.jugadores[jid]["progreso"] = "Empezando"
                         enviar(sock, {"tipo": "ELEGIDO", "rol": rol})
                         print(f"    {self.jugadores[jid]['nombre']} eligio {rol}")
                         self.avisar_roles()
 
                     elif tipo == "SOLTAR":
                         if self.soltar_rol(jid):
+                            self.jugadores[jid]["progreso"] = "Eligiendo personaje"
                             self.avisar_roles()
 
                     elif tipo == "ROLES?":
                         enviar(sock, {"tipo": "ROLES", "ocupados": self.ocupados()})
+
+                    elif tipo == "RESULTADO":
+                        # Un jugador termino un evento: se guarda y se reparte a todos
+                        datos = self.jugadores[jid]
+                        datos["progreso"] = str(msg.get("evento") or datos["progreso"])
+                        if isinstance(msg.get("indicadores"), dict):
+                            datos["indicadores"] = msg["indicadores"]
+                        if msg.get("decision"):
+                            datos["decision"] = msg["decision"]
+                        print(f"    {datos['nombre']}: {datos['progreso']} {datos['indicadores'] or ''}")
+                        self.avisar_jugadores()
         finally:
             with self.candado:
                 nombre = self.jugadores[jid]["nombre"]

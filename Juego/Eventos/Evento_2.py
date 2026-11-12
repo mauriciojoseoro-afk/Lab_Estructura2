@@ -1221,7 +1221,8 @@ def mostrar_tutorial(display, canvas, fondo, reloj):
 
 # ---------------------------------------------------------------- evento
 
-def Evento_2():
+def Evento_2(rol=None):
+    """rol: personaje elegido (por ahora no cambia nada: se juega el modo clásico de dos parejas)."""
     pygame.init()
 
     pantalla_completa = False
