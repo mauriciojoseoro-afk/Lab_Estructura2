@@ -3,7 +3,7 @@
 from pathlib import Path
 import pygame
 import Metodos
-from Eventos import Mapa, Evento_2, Periodista_Presidente, Evento3_Oficina
+from Eventos import Mapa, Evento_2, Periodista_Presidente, Evento3_Oficina, Evento1_Pozo
 from Eventos.Evento1_Pozo import Indicadores
 
 BASE = Path(__file__).resolve().parent.parent
@@ -64,6 +64,13 @@ def jugar_secuencia(rol):
     try:
         # 1: primer lugar visible, sin marcar misión terminada.
         Mapa.mostrar_mapa(display,mapa,terminar=False)
+        # 1b: si el personaje tiene escena propia en el Evento 1 (hoy: SOBREVIVIENTE = el mercado),
+        # se juega aquí y sus indicadores/decisión pasan a la oficina.
+        resultado_evento1 = None
+        if mapa_rol in Evento1_Pozo.GUIONES and mapa_rol != "LÍDER":
+            resultado_evento1 = Evento1_Pozo.jugar(display, canvas, personaje=mapa_rol)
+            display,canvas=Metodos.crear_ventana(900,675,'The Leader')
+            Mapa.mostrar_mapa(display,mapa,terminar=True)
         cinematica_minas()
         resultado_minas = Evento_2.Evento_2()
         # Evento_2 modifica el display, por eso recreamos la ventana.
@@ -78,9 +85,13 @@ def jugar_secuencia(rol):
         # 'VERIFICAR_FALSO' es el valor predeterminado que requiere la oficina;
         # su dependencia narrativa del pozo sigue pendiente de rediseño.
         indicadores = Indicadores()
+        decision = 'VERIFICAR_FALSO'
+        if resultado_evento1 is not None:       # este personaje sí jugó su Evento 1
+            indicadores = resultado_evento1["indicadores"]
+            decision = resultado_evento1["resultado"]
         resultado_oficina = Evento3_Oficina.jugar(display,canvas,indicadores,
-                                                  'VERIFICAR_FALSO',oficina_rol)
-        return {'minas':resultado_minas,'entrevista':resultado_entrevista,
+                                                  decision,oficina_rol)
+        return {'evento1':resultado_evento1,'minas':resultado_minas,'entrevista':resultado_entrevista,
                 'oficina':resultado_oficina,'personaje':rol}
     finally:
         Metodos.MAPA = None

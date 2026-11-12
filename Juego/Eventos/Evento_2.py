@@ -80,7 +80,7 @@ FPS_ANIMACION = 12
 ESCALA_SPRITE = 1.0
 
 # --- PRUEBA DE SPRITES: usa el cuerpo de otro personaje sin cambiar nombres ni HUD ---
-# {"Ciudadano": "Sobreviviente"} = el Ciudadano (punto verde) se dibuja con los sprites de Sobreviviente.
+# {"Ciudadano": "Sobreviviente"} = el Ciudadano (amarillo) se dibuja con los sprites de Sobreviviente.
 # Deja el diccionario vacio ({}) para volver a la normalidad.
 SPRITES_PRUEBA = {"Ciudadano": "Sobreviviente"}
 # ---------------------------------------------------------------------------------------
@@ -93,7 +93,7 @@ FLECHAS = (pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT)
 
 PAREJAS = [
     [("Presidente", (70, 130, 255), WASD), ("Influencer", (200, 110, 255), FLECHAS)],
-    [("Periodista", (255, 220, 70), WASD), ("Ciudadano", (80, 220, 120), FLECHAS)],
+    [("Periodista", (80, 220, 120), WASD), ("Ciudadano", (255, 220, 70), FLECHAS)],   # Ciudadano (Estella) = amarillo
 ]
 
 ESTADOS_MOVIMIENTO = ["arriba", "abajo", "izquierda", "derecha", "corriendo"]
@@ -124,6 +124,8 @@ def cargar_frames(carpeta):
             archivo = carpeta / f"frame_{idx}.png"
         if not archivo.exists():
             archivo = carpeta / f"frame_{idx}.PNG"
+        if not archivo.exists():
+            archivo = carpeta / f"frame_{idx:02d}.png"     # tambien acepta frame_01.png, frame_02.png...
         if not archivo.exists():
             break
         try:

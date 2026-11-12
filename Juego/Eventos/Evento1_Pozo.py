@@ -117,7 +117,8 @@ ALERTA_LINEAS = [
 
 
 # ---------------------------------------------------------------------------
-# GUION DEL SOBREVIVIENTE (personaje CIUDADANO): el mercado de Barrio Las Acacias
+# GUION DEL SOBREVIVIENTE (personaje CIUDADANO = Estella): el mercado de Barrio Las Acacias.
+# Estella vive sola en una cueva y casi nunca baja; antes del colapso compartió sin verificar.
 # Mismo sistema que el del Líder; cambian los videos, los textos y la alerta.
 # VERIFICAR no tiene final falso/verdadero: ella se va con el hombre hacia el
 # campo minado (Evento 2), así que el resultado se guarda como "VERIFICAR".
@@ -125,9 +126,9 @@ ALERTA_LINEAS = [
 INTRO_SOBREVIVIENTE = {
     "video": "ciudadano_llegada.mp4",
     "subtitulos": [
-        (1.00, 3.20, 6.50, "El mercado de Barrio Las Acacias. Aquí todo se cambia por agua."),
-        (11.00, 13.00, 16.50, "Y cada día queda menos para cambiar."),
-        (28.20, 29.40, 31.40, "Todos te miran. Nadie sabe qué hacer."),
+        (1.00, 3.20, 6.50, "Hacía semanas que no bajabas de la cueva al mercado."),
+        (11.00, 13.00, 16.50, "Solo vienes cuando el agua se acaba. Y hoy ya no queda nada."),
+        (28.20, 29.40, 31.40, "Todos te miran. A ti, que nunca hablas con nadie."),
     ],
     "alerta": (20.60, 25.80),
     "alerta_lineas": [
@@ -144,7 +145,7 @@ CONSECUENCIAS_SOBREVIVIENTE = {
         "subtitulos": [],
         "pantalla": 3.70,
         "opcion": "COMPARTIR",
-        "texto": "Reenviaste el mensaje sin saber si\nera cierto. El mercado entró en\npánico.",
+        "texto": "Otra vez compartiste sin verificar.\nEl mercado entró en pánico...\ncomo aquella vez.",
         "efectos": {"Confianza": -15, "Caos": +20, "Cohesión": -10},
     },
     "IGNORAR": {
@@ -168,7 +169,7 @@ CONSECUENCIAS_SOBREVIVIENTE = {
         "subtitulos": [],
         "pantalla": 7.60,
         "opcion": "VERIFICAR",
-        "texto": "Decidiste verlo con tus propios ojos.\nPara llegar al agua, primero hay\nque cruzar el campo.",
+        "texto": "Esta vez no te dejaste llevar.\nPara llegar al agua, primero hay\nque cruzar el campo.",
         "efectos": {"Confianza": +15, "Caos": -10, "Cohesión": +10},
     },
 }
