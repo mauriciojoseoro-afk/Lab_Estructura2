@@ -15,6 +15,8 @@ import threading
 from Red.protocolo import enviar, lineas, leer_config
 
 _conexion = None            # una sola conexion para todo el juego
+_solo = False               # True = el jugador eligio JUGAR SOLO en el menu: nunca se conecta
+_destino = None             # (ip, puerto) elegido en el menu; None = usar Red/config.json
 
 
 class Conexion:
@@ -140,9 +142,13 @@ def conectar(nombre=None, espera=1.0):
     """Intenta conectarse al servidor de Red/config.json (solo la primera vez).
     Si no hay servidor devuelve None y el juego sigue en modo un jugador."""
     global _conexion
+    if _solo:
+        return None
     if _conexion is not None and _conexion.conectado:
         return _conexion
     host, puerto = leer_config()
+    if _destino is not None:
+        host, puerto = _destino[0], _destino[1] or puerto
     try:
         sock = socket.create_connection((host, puerto), timeout=espera)
         sock.settimeout(None)
@@ -155,6 +161,30 @@ def conectar(nombre=None, espera=1.0):
         nombre = "Jugador"
     _conexion = Conexion(sock, nombre)
     return _conexion
+
+
+def _cerrar():
+    global _conexion
+    if _conexion is not None:
+        try:
+            _conexion.sock.close()
+        except OSError:
+            pass
+    _conexion = None
+
+
+def modo_solo():
+    """Menu -> CREAR PARTIDA -> JUGAR SOLO: el juego no busca ningun servidor."""
+    global _solo, _destino
+    _cerrar()
+    _solo, _destino = True, None
+
+
+def usar_servidor(host, puerto=None):
+    """Menu -> CON COMPAÑIA (host = 127.0.0.1) o UNIRSE (host = IP del anfitrion)."""
+    global _solo, _destino
+    _cerrar()
+    _solo, _destino = False, (host, puerto)
 
 
 def actual():

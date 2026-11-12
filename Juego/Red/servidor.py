@@ -232,22 +232,55 @@ class Servidor:
             sock.close()
             print(f"[-] {nombre} se desconecto" + (f" (libera {rol})" if rol else ""))
 
-    def iniciar(self):
+    def abrir(self):
         servidor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         servidor.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         servidor.bind(("0.0.0.0", self.puerto))
         servidor.listen()
+        return servidor
+
+    def aceptar(self, servidor):
+        while True:
+            sock, direccion = servidor.accept()
+            threading.Thread(target=self.atender, args=(sock, direccion), daemon=True).start()
+
+    def iniciar(self):
+        servidor = self.abrir()
         print(f"Servidor de The Leader escuchando en el puerto {self.puerto}")
         print("IP de este PC (ponla en Red/config.json de los otros PCs):", ip_local())
         print("Ctrl + C para cerrar.\n")
         try:
-            while True:
-                sock, direccion = servidor.accept()
-                threading.Thread(target=self.atender, args=(sock, direccion), daemon=True).start()
+            self.aceptar(servidor)
         except KeyboardInterrupt:
             print("\nServidor cerrado.")
         finally:
             servidor.close()
+
+
+_en_marcha = None          # servidor abierto desde el menu (CREAR PARTIDA -> CON COMPAÑIA)
+
+
+def en_segundo_plano(puerto=None):
+    """Abre el servidor DENTRO del juego, en un hilo, sin escribir comandos.
+    Devuelve (ok, ip_de_este_pc). Si ya hay un servidor abierto en este PC
+    (por ejemplo con el comando), se usa ese. Se cierra al cerrar el juego."""
+    global _en_marcha
+    if puerto is None:
+        _, puerto = leer_config()
+    if _en_marcha is None:
+        try:                                         # ¿ya hay uno escuchando aqui?
+            socket.create_connection(("127.0.0.1", puerto), timeout=0.5).close()
+            return True, ip_local()
+        except OSError:
+            pass
+        srv = Servidor(puerto)
+        try:
+            sock = srv.abrir()
+        except OSError:
+            return False, ip_local()
+        threading.Thread(target=srv.aceptar, args=(sock,), daemon=True).start()
+        _en_marcha = srv
+    return True, ip_local()
 
 
 def ip_local():
