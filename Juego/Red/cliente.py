@@ -25,6 +25,8 @@ class Conexion:
         self.rol = None                      # rol que el servidor nos confirmo
         self.ocupados = {}                   # {rol: nombre} (lo actualiza el hilo)
         self.jugadores = []                  # [{nombre, rol, progreso, indicadores, decision}]
+        self.espera = None                   # {"listos": [...], "faltan": [...]} mientras se espera al grupo
+        self.final = None                    # {"promedio", "puntaje", "tabla"} cuando todos terminaron
         self.conectado = True
         self._respuestas = queue.Queue()     # respuestas a ELEGIR
         self._candado = threading.Lock()
@@ -50,6 +52,10 @@ class Conexion:
                 self._respuestas.put(msg)
             elif tipo == "JUGADORES":
                 self.jugadores = msg.get("lista", [])
+            elif tipo == "ESPERA":
+                self.espera = {"listos": msg.get("listos", []), "faltan": msg.get("faltan", [])}
+            elif tipo == "FINAL":
+                self.final = msg
         self.conectado = False
         self._respuestas.put({"tipo": "OCUPADO", "por": "se perdio la conexion"})
 
@@ -73,6 +79,16 @@ class Conexion:
             self.rol = rol
             return True, None
         return False, r.get("por")
+
+    def jugando(self):
+        """Cuantos jugadores tienen personaje elegido."""
+        return sum(1 for j in self.jugadores if j.get("rol"))
+
+    def terminar(self, indicadores, puntaje):
+        """Avisa que termine la partida. El servidor responde con FINAL cuando terminen todos."""
+        self.final = None
+        self.espera = None
+        self._enviar({"tipo": "TERMINE", "indicadores": indicadores, "puntaje": puntaje})
 
     def conectados(self):
         """Cuantos jugadores hay en la partida (contandome)."""
