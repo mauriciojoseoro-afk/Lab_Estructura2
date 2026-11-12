@@ -6,6 +6,8 @@ Se ejecuta UNA vez, en el PC que hace de servidor, desde la carpeta Juego:
 Mantiene y sincroniza el estado compartido:
   - jugadores conectados y que rol usa cada uno (un rol solo puede tenerlo una persona)
   - progreso e indicadores de cada jugador
+  - la ENTREVISTA POR TURNOS: sala de espera, la decision del dueño de cada fase
+    o la votacion del grupo, repartida a todos en orden
   - el FINAL DEL GRUPO: espera a que todos terminen, promedia sus indicadores y puntajes
     y envia a todos la misma tabla y el mismo puntaje del grupo
 Cuando un jugador se desconecta, su rol queda libre.
@@ -26,6 +28,10 @@ class Servidor:
         self.jugadores = {}              # id -> {"nombre", "rol", "sock", "progreso", "indicadores", "decision"}
         self.roles = {r: None for r in ROLES}   # rol -> id del jugador que lo usa (o None)
         self.siguiente_id = 1
+        # ENTREVISTA POR TURNOS
+        self.entrevista_listos = set()   # ids de quienes ya llegaron a la entrevista
+        self.decisiones = []             # decision numero n -> opcion elegida (la misma para todos)
+        self.votos = {}                  # numero de decision -> [(id, opcion), ...] en orden de llegada
 
     # ---------- estado ----------
     def ocupados(self):
@@ -80,6 +86,44 @@ class Servidor:
         for d in terminados:                 # listo para otra partida
             d["termino"] = False
 
+    # ---------- entrevista por turnos ----------
+    def revisar_entrevista(self):
+        """Sala de espera: cuando llegan todos los que juegan, empieza la entrevista."""
+        jugando = [j for j, d in self.jugadores.items() if d["rol"] is not None]
+        if not self.entrevista_listos:
+            return
+        listos = [self.jugadores[j]["nombre"] for j in jugando if j in self.entrevista_listos]
+        faltan = [self.jugadores[j]["nombre"] for j in jugando if j not in self.entrevista_listos]
+        self.difundir({"tipo": "ENTREVISTA_ESPERA", "listos": listos, "faltan": faltan})
+        if not faltan:
+            self.decisiones = []
+            self.votos = {}
+            self.entrevista_listos = set()
+            self.difundir({"tipo": "ENTREVISTA_INICIO"})
+            print("    ENTREVISTA: empieza con", ", ".join(listos))
+
+    def publicar_decision(self, numero, opcion):
+        self.decisiones.append(opcion)
+        self.difundir({"tipo": "DECISION", "numero": numero, "opcion": opcion})
+
+    def revisar_votos(self, numero):
+        """Si ya votaron todos los que juegan, gana la opcion con mas votos
+        (empate: la que se voto primero)."""
+        if numero != len(self.decisiones) or numero not in self.votos:
+            return
+        jugando = [j for j, d in self.jugadores.items() if d["rol"] is not None]
+        votos = [(j, o) for j, o in self.votos[numero] if j in jugando]
+        self.difundir({"tipo": "VOTOS", "numero": numero, "votaron": len(votos), "total": len(jugando)})
+        if len(votos) < len(jugando):
+            return
+        conteo = {}
+        for _, o in votos:
+            conteo[o] = conteo.get(o, 0) + 1
+        mayor = max(conteo.values())
+        ganadora = next(o for _, o in votos if conteo[o] == mayor)
+        print(f"    ENTREVISTA: votacion {numero} -> opcion {ganadora + 1} {conteo}")
+        self.publicar_decision(numero, ganadora)
+
     def soltar_rol(self, jid):
         rol = self.jugadores[jid]["rol"]
         if rol is not None:
@@ -133,6 +177,25 @@ class Servidor:
                     elif tipo == "ROLES?":
                         enviar(sock, {"tipo": "ROLES", "ocupados": self.ocupados()})
 
+                    elif tipo == "ENTREVISTA_LISTO":
+                        self.entrevista_listos.add(jid)
+                        self.revisar_entrevista()
+
+                    elif tipo == "ELECCION":
+                        # Una decision de la entrevista: del dueño de la fase o un voto
+                        numero, opcion = msg.get("numero"), msg.get("opcion")
+                        if not isinstance(numero, int) or not isinstance(opcion, int):
+                            continue
+                        if numero != len(self.decisiones):
+                            continue                 # ya se decidio (o llega fuera de orden)
+                        if msg.get("modo") == "voto":
+                            lista = self.votos.setdefault(numero, [])
+                            if all(j != jid for j, _ in lista):
+                                lista.append((jid, opcion))
+                            self.revisar_votos(numero)
+                        else:
+                            self.publicar_decision(numero, opcion)
+
                     elif tipo == "TERMINE":
                         # Termino la partida: guarda sus indicadores y puntaje y espera a los demas
                         datos = self.jugadores[jid]
@@ -162,6 +225,10 @@ class Servidor:
                 del self.jugadores[jid]
                 self.avisar_roles()
                 self.revisar_final()             # si los demas lo estaban esperando, ya no
+                self.entrevista_listos.discard(jid)
+                self.revisar_entrevista()
+                for numero in list(self.votos):
+                    self.revisar_votos(numero)
             sock.close()
             print(f"[-] {nombre} se desconecto" + (f" (libera {rol})" if rol else ""))
 

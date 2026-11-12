@@ -9,6 +9,12 @@ Todos llevan la clave "tipo". Ejemplos:
     servidor -> todos    : {"tipo": "ROLES", "ocupados": {"CIUDADANO": "Isaac"}}
     cliente  -> servidor : {"tipo": "RESULTADO", "evento": "Evento 1", "indicadores": {...}, "decision": "VERIFICAR"}
     servidor -> todos    : {"tipo": "JUGADORES", "lista": [{"nombre", "rol", "progreso", "indicadores"}, ...]}
+    cliente  -> servidor : {"tipo": "ENTREVISTA_LISTO"}     (sala de espera de la entrevista)
+    servidor -> todos    : {"tipo": "ENTREVISTA_ESPERA", "listos": [...], "faltan": [...]}
+    servidor -> todos    : {"tipo": "ENTREVISTA_INICIO"}
+    cliente  -> servidor : {"tipo": "ELECCION", "numero": 3, "opcion": 1, "modo": "dueño" | "voto"}
+    servidor -> todos    : {"tipo": "VOTOS", "numero": 3, "votaron": 1, "total": 2}
+    servidor -> todos    : {"tipo": "DECISION", "numero": 3, "opcion": 1}
     cliente  -> servidor : {"tipo": "TERMINE", "indicadores": {...}, "puntaje": 85}
     servidor -> todos    : {"tipo": "ESPERA", "listos": ["Ana"], "faltan": ["Beto"]}
     servidor -> todos    : {"tipo": "FINAL", "promedio": {...}, "puntaje": 72, "tabla": [{nombre, rol, indicadores, puntaje}]}

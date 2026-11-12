@@ -27,6 +27,11 @@ class Conexion:
         self.jugadores = []                  # [{nombre, rol, progreso, indicadores, decision}]
         self.espera = None                   # {"listos": [...], "faltan": [...]} mientras se espera al grupo
         self.final = None                    # {"promedio", "puntaje", "tabla"} cuando todos terminaron
+        # entrevista por turnos
+        self.entrevista_espera = None        # {"listos": [...], "faltan": [...]}
+        self.entrevista_inicio = False
+        self.decisiones = {}                 # numero de decision -> opcion
+        self.votos = {}                      # numero -> (votaron, total)
         self.conectado = True
         self._respuestas = queue.Queue()     # respuestas a ELEGIR
         self._candado = threading.Lock()
@@ -56,6 +61,16 @@ class Conexion:
                 self.espera = {"listos": msg.get("listos", []), "faltan": msg.get("faltan", [])}
             elif tipo == "FINAL":
                 self.final = msg
+            elif tipo == "ENTREVISTA_ESPERA":
+                self.entrevista_espera = {"listos": msg.get("listos", []), "faltan": msg.get("faltan", [])}
+            elif tipo == "ENTREVISTA_INICIO":
+                self.decisiones = {}
+                self.votos = {}
+                self.entrevista_inicio = True
+            elif tipo == "DECISION":
+                self.decisiones[int(msg["numero"])] = int(msg["opcion"])
+            elif tipo == "VOTOS":
+                self.votos[int(msg["numero"])] = (msg.get("votaron", 0), msg.get("total", 0))
         self.conectado = False
         self._respuestas.put({"tipo": "OCUPADO", "por": "se perdio la conexion"})
 
@@ -89,6 +104,21 @@ class Conexion:
         self.final = None
         self.espera = None
         self._enviar({"tipo": "TERMINE", "indicadores": indicadores, "puntaje": puntaje})
+
+    def llegar_a_entrevista(self):
+        """Entra a la sala de espera de la entrevista."""
+        self.entrevista_inicio = False
+        self.entrevista_espera = None
+        self.decisiones = {}
+        self.votos = {}
+        self._enviar({"tipo": "ENTREVISTA_LISTO"})
+
+    def elegir_en_entrevista(self, numero, opcion, modo):
+        """modo: "dueño" (la fase es mia) o "voto" (la fase la decide el grupo)."""
+        self._enviar({"tipo": "ELECCION", "numero": numero, "opcion": opcion, "modo": modo})
+
+    def roles_en_juego(self):
+        return {j.get("rol") for j in self.jugadores if j.get("rol")}
 
     def conectados(self):
         """Cuantos jugadores hay en la partida (contandome)."""
