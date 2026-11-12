@@ -76,6 +76,7 @@ DUENO_FASE = {"pregunta": "PERIODISTA", "respuesta": "PRESIDENTE", "ciudadano": 
 NOMBRE_ROL_RED = {"PERIODISTA": "Periodista", "PRESIDENTE": "Presidente",
                   "CIUDADANO": "Ciudadano", "INFLUENCER": "Influencer"}
 ROLES_VERIFICACION = ["ciudadano"]
+ESPERA_AUTO = 1.8   # UN JUGADOR: segundos que "piensa" el juego antes de elegir por otro personaje
 
 # CIVINET interviene después de las preguntas 3, 6 y 9. La entrevista original
 # permanece intacta: la manipulación aparece como una publicación paralela.
@@ -354,7 +355,7 @@ class FondoVideo:
         self.cap.release()
 
 
-def Entrevista():
+def Entrevista(rol=None):
     pygame.init()
 
     ruta_assets = Path(__file__).parent.parent / "Assets" / "Interfaz"
@@ -1030,6 +1031,10 @@ def Entrevista():
     if red is not None and red.jugando() < 2:
         red = None
     turnos = {"numero": 0, "enviado": None, "aviso": "", "color": COL_AMBAR}
+    # UN JUGADOR (elegido en el menú): tú decides las fases de tu personaje y la audiencia;
+    # las de los otros personajes las decide el juego.
+    modo_menu = red_cliente.modo() if red_cliente is not None else None
+    auto = red is None and modo_menu == "solo" and rol in NOMBRE_ROL_RED
 
     def sala_de_espera():
         """Espera a que lleguen todos los que juegan. Devuelve False si cierran la ventana."""
@@ -1065,11 +1070,21 @@ def Entrevista():
             pygame.display.update()
         return True
 
-    def turno(clave, i):
+    def turno(clave, i, n=3):
         """Recibe la opción que el jugador tocó en esta pantalla (o None) y devuelve
         la decisión que vale para todos (o None mientras no se haya decidido)."""
         if red is None or not red.conectado:
-            return i                             # un jugador: igual que siempre
+            dueno = DUENO_FASE.get(clave)
+            if auto and dueno is not None and dueno != rol:
+                turnos["aviso"] = f"Turno de {NOMBRE_ROL_RED[dueno]} · el juego está eligiendo..."
+                turnos["color"] = COL_APAGADO
+                if t_fase >= ESPERA_AUTO:
+                    turnos["aviso"] = ""
+                    return random.randrange(n)
+                return None
+            turnos["aviso"] = "TU TURNO · elige una opción" if auto else ""
+            turnos["color"] = COL_AMBAR
+            return i                             # sin menú o multijugador local: igual que siempre
         n = turnos["numero"]
         if n in red.decisiones:                  # ya se decidió: todos aplican lo mismo
             turnos["numero"] += 1
@@ -1303,7 +1318,7 @@ def Entrevista():
             visibles = ids_disponibles[:3]
             i = lista_opciones(Y_CONTENIDO, [preguntas[id_p] for id_p in visibles],
                                ROLES["pregunta"][1], mouse_pos, click, tecla)
-            i = turno("pregunta", i)
+            i = turno("pregunta", i, len(visibles))
             if i is not None:
                 id_p = visibles[i]
                 if arbol_preguntas.get(id_p) is not None:
@@ -1432,7 +1447,7 @@ def Entrevista():
             opciones_accion = ACCIONES_VERIFICACION[rol]
             i = lista_opciones(y, [opcion[0] for opcion in opciones_accion],
                                ROLES[rol][1], mouse_pos, click, tecla)
-            i = turno("verificacion", i)
+            i = turno("verificacion", i, len(opciones_accion))
             if i is not None:
                 _, delta_confianza, delta_falso, delta_espectadores, delta_influencer, delta_ciudadano = opciones_accion[i]
                 confianza_civinet = max(0, min(100, confianza_civinet + delta_confianza))
@@ -1566,7 +1581,7 @@ def Entrevista():
             canvas.blit(banner, (164, 280-int((1-a)*14)))
 
         # MULTIJUGADOR: a quién le toca decidir
-        if red is not None and turnos["aviso"] and fase in DUENO_FASE:
+        if (red is not None or auto) and turnos["aviso"] and fase in DUENO_FASE:
             texto_t = tipo(16).render(turnos["aviso"], True, COL_POLVO)
             barra_t = pygame.Rect(0, 0, texto_t.get_width() + 36, texto_t.get_height() + 12)
             barra_t.midtop = (ANCHO // 2, u(64))
@@ -1602,4 +1617,4 @@ def Entrevista():
 
     for f in fondos.values():
         f.cerrar()
-    return puntos_influencer, puntos_ciudadano
+    return puntos_influencer, puntos_ciudadano

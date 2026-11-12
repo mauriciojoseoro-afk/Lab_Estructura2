@@ -17,13 +17,19 @@ from Red.protocolo import enviar, lineas, leer_config
 _conexion = None            # una sola conexion para todo el juego
 _solo = False               # True = el jugador eligio JUGAR SOLO en el menu: nunca se conecta
 _destino = None             # (ip, puerto) elegido en el menu; None = usar Red/config.json
+_modo = None                # modo elegido en el menu: "solo", "local", "red" (None = sin menu, como antes)
+_locales = 1                # jugadores en el mismo PC (modo "local")
 
 
 class Conexion:
-    def __init__(self, sock, nombre):
+    def __init__(self, sock, nombre, anfitrion=False):
         self.sock = sock
         self.nombre = nombre
         self.id = None
+        self.anfitrion_id = None             # id de quien creo la partida (None = servidor por comando)
+        self.iniciada = False                # True cuando el anfitrion pulsa INICIAR
+        self.bienvenido = False
+        self.rechazo = None                  # motivo si el servidor no nos dejo entrar
         self.rol = None                      # rol que el servidor nos confirmo
         self.ocupados = {}                   # {rol: nombre} (lo actualiza el hilo)
         self.jugadores = []                  # [{nombre, rol, progreso, indicadores, decision}]
@@ -40,7 +46,7 @@ class Conexion:
         self._respuestas = queue.Queue()     # respuestas a ELEGIR
         self._candado = threading.Lock()
         threading.Thread(target=self._escuchar, daemon=True).start()
-        self._enviar({"tipo": "HOLA", "nombre": nombre})
+        self._enviar({"tipo": "HOLA", "nombre": nombre, "anfitrion": anfitrion})
 
     def _enviar(self, mensaje):
         try:
@@ -54,6 +60,13 @@ class Conexion:
             tipo = msg.get("tipo")
             if tipo == "BIENVENIDO":
                 self.id = msg.get("id")
+                self.anfitrion_id = msg.get("anfitrion")
+                self.iniciada = msg.get("iniciada", True)
+                self.bienvenido = True
+            elif tipo == "INICIO":
+                self.iniciada = True
+            elif tipo == "RECHAZADO":
+                self.rechazo = msg.get("motivo", "No se pudo entrar")
                 self.ocupados = msg.get("ocupados", {})
             elif tipo == "ROLES":
                 self.ocupados = msg.get("ocupados", {})
@@ -154,6 +167,13 @@ class Conexion:
             self.minas_pisadas[indice] = self.nombre
             self._enviar({"tipo": "PISE", "indice": indice})
 
+    def es_anfitrion(self):
+        return self.id is not None and self.id == self.anfitrion_id
+
+    def iniciar_partida(self):
+        """Solo el anfitrion: todos los de la sala empiezan a jugar."""
+        self._enviar({"tipo": "INICIAR"})
+
     def soltar(self):
         """Libera nuestro rol (por ejemplo, al volver a la seleccion)."""
         if self.rol is not None:
@@ -161,7 +181,7 @@ class Conexion:
             self._enviar({"tipo": "SOLTAR"})
 
 
-def conectar(nombre=None, espera=1.0):
+def conectar(nombre=None, espera=1.0, anfitrion=False):
     """Intenta conectarse al servidor de Red/config.json (solo la primera vez).
     Si no hay servidor devuelve None y el juego sigue en modo un jugador."""
     global _conexion
@@ -182,7 +202,7 @@ def conectar(nombre=None, espera=1.0):
         nombre = nombre or getpass.getuser()
     except Exception:
         nombre = "Jugador"
-    _conexion = Conexion(sock, nombre)
+    _conexion = Conexion(sock, nombre, anfitrion)
     return _conexion
 
 
@@ -198,16 +218,40 @@ def _cerrar():
 
 def modo_solo():
     """Menu -> CREAR PARTIDA -> JUGAR SOLO: el juego no busca ningun servidor."""
-    global _solo, _destino
+    global _solo, _destino, _modo
     _cerrar()
-    _solo, _destino = True, None
+    _solo, _destino, _modo = True, None, "solo"
+
+
+def modo_local(cantidad):
+    """Menu -> CREAR PARTIDA -> MULTIJUGADOR LOCAL: varios jugadores en este mismo PC (sin red)."""
+    global _solo, _destino, _modo, _locales
+    _cerrar()
+    _solo, _destino, _modo = True, None, "local"
+    _locales = max(2, min(4, int(cantidad)))
+
+
+def modo():
+    """'solo', 'local', 'red' o None (si el juego no se abrio desde el menu)."""
+    return _modo
+
+
+def jugadores_locales():
+    return _locales if _modo == "local" else 1
+
+
+def salir():
+    """Deja la sala (ESC en el menu)."""
+    global _modo
+    _cerrar()
+    _modo = None
 
 
 def usar_servidor(host, puerto=None):
     """Menu -> CON COMPAÑIA (host = 127.0.0.1) o UNIRSE (host = IP del anfitrion)."""
-    global _solo, _destino
+    global _solo, _destino, _modo
     _cerrar()
-    _solo, _destino = False, (host, puerto)
+    _solo, _destino, _modo = False, (host, puerto), "red"
 
 
 def actual():

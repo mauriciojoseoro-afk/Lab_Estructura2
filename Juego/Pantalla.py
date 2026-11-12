@@ -21,9 +21,11 @@ BUTTONS={
  'CRÉDITOS':pygame.Rect(400,552,110,35),
 }
 # Ventanas de CREAR PARTIDA / UNIRSE A PARTIDA (coords del canvas 900x600).
-SOLO=pygame.Rect(160,195,580,100)
-GRUPO=pygame.Rect(160,315,580,100)
-COMENZAR=pygame.Rect(300,420,300,54)
+SOLO=pygame.Rect(160,176,580,86)
+LOCAL=pygame.Rect(160,272,580,86)
+RED=pygame.Rect(160,368,580,86)
+CANTIDADES={n:pygame.Rect(190+(n-2)*185,232,150,110) for n in (2,3,4)}
+INICIAR=pygame.Rect(300,420,300,54)
 CAMPO_IP=pygame.Rect(160,252,580,58)
 ENTRAR=pygame.Rect(300,420,300,54)
 def a_canvas(display,pos):
@@ -69,8 +71,16 @@ def boton(s,r,titulo,sub=None,hover=False):
  pygame.draw.rect(s,(195,142,93) if hover else (91,81,73),r,2,border_radius=4)
  t=pygame.font.SysFont('timesnewroman',28,bold=True).render(titulo,True,(238,222,197))
  if sub:
-  s.blit(t,(r.x+26,r.y+16));label(s,sub,r.x+26,r.y+58,19,(203,178,140))
+  s.blit(t,(r.x+26,r.y+12));label(s,sub,r.x+26,r.bottom-36,19,(203,178,140))
  else:s.blit(t,t.get_rect(center=r.center))
+def lista_sala(s,red,y):
+ """Jugadores conectados a la sala, con el anfitrión marcado."""
+ jugadores=red.jugadores if red is not None else []
+ label(s,f'JUGADORES EN LA SALA ({len(jugadores)})',150,y,19,(203,158,110),bold=True)
+ for k,j in enumerate(jugadores[:10]):
+  col,fila=divmod(k,5)
+  nombre=j.get('nombre','?')+('  (anfitrión)' if j.get('anfitrion') else '')
+  label(s,'•  '+nombre,160+col*300,y+30+fila*25,20)
 
 def main():
  pygame.init();display=Accesibilidad.window(title='The Leader')
@@ -79,14 +89,16 @@ def main():
  if not video.isOpened():raise FileNotFoundError('No se pudo abrir '+str(VIDEO))
  fps=video.get(cv2.CAP_PROP_FPS) or 30
  frame_time=0;last=None;page=None;running=True
- ip='';ip_host='';aviso='';unirse=False
+ ip='';ip_host='';aviso='';unirse=False;sala=None
  while running:
   dt=min(clock.tick(60)/1000,.08);frame_time+=dt
   for e in pygame.event.get():
    if e.type==pygame.QUIT:running=False
    if e.type==pygame.VIDEORESIZE:
     Accesibilidad.remember_size((e.w,e.h));display=Accesibilidad.window((e.w,e.h))
-   if e.type==pygame.KEYDOWN and e.key==pygame.K_ESCAPE:page=None
+   if e.type==pygame.KEYDOWN and e.key==pygame.K_ESCAPE:
+    if page in ('SALA','SALA_HOST'):cliente.salir();sala=None
+    page='CREAR' if page=='LOCAL' else None
    elif e.type==pygame.KEYDOWN and page=='UNIRSE':
     if e.key in (pygame.K_RETURN,pygame.K_KP_ENTER):unirse=True
     elif e.key==pygame.K_BACKSPACE:ip=ip[:-1]
@@ -101,12 +113,21 @@ def main():
     elif page=='CREAR':
      if SOLO.collidepoint(pt):
       cliente.modo_solo();page=None;display=jugar()
-     elif GRUPO.collidepoint(pt):
+     elif LOCAL.collidepoint(pt):page='LOCAL'
+     elif RED.collidepoint(pt):
       ok,ip_host=red_servidor.en_segundo_plano()
-      if ok:cliente.usar_servidor('127.0.0.1');page='ANFITRION'
+      if ok:
+       cliente.usar_servidor('127.0.0.1')
+       sala=cliente.conectar(espera=2.0,anfitrion=True)
+      if ok and sala is not None:page='SALA_HOST'
       else:aviso='No se pudo abrir la partida: el puerto está ocupado.'
-    elif page=='ANFITRION':
-     if COMENZAR.collidepoint(pt):page=None;display=jugar()
+    elif page=='LOCAL':
+     for n,r in CANTIDADES.items():
+      if r.collidepoint(pt):
+       cliente.modo_local(n);page=None;display=jugar();break
+    elif page=='SALA_HOST':
+     if INICIAR.collidepoint(pt) and sala is not None and sala.es_anfitrion():
+      sala.iniciar_partida();page=None;display=jugar()
     elif page=='UNIRSE':
      if ENTRAR.collidepoint(pt):unirse=True
     elif not page:
@@ -121,8 +142,17 @@ def main():
   if unirse:
    unirse=False;destino=ip.strip() or '127.0.0.1'
    cliente.usar_servidor(destino)
-   if cliente.conectar(espera=2.0) is not None:page=None;display=jugar()
+   sala=cliente.conectar(espera=2.0)
+   if sala is not None:page='SALA';ip_host=destino
    else:aviso=f'No se encontró ninguna partida en {destino}.'
+  # SALA DE ESPERA: los que se unen empiezan cuando el anfitrión pulsa INICIAR.
+  if page in ('SALA','SALA_HOST') and sala is not None:
+   if sala.rechazo:
+    aviso=sala.rechazo+'.';cliente.salir();sala=None;page='UNIRSE'
+   elif not sala.conectado:
+    aviso='El anfitrión cerró la partida.';cliente.salir();sala=None;page='UNIRSE'
+   elif page=='SALA' and sala.bienvenido and sala.iniciada:
+    page=None;display=jugar()
   if last is None or frame_time>=1/max(1,fps):
    frame_time=0
    ok,frame=video.read()
@@ -140,17 +170,39 @@ def main():
    m=a_canvas(display,pygame.mouse.get_pos())
    if page=='CREAR':
     modal(canvas,'CREAR PARTIDA')
-    boton(canvas,SOLO,'JUGAR SOLO','Tú solo, sin servidor ni esperas.',SOLO.collidepoint(m))
-    boton(canvas,GRUPO,'CON COMPAÑÍA','Abres la partida y tus compañeros se unen a ti.',GRUPO.collidepoint(m))
-    if aviso:label(canvas,aviso,160,440,19,(226,120,95))
-   elif page=='ANFITRION':
-    modal(canvas,'PARTIDA CREADA')
-    label(canvas,'Tus compañeros deben pulsar UNIRSE A PARTIDA',150,185,23)
-    label(canvas,'y escribir esta dirección:',150,218,23)
-    t=pygame.font.SysFont('timesnewroman',54,bold=True).render(ip_host,True,(226,178,104))
-    canvas.blit(t,t.get_rect(center=(W//2,300)))
-    label(canvas,'(si juegan en este mismo PC: 127.0.0.1)',150,350,19,(170,160,145),italic=True)
-    boton(canvas,COMENZAR,'COMENZAR',hover=COMENZAR.collidepoint(m))
+    boton(canvas,SOLO,'UN JUGADOR','Tú solo. Los demás personajes los maneja el juego.',SOLO.collidepoint(m))
+    boton(canvas,LOCAL,'MULTIJUGADOR LOCAL','Varios en este mismo PC, cada uno con sus teclas.',LOCAL.collidepoint(m))
+    boton(canvas,RED,'MULTIJUGADOR EN RED','Cada uno en su PC. Tus compañeros se unen a ti.',RED.collidepoint(m))
+    if aviso:label(canvas,aviso,160,462,19,(226,120,95))
+   elif page=='LOCAL':
+    modal(canvas,'MULTIJUGADOR LOCAL')
+    label(canvas,'¿Cuántos van a jugar en este PC?',150,182,23)
+    for n,r in CANTIDADES.items():
+     boton(canvas,r,'',hover=r.collidepoint(m))
+     t=pygame.font.SysFont('timesnewroman',64,bold=True).render(str(n),True,(238,222,197))
+     canvas.blit(t,t.get_rect(center=(r.centerx,r.centery-8)))
+     t=pygame.font.SysFont('timesnewroman',17).render('jugadores',True,(203,178,140))
+     canvas.blit(t,t.get_rect(center=(r.centerx,r.bottom-18)))
+    label(canvas,'Jugador 1: W A S D   ·   Jugador 2: flechas',150,365,20)
+    label(canvas,'Jugador 3: I J K L   ·   Jugador 4: 8 4 5 6 (teclado numérico)',150,393,20)
+    label(canvas,'En el campo minado juegan todos a la vez; en lo demás se pasan el control.',150,431,18,(170,160,145),italic=True)
+   elif page=='SALA_HOST':
+    modal(canvas,'SALA DE ESPERA')
+    label(canvas,'Tus compañeros deben pulsar UNIRSE A PARTIDA y escribir:',150,178,21)
+    t=pygame.font.SysFont('timesnewroman',46,bold=True).render(ip_host,True,(226,178,104))
+    canvas.blit(t,t.get_rect(midleft=(150,234)))
+    label(canvas,'(en este mismo PC: 127.0.0.1)',W//2+70,222,18,(170,160,145),italic=True)
+    lista_sala(canvas,sala,272)
+    puede=sala is not None and sala.es_anfitrion()
+    boton(canvas,INICIAR,'INICIAR PARTIDA',hover=puede and INICIAR.collidepoint(m))
+    label(canvas,'Solo tú, como anfitrión, puedes iniciar.' if puede else 'Ya hay otra partida creada en este PC.',
+          430,502,17,(170,160,145),italic=True)
+   elif page=='SALA':
+    modal(canvas,'SALA DE ESPERA')
+    label(canvas,f'Conectado a {ip_host}.',150,180,21,(170,160,145))
+    puntos='.'*(1+int(pygame.time.get_ticks()/400)%3)
+    label(canvas,'Esperando a que el anfitrión inicie la partida'+puntos,150,212,25,(226,178,104),bold=True)
+    lista_sala(canvas,sala,272)
    elif page=='UNIRSE':
     modal(canvas,'UNIRSE A PARTIDA')
     label(canvas,'Escribe la dirección que le aparece al anfitrión:',150,195,23)

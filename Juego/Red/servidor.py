@@ -30,6 +30,10 @@ class Servidor:
         self.jugadores = {}              # id -> {"nombre", "rol", "sock", "progreso", "indicadores", "decision"}
         self.roles = {r: None for r in ROLES}   # rol -> id del jugador que lo usa (o None)
         self.siguiente_id = 1
+        # SALA DE ESPERA: si la partida se creo desde el menu (CON COMPAÑIA), solo el anfitrion
+        # puede iniciarla. Si el servidor se abrio con el comando, no hay anfitrion y se juega como antes.
+        self.anfitrion = None            # id del jugador que creo la partida
+        self.iniciada = True
         # CAMPO MINADO COMPARTIDO: con la misma semilla todos generan las mismas minas
         self.semilla = random.randint(1, 10 ** 9)
         self.minas_pisadas = {}          # indice de la mina -> nombre de quien la piso
@@ -45,8 +49,9 @@ class Servidor:
 
     def lista_jugadores(self):
         return [{"nombre": d["nombre"], "rol": d["rol"], "progreso": d["progreso"],
-                 "indicadores": d["indicadores"], "decision": d["decision"]}
-                for _, d in sorted(self.jugadores.items())]
+                 "indicadores": d["indicadores"], "decision": d["decision"],
+                 "anfitrion": j == self.anfitrion}
+                for j, d in sorted(self.jugadores.items())]
 
     def difundir(self, mensaje):
         """Envia un mensaje a todos los jugadores conectados."""
@@ -153,8 +158,21 @@ class Servidor:
                         nombre = str(msg.get("nombre") or "").strip()[:20]
                         if nombre:
                             self.jugadores[jid]["nombre"] = nombre
-                        enviar(sock, {"tipo": "BIENVENIDO", "id": jid, "ocupados": self.ocupados()})
+                        if msg.get("anfitrion") and self.anfitrion is None:
+                            self.anfitrion = jid             # el que creo la partida
+                            self.iniciada = False            # se espera a que el pulse INICIAR
+                        elif self.iniciada and self.anfitrion is not None:
+                            enviar(sock, {"tipo": "RECHAZADO", "motivo": "La partida ya empezó"})
+                            break                            # llega tarde: no entra
+                        enviar(sock, {"tipo": "BIENVENIDO", "id": jid, "ocupados": self.ocupados(),
+                                      "anfitrion": self.anfitrion, "iniciada": self.iniciada})
                         self.avisar_jugadores()
+
+                    elif tipo == "INICIAR":
+                        if jid == self.anfitrion and not self.iniciada:
+                            self.iniciada = True
+                            self.difundir({"tipo": "INICIO"})
+                            print("[*] El anfitrion inicio la partida")
 
                     elif tipo == "ELEGIR":
                         rol = msg.get("rol")

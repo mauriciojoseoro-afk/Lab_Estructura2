@@ -41,7 +41,7 @@ def Presidente():
     display, canvas = Metodos.crear_ventana(ANCHO, ALTO, "My Game")
         # ESCENA DEL PERIODISTA Y ENTREVISTA
     Evento3_Oficina.reproducir_escena(Evento3_Oficina.ESCENA_ENTREVISTA)
-    Periodista_Presidente.Entrevista()
+    Periodista_Presidente.Entrevista("PRESIDENTE")
     cliente.reportar("Terminó la entrevista")
     display, canvas = Metodos.crear_ventana(ANCHO, ALTO, "My Game")
 
@@ -84,4 +84,4 @@ def Presidente():
             Periodista_Presidente.Entrevista()
 
         Metodos.mostrar_canvas(display, canvas)
-        pygame.display.update()
+        pygame.display.update()

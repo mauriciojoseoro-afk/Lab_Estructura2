@@ -3,6 +3,11 @@
 Cada mensaje es un diccionario JSON en UNA linea terminada en '\n'.
 Todos llevan la clave "tipo". Ejemplos:
     cliente  -> servidor : {"tipo": "HOLA", "nombre": "Isaac"}
+    cliente  -> servidor : {"tipo": "HOLA", "nombre": "Isaac", "anfitrion": true}   (quien crea la partida)
+    servidor -> cliente  : {"tipo": "BIENVENIDO", "id": 1, "anfitrion": 1, "iniciada": false, "ocupados": {...}}
+    servidor -> cliente  : {"tipo": "RECHAZADO", "motivo": "La partida ya empezó"}
+    cliente  -> servidor : {"tipo": "INICIAR"}              (solo el anfitrion)
+    servidor -> todos    : {"tipo": "INICIO"}
     cliente  -> servidor : {"tipo": "ELEGIR", "rol": "CIUDADANO"}
     servidor -> cliente  : {"tipo": "ELEGIDO", "rol": "CIUDADANO"}
     servidor -> cliente  : {"tipo": "OCUPADO", "rol": "CIUDADANO", "por": "Ana"}

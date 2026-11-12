@@ -90,6 +90,12 @@ LIMITE_ARRIBA = ALTURA_SPRITE - RADIO_HITBOX   # y mínima de los pies para que 
 
 WASD = (pygame.K_w, pygame.K_s, pygame.K_a, pygame.K_d)
 FLECHAS = (pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT)
+IJKL = (pygame.K_i, pygame.K_k, pygame.K_j, pygame.K_l)
+NUMPAD = (pygame.K_KP8, pygame.K_KP5, pygame.K_KP4, pygame.K_KP6)
+# MULTIJUGADOR LOCAL: teclas del jugador 1, 2, 3 y 4 en el mismo teclado
+TECLAS_LOCALES = [WASD, FLECHAS, IJKL, NUMPAD]
+NOMBRE_TECLAS = {WASD: "W A S D", FLECHAS: "las flechas", IJKL: "I J K L", NUMPAD: "8 4 5 6 del teclado numérico"}
+TEXTO_CONTROLES = "El primer jugador se mueve con W, A, S, D; el segundo, con las flechas."
 
 PAREJAS = [
     [("Presidente", (70, 130, 255), WASD), ("Influencer", (200, 110, 255), FLECHAS)],
@@ -263,7 +269,7 @@ def crear_minas(semilla=None):
 def crear_jugadores(pareja):
     jugadores = []
     for i, (nombre, color, teclas) in enumerate(pareja):
-        x = ANCHO // 3 * (i + 1)
+        x = ANCHO * (i + 1) // (len(pareja) + 1)   # con 2 queda igual que antes (tercios)
         y = ALTO_MUNDO - ALTO_INICIO + 20       # (x, y) es la posición de los PIES
         jugador = {
             "nombre": nombre,
@@ -933,13 +939,16 @@ def dibujar_resultado(canvas, jugadores, siguiente):
     if len(jugadores) == 1:
         titulo = "Llegaste al depósito" if llegaron else "No llegaste al depósito"
     elif len(llegaron) == len(jugadores):
-        titulo = "Los dos llegaron al depósito"
-    elif llegaron:
+        titulo = "Los dos llegaron al depósito" if len(jugadores) == 2 else "Todos llegaron al depósito"
+    elif len(llegaron) == 1:
         titulo = f"{llegaron[0]['nombre']} llegó al depósito"
+    elif llegaron:
+        titulo = f"{len(llegaron)} de {len(jugadores)} llegaron al depósito"
     else:
         titulo = "Nadie llegó al depósito"
 
-    banda = pygame.Rect(0, ALTO // 2 - 95, ANCHO, 190)
+    extra = max(0, len(jugadores) - 2) * 38
+    banda = pygame.Rect(0, ALTO // 2 - 95 - extra // 2, ANCHO, 190 + extra)
     capa = pygame.Surface(banda.size, pygame.SRCALPHA)
     capa.fill((16, 13, 10, 228))
     canvas.blit(capa, banda.topleft)
@@ -1133,8 +1142,7 @@ def mostrar_tutorial(display, canvas, fondo, reloj):
         {
             "titulo": "Lleva el agua a Nova",
             "texto": "Cruza el campo minado y alcanza el otro extremo. Tu objetivo es llegar al depósito "
-                     "para recuperar el agua que necesitan los ciudadanos. El primer jugador se mueve con "
-                     "W, A, S, D; el segundo, con las flechas.",
+                     "para recuperar el agua que necesitan los ciudadanos. " + TEXTO_CONTROLES,
             "demo": demo_objetivo,
         },
     ]
@@ -1595,7 +1603,21 @@ def dibujar_hud_industrial(canvas, jugadores, pareja, retratos, espera, activo, 
     _hud_txt_ajustado(canvas, "SECTOR / CAMPO MINADO", 15, (151, 145, 129), x+440,y+15, 225)
     pygame.draw.line(canvas,(103,79,61),(x+22,y+41),(x+w-22,y+41),1)
     # Dos filas con fotos auténticas del evento de periodista.
-    for i,j in enumerate(jugadores):
+    if len(jugadores) > 2:                       # multijugador local con 3 o 4: filas compactas
+        n = len(jugadores)
+        alto = 37 if n == 3 else 27
+        for i, j in enumerate(jugadores):
+            yy = y + 49 + i * (alto + (5 if n == 3 else 4))
+            pygame.draw.rect(canvas, (36, 31, 30), (x+23, yy, 432, alto), border_radius=3)
+            pygame.draw.rect(canvas, j["color"], (x+23, yy, 5, alto))
+            _hud_txt_ajustado(canvas, j["nombre"].upper(), 19 if n == 3 else 16, (235, 218, 187),
+                              x+38, yy + (8 if n == 3 else 4), 150, True)
+            _hud_txt(canvas, "FUERA" if j["eliminado"] else ("OBJETIVO" if j["llego"] else "EXPLORANDO"),
+                     13, (211, 96, 79) if j["eliminado"] else (161, 164, 148), x+200, yy + (11 if n == 3 else 6))
+            for k in range(VIDAS):
+                dibujar_gota(canvas, x+359+k*28, yy + alto // 2, 7 if n == 3 else 6,
+                             COL_AGUA if k < j["vidas"] else COL_APAGADO, seca=k >= j["vidas"])
+    for i,j in enumerate(jugadores if len(jugadores) <= 2 else []):
         yy=y+49+i*62
         pygame.draw.rect(canvas,(36,31,30),(x+23,yy,432,57),border_radius=3)
         pygame.draw.line(canvas,(104,72,51),(x+95,yy+53),(x+432,yy+53),1)
@@ -1727,12 +1749,28 @@ def Evento_2(rol=None):
             semilla = red.pedir_campo()
         if semilla is None:
             red = None                          # sin servidor o solo: modo clásico
-    if red is not None:
-        nombre_pj = NOMBRE_POR_ROL[rol]
-        color_pj = next(c for pareja in PAREJAS for n, c, _ in pareja if n == nombre_pj)
-        parejas = [[(nombre_pj, color_pj, WASD)]]  # solo mi personaje (WASD o flechas)
+    # Modo elegido en el menú (CREAR PARTIDA): un jugador, local (2-4 en este PC) o en red.
+    try:
+        from Red import cliente as _cliente
+        modo, locales = _cliente.modo(), _cliente.jugadores_locales()
+    except ImportError:
+        modo, locales = None, 1
+    global TEXTO_CONTROLES
+    colores = {n: c for pareja in PAREJAS for n, c, _ in pareja}
+    nombre_pj = NOMBRE_POR_ROL.get(rol, "Presidente")
+    if red is None and modo == "local":
+        # todos a la vez, cada uno con sus teclas; el jugador 1 lleva el personaje elegido
+        orden = [nombre_pj] + [n for n in ("Presidente", "Ciudadano", "Periodista", "Influencer") if n != nombre_pj]
+        grupo = [(n, colores[n], TECLAS_LOCALES[k]) for k, n in enumerate(orden[:locales])]
+        parejas = [grupo]
+        TEXTO_CONTROLES = "Controles: " + "; ".join(
+            f"{n}, {NOMBRE_TECLAS[t]}" for n, _, t in grupo) + "."
+    elif red is not None or modo in ("solo", "red"):
+        parejas = [[(nombre_pj, colores[nombre_pj], WASD)]]  # solo mi personaje (WASD o flechas)
+        TEXTO_CONTROLES = "Te mueves con W, A, S, D o con las flechas."
     else:
-        parejas = PAREJAS
+        parejas = PAREJAS                   # sin menú: modo clásico de dos parejas
+        TEXTO_CONTROLES = "El primer jugador se mueve con W, A, S, D; el segundo, con las flechas."
 
     pantalla_completa = False
     display = pygame.display.set_mode((1280, 720), pygame.RESIZABLE)
@@ -1788,7 +1826,7 @@ def Evento_2(rol=None):
     indice_pareja = 0
     duo_actual = 0                  # pareja que está jugando ahora (para la imagen de arriba)
     jugadores = crear_jugadores(parejas[0])
-    if red is not None:
+    if len(jugadores) == 1:
         jugadores[0]["teclas_extra"] = [FLECHAS]
         jugadores[0]["x"] = ANCHO // 2
         jugadores[0]["inicio"] = (ANCHO // 2, jugadores[0]["y"])
@@ -2020,4 +2058,4 @@ def Evento_2(rol=None):
 
 
 if __name__ == "__main__":
-    Evento_2()
+    Evento_2()
