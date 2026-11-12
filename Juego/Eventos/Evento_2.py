@@ -79,6 +79,12 @@ COL_MINA = (220, 40, 40)
 FPS_ANIMACION = 12
 ESCALA_SPRITE = 1.0
 
+# --- PRUEBA DE SPRITES: usa el cuerpo de otro personaje sin cambiar nombres ni HUD ---
+# {"Periodista": "Sobreviviente"} = el Periodista (punto amarillo) se dibuja con los sprites de Sobreviviente.
+# Deja el diccionario vacio ({}) para volver a la normalidad.
+SPRITES_PRUEBA = {"Periodista": "Sobreviviente"}
+# ---------------------------------------------------------------------------------------
+
 ALTURA_SPRITE = int(RADIO_SPRITE_VISUAL * 2 * ESCALA_SPRITE)
 LIMITE_ARRIBA = ALTURA_SPRITE - RADIO_HITBOX   # y mínima de los pies para que la cabeza no se salga por arriba
 
@@ -153,7 +159,7 @@ def cargar_animaciones():
     for pareja in PAREJAS:
         for nombre, color, teclas in pareja:
             ANIMACIONES[nombre] = {}
-            ruta_personaje = ruta_base / nombre
+            ruta_personaje = ruta_base / SPRITES_PRUEBA.get(nombre, nombre)
             if not ruta_personaje.exists():
                 continue
 

@@ -1,0 +1,47 @@
+{
+  "cell_w": 116,
+  "cell_h": 248,
+  "pivot": "bottom-center",
+  "animations": {
+    "walk_down": {
+      "sheet": "down.png",
+      "row": 0,
+      "frames": 8
+    },
+    "idle_down": {
+      "sheet": "down.png",
+      "row": 1,
+      "frames": 8
+    },
+    "walk_up": {
+      "sheet": "up.png",
+      "row": 0,
+      "frames": 8
+    },
+    "idle_up": {
+      "sheet": "up.png",
+      "row": 1,
+      "frames": 8
+    },
+    "walk_left": {
+      "sheet": "left.png",
+      "row": 0,
+      "frames": 8
+    },
+    "idle_left": {
+      "sheet": "left.png",
+      "row": 1,
+      "frames": 10
+    },
+    "walk_right": {
+      "sheet": "right.png",
+      "row": 0,
+      "frames": 8
+    },
+    "idle_right": {
+      "sheet": "right.png",
+      "row": 1,
+      "frames": 10
+    }
+  }
+}
