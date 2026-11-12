@@ -13,8 +13,8 @@ VIDAS = 2
 
 # --- PODER (tecla B): muestra las minas un momento ---
 TECLA_PODER = pygame.K_b
-DURACION_PODER = 8.0        # segundos que se ven las minas
-ESPERA_PODER = 5.0         # segundos para volver a usarlo (cuentan desde que lo activas)
+DURACION_PODER = 5.0        # segundos que se ven las minas
+ESPERA_PODER = 9.0         # segundos de recarga tras finalizar el escaneo
 # -----------------------------------------------------
 
 # --- SEPARACIÓN DE TAMAÑOS ---
@@ -56,8 +56,8 @@ IMAGENES_DUO = ["Duo_1.png", "Duo_2.png"]   # 1a pareja (Presidente + Influencer
 
 # --- TIPOGRAFIAS (opcionales): ponlas en Assets/Fuentes. Si no estan, usa fuentes del sistema ---
 # Recomendadas (gratis en Google Fonts): "Stardos Stencil" (titulos) y "Special Elite" (maquina de escribir)
-FUENTE_TITULO_TTF = "StardosStencil-Bold.ttf"
-FUENTE_TEXTO_TTF = "SpecialElite-Regular.ttf"
+FUENTE_TITULO_TTF = None
+FUENTE_TEXTO_TTF = None
 VELOCIDAD_TEXTO = 70        # letras por segundo en la maquina de escribir del tutorial
 # -------------------------------------------------------------------------------------------
 # ================================
@@ -583,11 +583,11 @@ def _cargar_fuente(archivo, nombres_sistema, tam, negrita=False):
 def cargar_fuentes():
     FUENTES.clear()
     _CACHE_TEXTO.clear()
-    titulares = "impact,haettenschweiler,arialnarrow,arial"
-    maquina = "couriernew,consolas,dejavusansmono,courier"
-    FUENTES["nombre"] = _cargar_fuente(FUENTE_TITULO_TTF, titulares, 27)
-    FUENTES["titulo"] = _cargar_fuente(FUENTE_TITULO_TTF, titulares, 54)
-    FUENTES["tecla"] = _cargar_fuente(FUENTE_TITULO_TTF, titulares, 20)
+    titulares = "timesnewroman,liberationserif"
+    maquina = "timesnewroman,liberationserif"
+    FUENTES["nombre"] = _cargar_fuente(FUENTE_TITULO_TTF, titulares, 27, True)
+    FUENTES["titulo"] = _cargar_fuente(FUENTE_TITULO_TTF, titulares, 54, True)
+    FUENTES["tecla"] = _cargar_fuente(FUENTE_TITULO_TTF, titulares, 20, True)
     FUENTES["cuerpo"] = _cargar_fuente(FUENTE_TEXTO_TTF, maquina, 28, True)
     FUENTES["nota"] = _cargar_fuente(FUENTE_TEXTO_TTF, maquina, 19, True)
     FUENTES["pequena"] = _cargar_fuente(FUENTE_TEXTO_TTF, maquina, 16, True)
@@ -1101,7 +1101,15 @@ def mostrar_tutorial(display, canvas, fondo, reloj):
             "titulo": "Escanea el terreno",
             "texto": f"Tu dispositivo puede revelar temporalmente las minas ocultas. Pulsa B para activarlo. "
                      f"El escaneo dura {int(DURACION_PODER)} segundos y luego necesita {int(ESPERA_PODER)} "
-                     "segundos para recargarse.",
+                     "segundos para recargarse después de apagarse.",
+            "demo": demo_poder,
+        },
+        {
+            "titulo": "Sensor de proximidad compartido",
+            "texto": "El equipo tiene UN solo sensor para los dos exploradores. Cuando cualquiera se acerca "
+                     "mucho a una mina, el dispositivo avisa con una señal roja y el texto MINA CERCA. "
+                     "No indica cuál de los dos está en peligro ni dónde está la mina: deben observar "
+                     "el terreno, comunicarse y decidir quién debe moverse. El aviso funciona sin pulsar B.",
             "demo": demo_poder,
         },
         {
@@ -1221,6 +1229,475 @@ def mostrar_tutorial(display, canvas, fondo, reloj):
 
 # ---------------------------------------------------------------- evento
 
+
+# ==============================================================
+# REMASTER — efectos y optimización independientes de las mecánicas
+# ==============================================================
+REMASTER_CINEMATICA = False
+REMASTER_RADAR_PROXIMIDAD = False
+REMASTER_PARTICULAS_PASOS = True
+REMASTER_CELDA_MINAS = 64
+REMASTER_DISTANCIA_ALERTA = 115
+
+def remaster_indice_minas(minas):
+    """Índice espacial: conserva exactamente las mismas minas y colisiones."""
+    celdas = {}
+    for mina in minas:
+        clave = (int(mina[0] // REMASTER_CELDA_MINAS),
+                 int(mina[1] // REMASTER_CELDA_MINAS))
+        celdas.setdefault(clave, []).append(mina)
+    return celdas
+
+def remaster_minas_cercanas(indice, x, y, radio):
+    cx = int(x // REMASTER_CELDA_MINAS)
+    cy = int(y // REMASTER_CELDA_MINAS)
+    alcance = math.ceil(radio / REMASTER_CELDA_MINAS) + 1
+    for ix in range(cx - alcance, cx + alcance + 1):
+        for iy in range(cy - alcance, cy + alcance + 1):
+            yield from indice.get((ix, iy), ())
+
+def remaster_cartel(canvas, titulo, subtitulo, progreso=0.0):
+    """Placa industrial legible, independiente de las imágenes de fondo."""
+    capa = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)
+    capa.fill((10, 10, 13, 188))
+    canvas.blit(capa, (0, 0))
+    r = pygame.Rect(ANCHO // 2 - 420, ALTO // 2 - 125, 840, 250)
+    pygame.draw.rect(canvas, (18, 17, 19), r, border_radius=8)
+    pygame.draw.rect(canvas, (183, 127, 74), r, 4, border_radius=8)
+    pygame.draw.rect(canvas, (126, 42, 37), (r.x + 20, r.y + 20, 8, r.h - 40))
+    f1 = pygame.font.SysFont("timesnewroman", 58, bold=True)
+    f2 = pygame.font.SysFont("timesnewroman", 25, bold=True)
+    for texto, font, y, color in (
+        (titulo, f1, r.y + 74, (245, 223, 189)),
+        (subtitulo, f2, r.y + 157, (204, 164, 115)),
+    ):
+        surf = font.render(texto, True, color)
+        canvas.blit(surf, surf.get_rect(center=(ANCHO // 2, y)))
+    pygame.draw.rect(canvas, (65, 47, 37), (r.x + 64, r.bottom - 35, r.w - 128, 7))
+    pygame.draw.rect(canvas, (209, 143, 81),
+                     (r.x + 64, r.bottom - 35, int((r.w - 128) * max(0, min(1, progreso))), 7))
+
+def remaster_cinematica(display, canvas, fondo, reloj, titulo, subtitulo, duracion=2.6):
+    """Apertura integrada, omisible con Enter/Espacio, sin requerir un MP4."""
+    transcurrido = 0.0
+    while transcurrido < duracion:
+        dt = min(reloj.tick(60) / 1000.0, 0.06)
+        transcurrido += dt
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if evento.type == pygame.KEYDOWN and evento.key in (
+                    pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE, pygame.K_ESCAPE):
+                return display
+            if evento.type == pygame.VIDEORESIZE:
+                display = pygame.display.set_mode(
+                    (max(320, evento.w), max(240, evento.h)), pygame.RESIZABLE)
+        if fondo is not None:
+            dibujar_fondo(canvas, fondo, ALTO_MUNDO - ALTO)
+        else:
+            canvas.fill((22, 19, 18))
+        remaster_cartel(canvas, titulo, subtitulo, transcurrido / duracion)
+        Metodos.mostrar_canvas(display, canvas)
+        pygame.display.flip()
+    return display
+
+_REMASTER_FUENTE_RADAR = None
+
+def remaster_radar(canvas, jugadores, indice, tiempo):
+    """Aviso de proximidad: no revela posiciones exactas de minas ocultas."""
+    global _REMASTER_FUENTE_RADAR
+    if _REMASTER_FUENTE_RADAR is None:
+        _REMASTER_FUENTE_RADAR = pygame.font.SysFont("consolas", 19, bold=True)
+    for j in jugadores:
+        if j["eliminado"] or j["llego"]:
+            continue
+        dist_min = REMASTER_DISTANCIA_ALERTA
+        for mx, my in remaster_minas_cercanas(
+                indice, j["x"], j["y"], REMASTER_DISTANCIA_ALERTA):
+            distancia = math.hypot(j["x"] - mx, j["y"] - my)
+            dist_min = min(dist_min, distancia)
+        if dist_min >= REMASTER_DISTANCIA_ALERTA:
+            continue
+        intensidad = 1 - dist_min / REMASTER_DISTANCIA_ALERTA
+        x = 280 if j["teclas"] == WASD else ANCHO - 280
+        y = 120
+        radio = int(16 + intensidad * 13 + 3 * math.sin(tiempo * 8))
+        color = (232, 170, 74) if intensidad < .65 else (230, 80, 61)
+        pygame.draw.circle(canvas, color, (x, y), max(4, radio), 2)
+        etiqueta = _REMASTER_FUENTE_RADAR.render("PELIGRO CERCANO", True, color)
+        canvas.blit(etiqueta, etiqueta.get_rect(center=(x, y + 37)))
+
+def remaster_pasos(canvas, jugadores, camara, tiempo):
+    """Sombras/huellas visuales ligeras, sin superficies nuevas por frame."""
+    for j in jugadores:
+        if j["eliminado"] or j["llego"] or j["estado"] == "quieto":
+            continue
+        x = int(j["x"])
+        y = int(j["y"] - camara + RADIO_HITBOX)
+        if not (-12 < y < ALTO + 12):
+            continue
+        lado = -1 if int(tiempo * 7) % 2 else 1
+        pygame.draw.ellipse(canvas, (82, 65, 48),
+                         (x + lado * 11 - 7, y - 1, 14, 5))
+
+
+
+# Niebla de polvo precalculada: superficies pequeñas, sin ruido por píxel en el bucle.
+# Efectos ambientales precalculados: no se crean superficies durante el dibujo.
+NIEBLA_ACTIVA = True
+NIEBLA_OPACIDAD = 0.78  # 0.0 a 1.0; valores bajos mejoran la visibilidad
+LUCES_PERSONAJES = False
+POLVO_RAFAGAS = True
+HUD_REMASTER = True
+
+def cargar_atmosfera():
+    ruta = carpeta_assets("Interfaz", "Evento2Remaster")
+    capas = []
+    for nombre, velocidad, amplitud in (
+        ("bruma_01.png", 9.0, 0.12),
+        ("bruma_02.png", -14.0, 0.07),
+    ):
+        try:
+            imagen = pygame.image.load(str(ruta / nombre)).convert_alpha()
+            imagen.set_alpha(int(255 * NIEBLA_OPACIDAD))
+            capas.append((imagen, velocidad, amplitud))
+        except (OSError, pygame.error) as error:
+            print(f"[Evento_2] Niebla opcional no disponible: {nombre}: {error}")
+    return capas
+
+def dibujar_neblina(canvas, capas, tiempo, camara):
+    if not NIEBLA_ACTIVA:
+        return
+    # Bruma en franjas amplias, desplazamiento lento con parallax.
+    for indice, (imagen, velocidad, amplitud) in enumerate(capas):
+        w, h = imagen.get_size()
+        x_inicio = int(tiempo * velocidad) % w - w
+        y_inicio = int(camara * amplitud + indice * 255) % h - h
+        for y in range(y_inicio, ALTO, h):
+            for x in range(x_inicio, ANCHO, w):
+                canvas.blit(imagen, (x, y))
+
+def crear_luz_personaje():
+    radio = 175
+    luz = pygame.Surface((radio * 2, radio * 2), pygame.SRCALPHA)
+    for r in range(radio, 0, -5):
+        f = 1 - r / radio
+        a = int(2 + 10 * f * f)
+        pygame.draw.circle(luz, (244, 184, 112, a), (radio, radio), r)
+    return luz
+
+def dibujar_luces(canvas, jugadores, camara, luz):
+    if not LUCES_PERSONAJES:
+        return
+    for jugador in jugadores:
+        if jugador["eliminado"]:
+            continue
+        x, y = int(jugador["x"]), int(jugador["y"] - camara - 56)
+        if -180 < y < ALTO + 180:
+            canvas.blit(luz, (x - 175, y - 175), special_flags=pygame.BLEND_RGBA_ADD)
+
+def crear_rafagas():
+    rng = random.Random(6152)
+    return [(rng.randrange(ANCHO), rng.randrange(ALTO_MUNDO),
+             rng.randrange(14, 30), rng.randrange(2, 5), rng.random() * 6.28)
+            for _ in range(65)]
+
+def dibujar_rafagas(canvas, rafagas, camara, tiempo):
+    if not POLVO_RAFAGAS:
+        return
+    for x, y, velocidad, grosor, fase in rafagas:
+        sy = int(y - camara + math.sin(tiempo * .7 + fase) * 13)
+        if 0 <= sy < ALTO:
+            sx = int((x + tiempo * velocidad) % ANCHO)
+            pygame.draw.line(canvas, (121, 102, 77), (sx, sy),
+                             (min(ANCHO - 1, sx + 15), sy - 3), grosor)
+
+def dibujar_hud_remaster(canvas, jugadores, activo, espera, tiempo):
+    if not HUD_REMASTER:
+        return
+    # Franja de estado bajo el panel existente, sin tapar el mapa central.
+    r = pygame.Rect(22, 174, 580, 31)
+    placa(canvas, r, corte=7, alfa=200)
+    if activo > 0:
+        texto = "ESCANEO ACTIVO"
+        restante = activo / DURACION_PODER
+        color = COL_AMBAR
+    elif espera > 0:
+        texto = "RECARGANDO ESCANER"
+        restante = 1 - espera / ESPERA_PODER
+        color = COL_APAGADO
+    else:
+        texto = "ESCANER DISPONIBLE  [B]"
+        restante = 1.0
+        color = COL_AGUA
+    fuente = FUENTES["pequena"]
+    escribir(canvas, texto, fuente, color, (r.x + 12, r.centery), "midleft")
+    pygame.draw.rect(canvas, (54, 43, 36), (r.right - 190, r.y + 10, 171, 10))
+    ancho = max(0, min(171, int(171 * restante)))
+    if ancho:
+        pygame.draw.rect(canvas, color, (r.right - 190, r.y + 10, ancho, 10))
+    pygame.draw.rect(canvas, COL_ACERO, (r.right - 190, r.y + 10, 171, 10), 1)
+
+
+# ====== REMASTER VISUAL: onda, quemaduras, sombras y chispas ======
+RADAR_VELOCIDAD_ONDA = 610.0
+RADAR_ALCANCE_ONDA = 1900.0
+DECAL_DURACION = 24.0
+
+def crear_decal_quemadura():
+    superficie = pygame.Surface((92, 50), pygame.SRCALPHA)
+    for r, alpha in ((43, 14), (34, 24), (25, 36), (16, 32)):
+        pygame.draw.ellipse(superficie, (18, 12, 10, alpha),
+                            (46-r, 25-int(r*.52), 2*r, int(r*1.04)))
+    return superficie
+
+def dibujar_decal_quemaduras(canvas, marcas, camara, decal, tiempo):
+    for marca in marcas:
+        x, y, t0 = marca
+        edad = tiempo - t0
+        if edad > DECAL_DURACION:
+            continue
+        sy = int(y - camara)
+        if -60 < sy < ALTO + 60:
+            decal.set_alpha(int(255 * (1 - edad / DECAL_DURACION)))
+            canvas.blit(decal, (int(x)-46, sy-25))
+    decal.set_alpha(255)
+
+def dibujar_onda_radar(canvas, jugadores, tiempo_desde_activacion, camara):
+    radio = int(tiempo_desde_activacion * RADAR_VELOCIDAD_ONDA)
+    if radio > RADAR_ALCANCE_ONDA:
+        return
+    for jugador in jugadores:
+        if jugador['eliminado']:
+            continue
+        cx, cy = int(jugador['x']), int(jugador['y'] - camara)
+        if cy + radio < 0 or cy - radio > ALTO:
+            continue
+        for delta, color, grosor in ((0, (245, 193, 101), 3), (-17, (98, 191, 199), 2)):
+            r = radio + delta
+            if r > 1:
+                pygame.draw.circle(canvas, color, (cx, cy), r, grosor)
+
+def dibujar_minas_pulso(canvas, minas, camara, tiempo, edad_poder, jugadores):
+    # La onda revela progresivamente las minas; no altera sus hitboxes.
+    alcance = min(RADAR_ALCANCE_ONDA, edad_poder * RADAR_VELOCIDAD_ONDA)
+    for mx, my in minas:
+        sy = int(my - camara)
+        if not (-22 <= sy <= ALTO + 22):
+            continue
+        if not any(math.hypot(mx-j['x'], my-j['y']) <= alcance
+                   for j in jugadores if not j['eliminado']):
+            continue
+        pulso = (1 + math.sin(tiempo * 10 + mx * .017 + my * .009)) * .5
+        pygame.draw.circle(canvas, (95, 36, 24), (mx, sy), 12 + int(4*pulso))
+        pygame.draw.circle(canvas, (210 + int(40*pulso), 65 + int(75*pulso), 38),
+                           (mx, sy), RADIO_MINA + int(2*pulso))
+        pygame.draw.circle(canvas, (255, 220, 132), (mx, sy), 2)
+
+def dibujar_marcos_peligro(canvas, poder_activo, tiempo):
+    if poder_activo <= 0:
+        return
+    intensidad = int(22 + 14 * (0.5 + 0.5 * math.sin(tiempo * 5)))
+    overlay = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)
+    overlay.fill((9, 18, 23, intensidad))
+    canvas.blit(overlay, (0, 0))
+    pygame.draw.rect(canvas, (129, 178, 180), (5, 5, ANCHO-10, ALTO-10), 2)
+
+
+# ===============================================================
+# HUD INDUSTRIAL: inspirado en la interfaz de la entrevista
+# Componentes y retratos cargados una sola vez; datos siempre dinámicos.
+# ===============================================================
+def cargar_retratos_industriales():
+    nombres = {
+        "Presidente": "retrato_respuesta.png",
+        "Influencer": "retrato_opinion.png",
+        "Periodista": "retrato_pregunta.png",
+        "Ciudadano": "retrato_ciudadano.png",
+    }
+    resultado = {}
+    for nombre, archivo in nombres.items():
+        ruta = carpeta_assets("Interfaz", "Evento2Industrial", archivo)
+        try:
+            imagen = pygame.image.load(str(ruta)).convert_alpha()
+            resultado[nombre] = pygame.transform.smoothscale(imagen, (51, 51))
+        except (OSError, pygame.error) as error:
+            print(f"[Evento_2] Retrato industrial opcional {nombre}: {error}")
+    return resultado
+
+def _hud_txt(canvas, texto, tam, color, x, y, bold=False, centro=False):
+    cache = getattr(_hud_txt, "_cache", None)
+    if cache is None:
+        cache = {}
+        _hud_txt._cache = cache
+    key = (tam, bold)
+    if key not in cache:
+        cache[key] = pygame.font.SysFont("timesnewroman", tam, bold=bold)
+    superficie = cache[key].render(str(texto), True, color)
+    rect = superficie.get_rect(center=(x, y)) if centro else superficie.get_rect(topleft=(x, y))
+    canvas.blit(superficie, rect)
+    return rect
+
+def _hud_txt_ajustado(canvas, texto, tam, color, x, y, max_ancho, bold=False):
+    """Reduce solo el tamaño de la etiqueta hasta que quepa en el panel."""
+    texto = str(texto)
+    for talla in range(tam, 11, -1):
+        fuente = pygame.font.SysFont("timesnewroman", talla, bold=bold)
+        if fuente.size(texto)[0] <= max_ancho:
+            return _hud_txt(canvas, texto, talla, color, x, y, bold)
+    return _hud_txt(canvas, texto, 12, color, x, y, bold)
+
+SENSOR_RADIO = 90  # distancia en píxeles del mundo; un aviso compartido
+
+def sensor_compartido(jugadores, indice):
+    """Solo indica peligro si AL MENOS UNO está cerca; no revela quién."""
+    radio2 = SENSOR_RADIO * SENSOR_RADIO
+    for jugador in jugadores:
+        if jugador["eliminado"] or jugador["llego"]:
+            continue
+        x, y = jugador["x"], jugador["y"]
+        for mx, my in remaster_minas_cercanas(indice, x, y, SENSOR_RADIO):
+            if (x - mx) ** 2 + (y - my) ** 2 <= radio2:
+                return True
+    return False
+
+_HUD_CHASIS = None
+
+def cargar_chasis_hud():
+    global _HUD_CHASIS
+    try:
+        ruta = carpeta_assets("Interfaz", "Evento2Industrial", "chasis_expediente.png")
+        _HUD_CHASIS = pygame.image.load(str(ruta)).convert_alpha()
+    except (OSError, pygame.error) as error:
+        _HUD_CHASIS = None
+        print(f"[Evento_2] Chasis opcional no disponible: {error}")
+
+def dibujar_hud_industrial(canvas, jugadores, pareja, retratos, espera, activo, tiempo, alerta=False):
+    x, y, w, h = 24, 22, 700, 216
+    if _HUD_CHASIS is not None:
+        canvas.blit(_HUD_CHASIS, (x - 18, y - 18))
+    else:
+        pygame.draw.rect(canvas, (31, 27, 27), (x, y, w, h), border_radius=7)
+        pygame.draw.rect(canvas, (132, 88, 51), (x, y, w, h), 3, border_radius=7)
+    _hud_txt(canvas, "EXPEDIENTE DE CAMPO", 19, (219, 172, 112), x+25,y+12,True)
+    _hud_txt_ajustado(canvas, "SECTOR / CAMPO MINADO", 15, (151, 145, 129), x+440,y+15, 225)
+    pygame.draw.line(canvas,(103,79,61),(x+22,y+41),(x+w-22,y+41),1)
+    # Dos filas con fotos auténticas del evento de periodista.
+    for i,j in enumerate(jugadores):
+        yy=y+49+i*62
+        pygame.draw.rect(canvas,(36,31,30),(x+23,yy,432,57),border_radius=3)
+        pygame.draw.line(canvas,(104,72,51),(x+95,yy+53),(x+432,yy+53),1)
+        pygame.draw.rect(canvas,j["color"],(x+23,yy,5,57))
+        portrait=retratos.get(j["nombre"])
+        if portrait:
+            crop=pygame.Rect(0,0,53,53)
+            pygame.draw.rect(canvas,(198,179,146),(x+34,yy+2,57,53))
+            thumb=portrait
+            canvas.blit(thumb,(x+37,yy+3))
+        else:
+            pygame.draw.rect(canvas,(96,78,63),(x+35,yy+3,52,52))
+            _hud_txt(canvas,j["nombre"][0],26,(230,211,178),x+51,yy+12,True)
+        _hud_txt_ajustado(canvas,j["nombre"].upper(),25,(235,218,187),x+105,yy+5,220,True)
+        _hud_txt(canvas,"FUERA" if j["eliminado"] else ("OBJETIVO" if j["llego"] else "EXPLORANDO"),
+                 14,(211,96,79) if j["eliminado"] else (161,164,148),x+107,yy+36)
+        for k in range(VIDAS):
+            cx=x+359+k*31
+            cy=yy+29
+            dibujar_gota(canvas,cx,cy,9,COL_AGUA if k<j["vidas"] else COL_APAGADO,
+                         seca=k>=j["vidas"])
+    # Un único sensor para toda la pareja: nunca identifica al jugador.
+    cx,cy=x+542,y+105
+    pygame.draw.circle(canvas,(9,21,22),(cx,cy),53)
+    borde=(224,70,52) if alerta else (163,117,70)
+    pygame.draw.circle(canvas,borde,(cx,cy),56,5)
+    for a in range(0,360,30):
+        t=math.radians(a)
+        pygame.draw.circle(canvas,borde,
+                           (int(cx+57*math.cos(t)),int(cy+57*math.sin(t))),2)
+    pygame.draw.circle(canvas,(52,101,92),(cx,cy),47,1)
+    dibujar_radar(canvas,cx,cy,40,tiempo*(4.2 if activo>0 else 0.75),
+                  (99,207,184) if activo>0 else (117,147,131),True)
+    # Zona de texto estrictamente contenida dentro del chasis (borde derecho x+w).
+    tx=x+605
+    disponible=x+w-tx-16
+    if alerta:
+        pulso=0.5+0.5*math.sin(tiempo*11)
+        rojo=(int(190+60*pulso),int(70+35*pulso),55)
+        _hud_txt_ajustado(canvas,"¡MINA",20,rojo,tx,y+59,disponible,True)
+        _hud_txt_ajustado(canvas,"CERCA!",20,rojo,tx,y+85,disponible,True)
+        _hud_txt_ajustado(canvas,"SENSOR",14,(222,181,130),tx,y+121,disponible,True)
+    else:
+        _hud_txt_ajustado(canvas,"ESCÁNER B",17,(238,200,135),tx,y+59,disponible,True)
+        estado="ACTIVO" if activo>0 else ("RECARGA" if espera>0 else "LISTO")
+        color=(110,229,195) if activo>0 else ((211,153,94) if espera>0 else (132,215,160))
+        _hud_txt_ajustado(canvas,estado,18,color,tx,y+88,disponible,True)
+        tiempo_restante=f"{activo if activo>0 else espera:.1f} s" if activo>0 or espera>0 else "[B]"
+        _hud_txt_ajustado(canvas,tiempo_restante,18,(230,215,184),tx,y+118,disponible,True)
+    color=(110,229,195) if activo>0 else ((211,153,94) if espera>0 else (132,215,160))
+    # Barra inferior única con progreso real.
+    pygame.draw.rect(canvas,(17,15,15),(x+18,y+176,w-36,29),border_radius=3)
+    if activo>0:
+        fraccion=activo/DURACION_PODER
+        leyenda="ESCANEANDO / MINAS REVELADAS"
+    elif espera>0:
+        fraccion=1-espera/ESPERA_PODER
+        leyenda="SISTEMA RECARGANDO"
+    else:
+        fraccion=1.0
+        leyenda="ESCÁNER DISPONIBLE [B]"
+    _hud_txt_ajustado(canvas,leyenda,15,(215,192,154),x+29,y+181,342,True)
+    bw=278
+    pygame.draw.rect(canvas,(51,53,49),(x+393,y+184,bw,12))
+    pygame.draw.rect(canvas,color,(x+393,y+184,int(bw*max(0,min(1,fraccion))),12))
+    pygame.draw.rect(canvas,(170,127,81),(x+393,y+184,bw,12),1)
+
+# ATMÓSFERA VISIBLE: sombras de bordes, manchas de terreno y bancos de polvo.
+# Sin focos aditivos ni filtros de píxeles por fotograma.
+def crear_atmosfera_profunda():
+    rng=random.Random(8841)
+    sombras=pygame.Surface((ANCHO,ALTO),pygame.SRCALPHA)
+    for i in range(70):
+        a=int(35*(1-i/70)**1.8)
+        pygame.draw.rect(sombras,(8,9,14,a),(i,i,ANCHO-2*i,ALTO-2*i),3)
+    # Detalles ambientales de suelo ligados a coordenadas del mundo.
+    suelo=pygame.Surface((ANCHO,ALTO_MUNDO),pygame.SRCALPHA)
+    for _ in range(100):
+        x=rng.randrange(135,ANCHO-135)
+        y=rng.randrange(90,ALTO_MUNDO-90)
+        radio=rng.randrange(25,78)
+        alto=rng.randrange(7,19)
+        pygame.draw.ellipse(suelo,(18,14,12,17),(x-radio,y-alto,radio*2,alto*2))
+        pygame.draw.ellipse(suelo,(192,163,120,11),(x-radio+9,y-alto+3,radio*2,alto*2),2)
+    # Bancos de niebla pre-renderizados con transparencias reales.
+    bancos=[]
+    for i in range(3):
+        surf=pygame.Surface((500,190),pygame.SRCALPHA)
+        for k in range(24):
+            px=rng.randrange(40,460)
+            py=rng.randrange(35,160)
+            rad=rng.randrange(30,100)
+            pygame.draw.ellipse(surf,(176,167,145,rng.randrange(4,12)),
+                               (px-rad,py-rad//3,rad*2,rad//2+38))
+        pygame.draw.ellipse(surf,(174,161,138,16),(15,65,460,75))
+        bancos.append(surf)
+    return sombras,suelo,bancos
+
+def dibujar_atmosfera_suelo(canvas,atmosfera,camara,tiempo):
+    _,suelo,_=atmosfera
+    canvas.blit(suelo,(0,0),(0,int(camara),ANCHO,ALTO))
+
+def dibujar_atmosfera_bruma(canvas,atmosfera,tiempo):
+    _,_,bancos=atmosfera
+    for i,banco in enumerate(bancos):
+        ancho=banco.get_width()
+        x=int((tiempo*(13+i*7)+i*490)%(ANCHO+ancho))-ancho
+        y=int(175+i*250+math.sin(tiempo*.25+i)*45)
+        canvas.blit(banco,(x,y))
+
+def dibujar_atmosfera_bordes(canvas,atmosfera):
+    canvas.blit(atmosfera[0],(0,0))
+
 def Evento_2(rol=None):
     """rol: personaje elegido (por ahora no cambia nada: se juega el modo clásico de dos parejas)."""
     pygame.init()
@@ -1241,6 +1718,8 @@ def Evento_2(rol=None):
             print(f"[Evento_2] No se pudo cargar el fondo '{FONDO}': {e}")
 
     duos = cargar_duos()
+    hud_retratos = cargar_retratos_industriales()
+    cargar_chasis_hud()
 
     reloj = pygame.time.Clock()
 
@@ -1257,14 +1736,28 @@ def Evento_2(rol=None):
     canvas_mundo = pygame.Surface((ANCHO, ALTO))
     sombra_personaje = crear_sombra()
     capa_ambiente = crear_capa_ambiente()
+    capas_neblina = cargar_atmosfera()
+    atmosfera_profunda = crear_atmosfera_profunda()
+    luz_personaje = None
+    rafagas = crear_rafagas()
+    remaster_vineta = None
+    try:
+        remaster_vineta = pygame.image.load(
+            str(carpeta_assets("Interfaz", "Evento2Remaster", "vineta.png"))).convert_alpha()
+    except (OSError, pygame.error):
+        pass
     tiempo_mundo = 0.0
     destello_dano = 0.0
 
+    marcas_quemadura = []
+    decal_quemadura = crear_decal_quemadura()
+    radar_inicio = None
     resultados = {}
     indice_pareja = 0
     duo_actual = 0                  # pareja que está jugando ahora (para la imagen de arriba)
     jugadores = crear_jugadores(PAREJAS[0])
     minas = crear_minas()
+    indice_minas = remaster_indice_minas(minas)
     poder_activo = 0.0
     poder_espera = 0.0
     camara = ALTO_MUNDO - ALTO
@@ -1276,7 +1769,9 @@ def Evento_2(rol=None):
         dt = min(reloj.tick(60) / 1000, 0.05)
         tiempo_mundo += dt
         poder_activo = max(0.0, poder_activo - dt)
-        poder_espera = max(0.0, poder_espera - dt)
+        # La recarga comienza cuando termina el escaneo, no mientras está activo.
+        if poder_activo <= 0:
+            poder_espera = max(0.0, poder_espera - dt)
         destello_dano = max(0.0, destello_dano - dt)
         sacudida = max(0.0, sacudida - dt)
         for j in jugadores:
@@ -1293,9 +1788,10 @@ def Evento_2(rol=None):
             if event.type == pygame.VIDEORESIZE and not pantalla_completa:
                 display = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
             if event.type == pygame.KEYDOWN:
-                if event.key == TECLA_PODER and fase == "jugando" and poder_espera <= 0:
+                if event.key == TECLA_PODER and fase == "jugando" and poder_espera <= 0 and poder_activo <= 0:
                     poder_activo = DURACION_PODER
                     poder_espera = ESPERA_PODER
+                    radar_inicio = tiempo_mundo
                 if event.key == pygame.K_F11:
                     pantalla_completa = not pantalla_completa
                     if pantalla_completa:
@@ -1323,10 +1819,12 @@ def Evento_2(rol=None):
 
                 # --- COLISIONES USANDO RADIO_HITBOX (en los pies) ---
                 if j["invulnerable"] <= 0:
-                    for mx, my in minas:
+                    for mx, my in remaster_minas_cercanas(
+                            indice_minas, j["x"], j["y"], RADIO_HITBOX + RADIO_MINA):
                         if abs(my - j["y"]) < RADIO_HITBOX + RADIO_MINA and \
                                 math.hypot(j["x"] - mx, j["y"] - my) < RADIO_HITBOX + RADIO_MINA:
                             crear_explosion(particulas_explosion, ondas_explosion, mx, my)
+                            marcas_quemadura.append((mx, my, tiempo_mundo))
                             destello_dano = DURACION_DESTELLO
                             sacudida = DURACION_SACUDIDA
                             j["vidas"] -= 1
@@ -1352,6 +1850,9 @@ def Evento_2(rol=None):
                 indice_pareja += 1
                 if indice_pareja < len(PAREJAS):
                     minas = crear_minas()
+                    marcas_quemadura.clear()
+                    radar_inicio = None
+                    indice_minas = remaster_indice_minas(minas)
                 fase = "pausa"
                 pausa = PAUSA_ENTRE_PAREJAS
 
@@ -1370,15 +1871,26 @@ def Evento_2(rol=None):
 
         cam = int(camara)
         dibujar_fondo(canvas_mundo, fondo, cam)
+        dibujar_atmosfera_suelo(canvas_mundo, atmosfera_profunda, cam, tiempo_mundo)
+        marcas_quemadura[:] = [m for m in marcas_quemadura if tiempo_mundo-m[2] < DECAL_DURACION]
+        dibujar_decal_quemaduras(canvas_mundo, marcas_quemadura, cam, decal_quemadura, tiempo_mundo)
 
         if ACTIVAR_POLVO:
             dibujar_particulas_polvo(canvas_mundo, particulas_polvo, cam, capa_particulas)
         dibujar_explosiones(canvas_mundo, particulas_explosion, ondas_explosion, cam)
+        dibujar_neblina(canvas_mundo, capas_neblina, tiempo_mundo, cam)
+        dibujar_atmosfera_bruma(canvas_mundo, atmosfera_profunda, tiempo_mundo)
+        dibujar_rafagas(canvas_mundo, rafagas, cam, tiempo_mundo)
+        # No se usan luces aditivas sobre el suelo: evitamos círculos amarillos.
 
-        if MINAS_VISIBLES or poder_activo > 0:
+        if poder_activo > 0 and radar_inicio is not None:
+            edad_radar = tiempo_mundo - radar_inicio
+            dibujar_minas_pulso(canvas_mundo, minas, cam, tiempo_mundo, edad_radar, jugadores)
+            dibujar_onda_radar(canvas_mundo, jugadores, edad_radar, cam)
+        elif MINAS_VISIBLES:
             for mx, my in minas:
-                sy = my - cam
-                if -RADIO_MINA <= sy <= ALTO + RADIO_MINA:
+                sy = int(my - cam)
+                if -12 <= sy <= ALTO + 12:
                     pygame.draw.circle(canvas_mundo, COL_MINA, (mx, sy), RADIO_MINA)
 
         for j in jugadores:
@@ -1418,11 +1930,17 @@ def Evento_2(rol=None):
                     pygame.draw.line(canvas_mundo, (255, 255, 255), (int(j["x"]) - 7, sy - 7), (int(j["x"]) + 7, sy + 7), 3)
                     pygame.draw.line(canvas_mundo, (255, 255, 255), (int(j["x"]) - 7, sy + 7), (int(j["x"]) + 7, sy - 7), 3)
 
+        if REMASTER_PARTICULAS_PASOS:
+            remaster_pasos(canvas_mundo, jugadores, cam, tiempo_mundo)
         dibujar_textos(canvas_mundo, textos_flotantes, cam)
 
         # El ambiente se aplica encima del mundo, pero debajo de la interfaz.
         if ACTIVAR_ILUMINACION:
             canvas_mundo.blit(capa_ambiente, (0, 0))
+        if remaster_vineta is not None:
+            canvas_mundo.blit(remaster_vineta, (0, 0))
+        dibujar_atmosfera_bordes(canvas_mundo, atmosfera_profunda)
+        dibujar_marcos_peligro(canvas_mundo, poder_activo, tiempo_mundo)
         dibujar_destello_dano(canvas_mundo, destello_dano)
 
         # Sacudida breve de camara al pisar una mina; el HUD permanece estable.
@@ -1436,7 +1954,9 @@ def Evento_2(rol=None):
         canvas.blit(canvas_mundo, (int(desplazamiento_x), int(desplazamiento_y)))
 
         retrato = duos[duo_actual] if duo_actual < len(duos) else None
-        dibujar_hud(canvas, jugadores, retrato, poder_espera, poder_activo, tiempo_mundo)
+        peligro_compartido = sensor_compartido(jugadores, indice_minas) if fase == "jugando" else False
+        dibujar_hud_industrial(canvas, jugadores, duo_actual, hud_retratos,
+                             poder_espera, poder_activo, tiempo_mundo, peligro_compartido)
         dibujar_ruta_juego(canvas, jugadores)
         if fase == "pausa":
             dibujar_resultado(canvas, jugadores, indice_pareja if indice_pareja < len(PAREJAS) else None)
