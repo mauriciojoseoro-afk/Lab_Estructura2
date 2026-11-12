@@ -14,9 +14,9 @@ except ImportError:
 # ====== POSICIÓN Y TAMAÑO DE LA INTERFAZ ======
 # Puedes cambiarlos aquí, o dentro del juego con el MODO AJUSTE (tecla F2):
 #   flechas = mover (Shift = más rápido) | - / + = tamaño | Enter = imprime los valores en la consola
-UI_ESCALA = 0.98          # tamaño de toda la interfaz (1.0 = como era antes)
-UI_CENTRO_X = 435           # X del centro de la interfaz (el canvas mide 900 de ancho)
-UI_Y = 120                  # Y donde empieza la interfaz (más chico = más arriba)
+UI_ESCALA = 1.0          # tamaño de toda la interfaz (1.0 = como era antes)
+UI_CENTRO_X = 389           # X del centro de la interfaz (el canvas mide 900 de ancho)
+UI_Y = 112                  # Y donde empieza la interfaz (más chico = más arriba)
 PANEL_CABECERA_ALFA = 150   # oscurece detrás del encabezado para que se lea sobre el video (0 = sin panel)
 # ==============================================
 
@@ -36,31 +36,34 @@ REINICIAR_VIDEO_AL_CAMBIAR = True   # cada vez que cambia el turno, el video del
 
 EXT_VIDEO = (".mp4", ".avi", ".mov", ".mkv", ".webm", ".m4v")
 
-# ====== PALETA (la misma del campo minado) ======
-# Paleta CRÓNICA: tinta azul petróleo, papel cálido y acentos de prensa.
-COL_POLVO = (25, 28, 25)       # negro verdoso del chasis
-COL_PAPEL = (239, 225, 194)    # marfil luminoso
-COL_OXIDO = (177, 112, 65)     # cobre cálido
-COL_AMBAR = (225, 174, 82)     # latón dorado
-COL_AGUA = (137, 177, 139)     # verde fósforo del CRT
-COL_ACERO = (112, 111, 91)     # metal envejecido
-COL_APAGADO = (174, 164, 139)  # gris cálido legible
-COL_VIVO = (197, 91, 68)       # rojo testigo
-COL_MALO = (218, 119, 77)
-COL_CIVITAS = (196, 70, 67)
+# CRÓNICA: identidad de transmisión gris, tinta y pantalla analógica.
+# CRÓNICA / ARCHIVO DE TRANSMISIÓN — estética de dossier oscuro.
+# Inspiración de composición dramática y contrastes, sin reutilizar arte de otros juegos.
+COL_POLVO = (20, 21, 22)
+COL_PAPEL = (236, 229, 211)
+COL_TINTA = (34, 32, 30)
+COL_OXIDO = (166, 133, 86)
+COL_AMBAR = (214, 180, 112)
+COL_AGUA = (169, 188, 171)
+COL_ACERO = (112, 106, 95)
+COL_APAGADO = (182, 175, 160)
+COL_VIVO = (184, 73, 66)
+COL_MALO = (195, 94, 79)
+COL_CIVITAS = (195, 76, 67)
 
 # Quién juega en cada fase: nombre, color (el mismo de Evento_2) e instrucción
 ROLES = {
-    "pregunta": ("Periodista", (221, 174, 91), "elige una pregunta"),
-    "respuesta": ("Presidente", (112, 174, 157), "elige una respuesta"),
-    "ciudadano": ("Audiencia", (139, 178, 165), "¿cómo recibe la ciudad esta respuesta?"),
-    "opinion": ("Influencer", (207, 139, 111), "da tu opinión sobre esta respuesta"),
-    "civinet": ("CIVINET", (213, 137, 99), "una publicación está circulando"),
-    "civitas": ("CIVITAS", (194, 79, 78), "la red está bajo intervención"),
-    "intro": ("TRANSMISIÓN", (112, 174, 157), "preparando conexión"),
-    "final": ("Cierre de la entrevista", (221, 174, 91), "revisa el resultado de tus decisiones"),
+    "pregunta": ("Periodista", (193, 200, 211), "elige una pregunta"),
+    "respuesta": ("Presidente", (157, 183, 195), "elige una respuesta"),
+    "ciudadano": ("Ciudadano", (171, 183, 191), "valora la respuesta desde tu experiencia en la ciudad"),
+    "audiencia": ("Audiencia", (166, 188, 201), "la comunidad reacciona y decide si la respuesta convence"),
+    "opinion": ("Influencer", (182, 170, 192), "publica tu opinión y decide cómo influye en tus seguidores"),
+    "civinet": ("CIVINET", (184, 157, 167), "una publicación está circulando"),
+    "civitas": ("CIVITAS", (193, 111, 122), "la red está bajo intervención"),
+    "intro": ("TRANSMISIÓN", (157, 183, 195), "preparando conexión"),
+    "final": ("Cierre de la entrevista", (193, 200, 211), "revisa el resultado de tus decisiones"),
 }
-ORDEN_FASES = ["pregunta", "respuesta", "ciudadano"]
+ORDEN_FASES = ["pregunta", "respuesta", "ciudadano", "audiencia", "opinion"]
 ROLES_VERIFICACION = ["ciudadano"]
 
 # CIVINET interviene después de las preguntas 3, 6 y 9. La entrevista original
@@ -359,6 +362,16 @@ def Entrevista():
     display = pygame.display.set_mode((ANCHO, ALTO), pygame.RESIZABLE)
     pygame.display.set_caption("CRÓNICA | La verdad está en juego")
     canvas = pygame.Surface((ANCHO, ALTO))
+    # Ilustraciones propias del evento. Si faltan, la interfaz sigue funcionando.
+    ruta_industrial = Path(__file__).parent.parent / "Assets" / "Interfaz" / "CronicaIndustrial"
+    def cargar_arte(nombre):
+        try:
+            return pygame.image.load(str(ruta_industrial / nombre)).convert()
+        except (FileNotFoundError, pygame.error):
+            return None
+    arte_estudio = cargar_arte("estudio_entrevista.png")
+    arte_metal = cargar_arte("metal_oscuro.png")
+
 
     if imagen_respaldo is not None:
         respaldo = pygame.transform.smoothscale(imagen_respaldo.convert(), (ANCHO, ALTO))
@@ -395,6 +408,7 @@ def Entrevista():
         "pregunta": "periodista",
         "respuesta": "presidente",
         "ciudadano": "ciudadano",
+        "audiencia": "ciudadano",
         "opinion": "influencer",
         "civinet": "influencer",
         "civitas": "influencer",
@@ -404,10 +418,20 @@ def Entrevista():
     }
     fondos = {clave: cargar_fondo(clave) for clave in fondo_por_fase.values()}
 
+    # Times New Roman en negrita. Se reutilizan instancias para no crear fuentes por frame.
+    _cache_tipografias = {}
+    def tipo(tamano):
+        tamano = max(9, int(tamano))
+        if tamano not in _cache_tipografias:
+            _cache_tipografias[tamano] = pygame.font.SysFont(
+                "Times New Roman,Times New Roman Bold,Liberation Serif,DejaVu Serif",
+                tamano, bold=True)
+        return _cache_tipografias[tamano]
+
     # --- ajuste de la interfaz (posición y tamaño) ---
     ajuste = {"x": UI_CENTRO_X, "y": UI_Y, "escala": UI_ESCALA}
     modo_ajuste = False
-    fuente_ajuste = pygame.font.SysFont("Consolas", 14)
+    fuente_ajuste = tipo(14)
 
     def u(n):
         """Convierte una medida del diseño original al tamaño actual de la interfaz."""
@@ -417,14 +441,12 @@ def Entrevista():
     ruta_fuente = ruta_assets / "upheavtt.ttf"  # se conserva como recurso opcional; no se usa en pantalla
 
     def tam_fuentes():
-        return max(8, round(16 * ajuste["escala"])), max(10, round(22 * ajuste["escala"]))
+        return max(9, round(16 * ajuste["escala"])), max(11, round(24 * ajuste["escala"]))
 
     def crear_fuentes():
         t1, t2 = tam_fuentes()
-        try:
-            return pygame.font.SysFont("Trebuchet MS", t1, bold=True), pygame.font.SysFont("Georgia", t2, bold=True)
-        except Exception:
-            return pygame.font.Font(None, t1), pygame.font.Font(None, t2)
+        return (tipo(t1),
+                tipo(t2))
 
     fuente, fuente_grande = crear_fuentes()
     tam_actual = tam_fuentes()
@@ -584,22 +606,46 @@ def Entrevista():
     ]
     chat_feed = []
     chat_reloj = 1.0
-    fuente_chat = pygame.font.SysFont("Trebuchet MS", 12)
-    fuente_chat_nombre = pygame.font.SysFont("Trebuchet MS", 11, bold=True)
+    fuente_chat = tipo(12)
+    fuente_chat_nombre = tipo(11)
     fuente_chat_emoji = pygame.font.SysFont("Segoe UI Emoji", 14)
     try:
         fuente_emoji = pygame.font.SysFont("Segoe UI Emoji", 25)
     except Exception:
-        fuente_emoji = pygame.font.SysFont("Arial", 22, bold=True)
+        fuente_emoji = tipo(22)
     t_linea = 0.0                        # tiempo desde que empezó a "escribirse" el diálogo actual
     fase_prev = fase
     cursor_mano = False
 
     # Capas precalculadas (se crean una sola vez para no gastar CPU en cada cuadro)
     velo_oscuro = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)
-    velo_oscuro.fill((3, 8, 9, 175))
+    velo_oscuro.fill((16, 15, 15, 185))
     velo_civitas = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)
-    velo_civitas.fill((4, 3, 8, 215))
+    velo_civitas.fill((22, 17, 17, 218))
+
+    # Recursos ilustrados independientes de la lógica. Se cargan una sola vez.
+    ruta_ui = Path(__file__).resolve().parent.parent / "Assets" / "Interfaz" / "CronicaUI"
+    laminas = {}
+    for nombre_ui in ("decision", "decision_hover", "decision_selected", "dialogo", "dialogo_civitas", "votacion", "votacion_hover", "post", "chat", "marco_fase", "marco_fase_activa", "banner_transicion", "banner_civitas", "tendencia", "etiqueta_vivo", "barra_estado", "escena_debate", "civinet_tendencias", "retrato_pregunta", "retrato_respuesta", "retrato_ciudadano", "retrato_audiencia", "retrato_opinion"):
+        try:
+            laminas[nombre_ui] = pygame.image.load(str(ruta_ui / (nombre_ui + ".png"))).convert_alpha()
+        except (FileNotFoundError, pygame.error):
+            laminas[nombre_ui] = None
+    cache_laminas = {}
+
+    def lamina(dest, nombre, rect):
+        """Dibuja una ilustración PNG real, con caché para evitar escalado por fotograma."""
+        original = laminas.get(nombre)
+        if original is None:
+            pygame.draw.rect(dest, (222, 217, 204) if nombre == "dialogo" else (32, 32, 32), rect, border_radius=u(5))
+            return
+        clave = (nombre, rect.width, rect.height)
+        if clave not in cache_laminas:
+            cache_laminas[clave] = pygame.transform.smoothscale(original, rect.size)
+        dest.blit(cache_laminas[clave], rect.topleft)
+
+    escenario_velo = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)
+    escenario_velo.fill((8, 11, 15, 155))
 
     # ------------------------------------------------------------ piezas de interfaz
 
@@ -611,25 +657,66 @@ def Entrevista():
         return v
 
     def panel_cabecera():
-        """Sombra suave detrás del encabezado: se desvanece hacia los bordes en vez de ser una caja."""
-        if PANEL_CABECERA_ALFA <= 0:
-            return
-        w, h = SCREEN_ANCHO + u(90), u(150)
-        clave = (w, h, PANEL_CABECERA_ALFA)
-        if cache_grad["clave"] != clave:
-            s = pygame.Surface((w, h), pygame.SRCALPHA)
-            for yy in range(h):
-                a = int(PANEL_CABECERA_ALFA * max(0.0, 1 - yy / h) ** 1.3)
-                pygame.draw.line(s, (*COL_POLVO, a), (0, yy), (w, yy))
-            m = pygame.Surface((w, h), pygame.SRCALPHA)
-            m.fill((255, 255, 255, 255))
-            borde = max(1, u(46))
-            for xx in range(w):
-                f = min(xx, w - 1 - xx) / borde
-                pygame.draw.line(m, (255, 255, 255, int(255 * min(1.0, f))), (xx, 0), (xx, h))
-            s.blit(m, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
-            cache_grad["clave"], cache_grad["surf"] = clave, s
-        canvas.blit(cache_grad["surf"], (SCREEN_X - u(45), SCREEN_Y - u(28)))
+        """Cabina industrial: navegación vertical y transmisión enmarcada."""
+        lateral = pygame.Rect(0, 0, 150, ALTO)
+        if arte_metal is not None:
+            canvas.blit(pygame.transform.smoothscale(arte_metal, lateral.size), lateral)
+        else:
+            pygame.draw.rect(canvas, (24, 22, 22), lateral)
+        pygame.draw.rect(canvas, (16, 15, 16, 185), lateral)
+        pygame.draw.line(canvas, (155, 111, 68), (149, 0), (149, ALTO), 3)
+        pygame.draw.rect(canvas, (52, 26, 24), (0, 0, ANCHO, 57))
+        pygame.draw.line(canvas, (185, 133, 72), (0, 56), (ANCHO, 56), 2)
+        f_logo = tipo(25)
+        canvas.blit(f_logo.render("CRÓNICA", True, (235, 202, 146)), (12, 13))
+        f_small = tipo(11)
+        canvas.blit(f_small.render("TRANSMISIÓN", True, (207, 181, 146)), (10, 83))
+        nombres = [("pregunta", "PERIODISTA"), ("respuesta", "PRESIDENTE"),
+                   ("ciudadano", "CIUDADANO"), ("audiencia", "AUDIENCIA"),
+                   ("opinion", "INFLUENCER")]
+        activo = "ciudadano" if fase == "verificacion" else fase
+        for i, (clave, nombre) in enumerate(nombres):
+            yy = 113 + i * 52
+            encendido = activo == clave
+            fondo = (84, 45, 35) if encendido else (32, 29, 29)
+            lamina(canvas, "marco_fase_activa" if encendido else "marco_fase",
+                   pygame.Rect(7, yy, 136, 44))
+            retrato = laminas.get("retrato_" + clave)
+            if retrato is not None:
+                imagen = pygame.transform.smoothscale(retrato, (38, 35))
+                if not encendido: imagen.set_alpha(150)
+                canvas.blit(imagen, (14, yy+4))
+            canvas.blit(f_small.render(nombre, True, (252, 231, 194) if encendido else (183, 166, 145)),
+                        (57, yy+15))
+        lamina(canvas, "barra_estado", pygame.Rect(7, 394, 136, 160))
+        pygame.draw.line(canvas, (124, 93, 62), (13, 391), (138, 391))
+        canvas.blit(f_small.render("ESTADO DE LA CIUDAD", True, (218, 180, 127)), (13, 404))
+        for j, (titulo, valor, maximo, tono) in enumerate(
+                (("CONFIANZA", confianza_civinet, 100, (206, 169, 96)),
+                 ("RUMOR", alcance_falso, 20, (194, 81, 67)))):
+            yy = 432 + j * 63
+            canvas.blit(f_small.render(titulo, True, (227, 221, 208)), (13, yy))
+            canvas.blit(f_small.render(str(valor), True, tono), (112, yy))
+            pygame.draw.rect(canvas, (60, 54, 50), (13, yy+24, 122, 8))
+            pygame.draw.rect(canvas, tono, (13, yy+24, int(122*min(1, max(0, valor/maximo))), 8))
+        # Franja de emisión central; el chat vive en su propia columna derecha.
+        pygame.draw.rect(canvas, (24, 21, 20), (151, 57, 497, 42))
+        pygame.draw.line(canvas, (123, 88, 57), (151, 98), (648, 98), 1)
+        canvas.blit(f_small.render("CIUDAD NOVA   /   ENTREVISTA PÚBLICA",
+                                   True, (218, 205, 178)), (164, 72))
+        pygame.draw.circle(canvas, (197, 64, 56), (615, 79), 5)
+        canvas.blit(f_small.render("LIVE", True, (231, 186, 156)), (624, 72))
+        # Ilustración integrada en la parte alta, atenuada para no competir con las opciones.
+        if arte_estudio is not None and fase not in ("intro", "civitas"):
+            imagen = laminas.get("escena_debate")
+            if imagen is not None:
+                retrato = pygame.transform.smoothscale(imagen, (465, 117))
+                retrato.set_alpha(110)
+            else:
+                retrato = pygame.transform.smoothscale(arte_estudio, (465, 117))
+                retrato.set_alpha(100)
+            canvas.blit(retrato, (166, 103))
+            pygame.draw.line(canvas, (169, 119, 69), (165, 220), (633, 220), 2)
 
     def contador(y, etiqueta, valor, clave, fuente_valor, color_valor, punto=False):
         x_r = SCREEN_X + SCREEN_ANCHO
@@ -653,173 +740,86 @@ def Entrevista():
                                (r_lab.left - u(12), r_lab.centery), max(2, u(5)))
 
     def cabecera():
-        x_r = SCREEN_X + SCREEN_ANCHO
+        titulo = {"pregunta":"LA PREGUNTA", "respuesta":"LA RESPUESTA",
+                  "ciudadano":"EL CRITERIO", "audiencia":"LA AUDIENCIA",
+                  "opinion":"LA INFLUENCIA", "civinet":"CIVINET",
+                  "verificacion":"CONTRASTAR FUENTES", "civitas":"INTERVENCIÓN",
+                  "intro":"APERTURA", "final":"EL VEREDICTO"}.get(fase, "ENTREVISTA")
+        f = tipo(23)
+        canvas.blit(f.render(titulo, True, (245, 224, 186)), (SCREEN_X, SCREEN_Y))
+        f2 = tipo(11)
+        canvas.blit(f2.render(f"EXPEDIENTE  {min(preguntas_hechas+1,total_preguntas):02d} / {total_preguntas:02d}",
+                              True, (201, 171, 129)), (SCREEN_X, SCREEN_Y+31))
+        pygame.draw.line(canvas, (151, 110, 67), (SCREEN_X, SCREEN_Y+51),
+                         (SCREEN_X+SCREEN_ANCHO, SCREEN_Y+51), 2)
 
-        # Durante CIVINET y la verificación, el encabezado identifica la etapa actual.
-        if fase in ("intro", "civitas"):
-            texto_titulo = "Conexión CIVINET" if fase == "intro" else "Interferencia detectada"
-        elif fase in ("civinet", "verificacion"):
-            n_intervencion = sum(1 for n in INTERVENCIONES_CIVINET if n <= preguntas_hechas)
-            texto_titulo = f"Interferencia {n_intervencion} de {len(INTERVENCIONES_CIVINET)}"
-        elif fase == "final":
-            texto_titulo = "Resultado de la entrevista"
-        else:
-            n_actual = min(preguntas_hechas + 1, total_preguntas)
-            texto_titulo = f"Pregunta {n_actual} de {total_preguntas}"
-        titulo = fuente_grande.render(texto_titulo, True, COL_PAPEL)
-        canvas.blit(titulo, (SCREEN_X, SCREEN_Y))
+    def dibujar_papel(dest, rect, tono=None, borde=None, sombra=True, semilla=0):
+        pygame.draw.rect(dest,(235,233,224),rect,border_radius=5)
+        pygame.draw.rect(dest,(150,153,151),rect,1,border_radius=5)
 
-        # progreso: segmentos inclinados, como una barra de capítulos
-        for k in range(total_preguntas):
-            seg = pygame.Rect(SCREEN_X + k * u(18), SCREEN_Y + u(32), u(14), max(3, u(6)))
-            if k < preguntas_hechas:
-                color = COL_AMBAR
-            elif k == preguntas_hechas:
-                color = COL_PAPEL if int(tiempo * 2) % 2 == 0 else mezclar(COL_PAPEL, COL_POLVO, 0.5)
-            else:
-                color = mezclar(COL_ACERO, COL_POLVO, 0.4)
-            pygame.draw.polygon(canvas, color, paralelogramo(seg, u(4)))
+    def marco_vn(dest, rect, color, nombre, clase_dialogo, relleno=None, jitter=0):
+        """Panel gráfico de diálogo: el texto permanece dinámico y legible."""
+        civitas = clase_dialogo == "civitas" or fase == "civitas"
+        lamina(dest, "dialogo_civitas" if civitas else "dialogo", rect)
+        tinta = (255, 255, 255) if civitas else (58, 42, 33)
+        lab = tipo(13).render(nombre.upper(), True, tinta)
+        dest.blit(lab, (rect.x + 25, rect.y + 10))
 
-        contador(SCREEN_Y, "en vivo", espectadores, "espectadores", fuente_grande, COL_PAPEL, punto=True)
-        contador(SCREEN_Y + u(26), "confianza", confianza_civinet, "confianza", fuente, COL_AGUA)
-
-        # línea divisoria con un tramo de óxido y un rombo al final
-        y_div = SCREEN_Y + u(50)
-        pygame.draw.line(canvas, COL_ACERO, (SCREEN_X, y_div), (x_r - u(8), y_div), 1)
-        pygame.draw.line(canvas, COL_OXIDO, (SCREEN_X, y_div), (SCREEN_X + u(48), y_div), max(2, u(3)))
-        rombo(canvas, x_r - u(2), y_div, max(2, u(4)), COL_OXIDO)
-
-        # de quién es el turno: medallón con su símbolo, su nombre y qué tiene que hacer
-        if fase == "verificacion":
-            rol = ROLES_VERIFICACION[indice_verificacion]
-            nombre, color, instruccion = ROLES[rol]
-            gl = rol
-        else:
-            nombre, color, instruccion = ROLES.get(fase, ROLES["pregunta"])
-            gl = fase if fase in ROLES else "pregunta"
-        cy_t = y_div + u(28)
-        emblema(canvas, gl, SCREEN_X + u(16), cy_t, u(14), color, pulso=0.5 + 0.5 * math.sin(tiempo * 3))
-        etiqueta = fuente.render(nombre, True, color)
-        r_et = etiqueta.get_rect(midleft=(SCREEN_X + u(40), cy_t - u(4)))
-        canvas.blit(etiqueta, r_et)
-        pygame.draw.polygon(canvas, color, paralelogramo(pygame.Rect(r_et.x, cy_t + u(8), r_et.width + u(6), max(2, u(3))), u(3)))
-        inst = fuente.render(instruccion, True, COL_PAPEL)
-        canvas.blit(inst, inst.get_rect(midleft=(r_et.right + u(16), cy_t - u(4))))
-
-        # orden de turnos: como la cola de personajes de un juego por turnos
-        fase_visual = ROLES_VERIFICACION[indice_verificacion] if fase == "verificacion" else fase
-        i_act = ORDEN_FASES.index(fase_visual) if fase_visual in ORDEN_FASES else 0
-        rr = max(5, u(7))
-        paso_t = u(22)
-        xs = [x_r - rr - (3 - k) * paso_t for k in range(4)]
-        pygame.draw.line(canvas, COL_ACERO, (xs[0], cy_t - u(4)), (xs[-1], cy_t - u(4)), 1)
-        for k, f in enumerate(ORDEN_FASES):
-            col = ROLES[f][1]
-            cx_k, cy_k = xs[k], cy_t - u(4)
-            if k == i_act:
-                pygame.draw.circle(canvas, mezclar(col, COL_POLVO, 0.5),
-                                   (cx_k, cy_k), int(rr + 3 + 2 * math.sin(tiempo * 4)), 1)
-                pygame.draw.circle(canvas, col, (cx_k, cy_k), rr)
-            elif k < i_act:
-                pygame.draw.circle(canvas, mezclar(col, COL_POLVO, 0.6), (cx_k, cy_k), rr)
-            else:
-                pygame.draw.circle(canvas, COL_POLVO, (cx_k, cy_k), rr)
-                pygame.draw.circle(canvas, mezclar(col, COL_POLVO, 0.45), (cx_k, cy_k), rr, 2)
-
-    def marco_vn(dest, rect, color, nombre, tipo, relleno=(14, 11, 9, 218), jitter=0):
-        """Ventana de diálogo estilo novela visual: marco doble, esquinas de visor y pestaña con el nombre."""
-        s = pygame.Surface(rect.size, pygame.SRCALPHA)
-        s.fill(relleno)
-        dest.blit(s, rect.topleft)
-        pygame.draw.rect(dest, mezclar(color, COL_POLVO, 0.38), rect, border_radius=u(12), width=2)
-        pygame.draw.rect(dest, (242, 232, 211, 28), rect.inflate(-u(8), -u(8)),
-                         border_radius=u(9), width=1)
-        pygame.draw.rect(dest, color, (rect.x, rect.y + u(10), u(4), rect.height - u(20)),
-                         border_radius=u(2))
-        etiqueta = fuente.render(nombre.upper(), True, color)
-        th = u(26)
-        tab = pygame.Rect(rect.x + u(16) + jitter, rect.y - th + u(3), etiqueta.get_width() + u(42), th)
-        pygame.draw.rect(dest, mezclar(COL_POLVO, color, 0.16), tab, border_radius=u(8))
-        pygame.draw.rect(dest, color, tab, border_radius=u(8), width=1)
-        glifo(dest, tipo, tab.x + u(16), tab.centery, u(7), color)
-        dest.blit(etiqueta, etiqueta.get_rect(midleft=(tab.x + u(30), tab.centery)))
-
-    def bloque_cita(y, etiqueta, texto, color, tipo="pregunta", n=None):
-        """Diálogo adaptable: reduce tipografía y espaciado para que nunca salga del televisor."""
-        if n is None:
-            n = int(t_fase * 150)
-        margen_x = u(46)
-        ancho_txt = max(u(120), SCREEN_ANCHO - margen_x)
-        reserva = u(176) if fase == "respuesta" else u(105)
-        alto_max = max(u(66), ALTO - (y + u(20)) - reserva)
-        tam = max(10, round(16 * ajuste["escala"]))
-        fuente_dialogo = pygame.font.SysFont("Trebuchet MS", tam, bold=True)
-        lineas = dividir_en_lineas(texto, fuente_dialogo, ancho_txt)
-        alto_linea = max(u(14), fuente_dialogo.get_linesize())
-        while len(lineas) * alto_linea + u(30) > alto_max and tam > 9:
-            tam -= 1
-            fuente_dialogo = pygame.font.SysFont("Trebuchet MS", tam, bold=True)
-            lineas = dividir_en_lineas(texto, fuente_dialogo, ancho_txt)
-            alto_linea = max(u(13), fuente_dialogo.get_linesize())
-        alto = min(alto_max, len(lineas) * alto_linea + u(30))
-        rect = pygame.Rect(SCREEN_X, y + u(20), SCREEN_ANCHO, alto)
-        marco_vn(capa, rect, color, etiqueta, tipo, relleno=(22, 27, 25, 188))
-        glifo(capa, tipo, rect.right - u(30), rect.bottom - u(25), u(17), mezclar(color, COL_POLVO, 0.72))
-        yy = rect.y + u(12)
-        # El clip protege el marco incluso en ventanas pequeñas.
-        clip_anterior = capa.get_clip()
-        capa.set_clip(rect.inflate(-u(12), -u(8)))
-        for linea in recortar_lineas(lineas, n):
-            capa.blit(fuente_dialogo.render(linea, True, COL_PAPEL), (rect.x + u(18), yy))
-            yy += alto_linea
-        capa.set_clip(clip_anterior)
+    def bloque_cita(y, etiqueta, texto, color, clase_dialogo="pregunta", n=None):
+        if n is None: n=int(t_fase*150)
+        max_h=max(65,ALTO-y-(177 if fase=="respuesta" else 110))
+        fs=17
+        f=tipo(fs)
+        lines=dividir_en_lineas(texto,f,SCREEN_ANCHO-45)
+        while (len(lines)*f.get_linesize()+48>max_h) and fs>11:
+            fs-=1; f=tipo(fs)
+            lines=dividir_en_lineas(texto,f,SCREEN_ANCHO-45)
+        h=min(max_h,len(lines)*f.get_linesize()+48)
+        rect=pygame.Rect(SCREEN_X,y,SCREEN_ANCHO,h)
+        marco_vn(capa,rect,color,etiqueta,clase_dialogo)
+        old=capa.get_clip(); capa.set_clip(rect.inflate(-24,-12))
+        for i,line in enumerate(recortar_lineas(lines,n)):
+            capa.blit(f.render(line,True,(255,255,255) if clase_dialogo=="civitas" else (38,30,25)),(rect.x+25,rect.y+36+i*f.get_linesize()))
+        capa.set_clip(old)
         return rect.bottom
 
     def tarjeta_transcripcion(rect, lineas):
         """'Lo que se dijo': una transcripción oficial, limpia, con sello de verificación."""
         color = ROLES["respuesta"][1]
-        s = pygame.Surface(rect.size, pygame.SRCALPHA)
-        s.fill((16, 13, 10, 225))
-        capa.blit(s, rect.topleft)
-        pygame.draw.rect(capa, mezclar(color, COL_POLVO, 0.45), rect, 2)
-        esquinas(capa, rect, color, u(10), 2, 1)
-        cab = pygame.Rect(rect.x + 2, rect.y + 2, rect.width - 4, u(26))
-        pygame.draw.rect(capa, mezclar(color, COL_POLVO, 0.78), cab)
-        glifo(capa, "respuesta", cab.x + u(16), cab.centery, u(7), color)
-        capa.blit(fuente.render("Lo que se dijo", True, color), (cab.x + u(32), cab.y + u(5)))
+        pygame.draw.rect(capa,(234,233,227),rect,border_radius=5)
+        cab = pygame.Rect(rect.x + u(8), rect.y + u(6), rect.width - u(16), u(27))
+        pygame.draw.line(capa, COL_OXIDO, (cab.x, cab.bottom), (cab.right, cab.bottom), max(1,u(2)))
+        capa.blit(fuente.render("LO QUE SE DIJO", True, COL_TINTA), (cab.x + u(7), cab.y + u(5)))
         yy = rect.y + u(38)
         for linea in lineas:
-            capa.blit(fuente.render(linea, True, COL_PAPEL), (rect.x + u(14), yy))
+            capa.blit(fuente.render(linea, True, (35, 32, 29)), (rect.x + u(14), yy))
             yy += u(20)
         pygame.draw.line(capa, COL_ACERO, (rect.x + u(14), rect.bottom - u(42)), (rect.right - u(14), rect.bottom - u(42)), 1)
         sx, sy = rect.x + u(21), rect.bottom - u(28)         # sello de verificación
         pygame.draw.circle(capa, COL_AGUA, (sx, sy), u(7), 2)
         pygame.draw.lines(capa, COL_AGUA, False, [(sx - u(3), sy), (sx - u(1), sy + u(3)), (sx + u(4), sy - u(3))], 2)
-        capa.blit(fuente.render("Versión completa", True, COL_AGUA), (rect.x + u(36), rect.bottom - u(36)))
-        capa.blit(fuente.render("Contexto intacto", True, COL_APAGADO), (rect.x + u(36), rect.bottom - u(18)))
+        capa.blit(fuente.render("Versión completa", True, (75, 62, 48)), (rect.x + u(36), rect.bottom - u(36)))
+        capa.blit(fuente.render("Contexto intacto", True, (75, 62, 48)), (rect.x + u(36), rect.bottom - u(18)))
 
     def tarjeta_post(rect, cuenta, lineas, tipo, compartido, jitter):
         """'Lo que circula': una publicación falsa de la red, inestable y con reacciones que suben."""
         rect = rect.move(jitter, 0)
-        s = pygame.Surface(rect.size, pygame.SRCALPHA)
-        s.fill((26, 12, 12, 228))
-        capa.blit(s, rect.topleft)
-        pygame.draw.rect(capa, mezclar(COL_MALO, COL_POLVO, 0.3), rect, 2)
-        esquinas(capa, rect, COL_MALO, u(10), 2, 1)
+        lamina(capa, "post", rect)
+        # Sin esquinas de visor: tarjeta de publicación sobria.
         cab = pygame.Rect(rect.x + 2, rect.y + 2, rect.width - 4, u(26))
-        pygame.draw.rect(capa, mezclar(COL_MALO, COL_POLVO, 0.78), cab)
+        pygame.draw.rect(capa, (70, 42, 40), cab)
         pygame.draw.circle(capa, mezclar(COL_MALO, COL_POLVO, 0.55), (cab.x + u(16), cab.centery), u(9))
         glifo(capa, "ciudadano", cab.x + u(16), cab.centery, u(6), COL_POLVO)
         capa.blit(fuente.render(cuenta, True, COL_MALO), (cab.x + u(32), cab.y + u(5)))
         yy = rect.y + u(38)
         for linea in lineas:
-            capa.blit(fuente.render(linea, True, COL_PAPEL), (rect.x + u(14), yy))
+            capa.blit(fuente.render(linea, True, (242, 234, 215)), (rect.x + u(14), yy))
             yy += u(20)
         pygame.draw.line(capa, COL_ACERO, (rect.x + u(14), rect.bottom - u(42)), (rect.right - u(14), rect.bottom - u(42)), 1)
         capa.blit(fuente.render(tipo, True, COL_MALO), (rect.x + u(14), rect.bottom - u(36)))
         corazon(capa, rect.x + u(21), rect.bottom - u(10), max(3, u(6)), COL_VIVO)
         capa.blit(fuente.render(f"{formato_k(compartido * 1.7)}    compartido {formato_k(compartido)}",
-                                True, COL_APAGADO), (rect.x + u(36), rect.bottom - u(18)))
+                                True, (211, 202, 184)), (rect.x + u(36), rect.bottom - u(18)))
         # sello torcido de "dudoso"
         txt = fuente.render("DUDOSO", True, COL_VIVO)
         sello = pygame.Surface((txt.get_width() + u(14), txt.get_height() + u(8)), pygame.SRCALPHA)
@@ -849,55 +849,35 @@ def Entrevista():
                 if j + 1 <= llenos:
                     pygame.draw.rect(capa, col, seg)
                 elif j < llenos:
-                    pygame.draw.rect(capa, mezclar((38, 31, 25), col, llenos - j), seg)
+                    pygame.draw.rect(capa, mezclar((38, 43, 50), col, llenos - j), seg)
                 else:
-                    pygame.draw.rect(capa, (38, 31, 25), seg)
+                    pygame.draw.rect(capa, (38, 43, 50), seg)
         return y + u(38)
 
     def tarjeta_opcion(rect, lineas, numero, color, mouse_pos, click, tecla):
-        """Tarjeta editorial con elevación, brillo de borde y respuesta al foco."""
         hover = rect.collidepoint(mouse_pos)
-        if hover:
-            ui["hover"] = True
-        h = anim((fase, indice_verificacion, numero), 1.0 if hover else 0.0)
-        entrada = min(1.0, max(0.0, t_fase / 0.34))
-        r = rect.move(int(u(7) * h), int((1 - entrada) * u(10)))
-        sombra = r.move(0, u(4))
-        pygame.draw.rect(capa, (15, 14, 12, 105), sombra, border_radius=u(13))
-        base = mezclar((48, 47, 39), (66, 65, 52), h)
-        pygame.draw.rect(capa, (*base, 244), r, border_radius=u(13))
-        pygame.draw.rect(capa, mezclar(COL_ACERO, color, 0.25 + 0.55*h), r,
-                         width=2 if h > 0.08 else 1, border_radius=u(11))
-        # Una banda de luz recorre la tarjeta al enfocarla.
-        if h > 0.01:
-            brillo_w = max(2, int((r.width - u(8)) * h))
-            brillo = pygame.Rect(r.x + u(4), r.y + u(3), brillo_w, max(2, u(3)))
-            pygame.draw.rect(capa, color, brillo, border_radius=u(2))
-        cx, cy = r.x + u(30), r.centery
-        pygame.draw.circle(capa, mezclar(COL_POLVO, color, 0.24 + 0.76*h),
-                           (cx, cy), u(15), 0)
-        pygame.draw.circle(capa, color, (cx, cy), u(15), 1)
-        num = fuente.render(str(numero), True, COL_PAPEL)
-        capa.blit(num, num.get_rect(center=(cx, cy)))
-        y = r.centery - (len(lineas) * u(19)) // 2
-        col_t = mezclar(COL_PAPEL, (255, 247, 230), h)
+        if hover: ui["hover"] = True
+        h = anim((fase, indice_verificacion, numero), float(hover))
+        r = rect.move(int(5*h), 0)
+        lamina(capa, "decision_hover" if hover else "decision", r)
+        fnum = tipo(25)
+        n = fnum.render(f"{numero:02d}", True, (245,210,144) if hover else (218,171,118))
+        capa.blit(n, n.get_rect(center=(r.x+34, r.centery)))
+        yy = r.centery - len(lineas)*19//2
         for linea in lineas:
-            capa.blit(fuente.render(linea, True, col_t), (r.x + u(58), y))
-            y += u(19)
-        if h > 0.5:
-            flecha_x = r.right - u(20) + int(math.sin(tiempo*7)*u(2))
-            pygame.draw.polygon(capa, color, [(flecha_x-u(4),cy-u(5)),(flecha_x+u(3),cy),(flecha_x-u(4),cy+u(5))])
+            capa.blit(fuente.render(linea, True, (252,238,213)), (r.x+70, yy))
+            yy += 19
+        if hover:
+            pygame.draw.polygon(capa,(245,210,144),[(r.right-23,r.centery-5),(r.right-14,r.centery),(r.right-23,r.centery+5)])
         return (hover and click) or tecla == numero
 
     def lista_opciones(y, textos, color, mouse_pos, click, tecla):
-        """Opciones apiladas con entrada escalonada y animación individual."""
-        elegido = None
-        for i, texto in enumerate(textos):
-            lineas = dividir_en_lineas(texto, fuente, SCREEN_ANCHO - u(96)) or [""]
-            rect = pygame.Rect(SCREEN_X, y, SCREEN_ANCHO, max(u(50), len(lineas) * u(19) + u(24)))
-            if tarjeta_opcion(rect, lineas, i + 1, color, mouse_pos, click, tecla):
-                elegido = i
-            y += rect.height + u(9)
+        elegido=None
+        for i,texto in enumerate(textos):
+            lines=dividir_en_lineas(texto,fuente,SCREEN_ANCHO-105) or [""]
+            rect=pygame.Rect(SCREEN_X,y,SCREEN_ANCHO,max(49,len(lines)*19+14))
+            if tarjeta_opcion(rect,lines,i+1,color,mouse_pos,click,tecla): elegido=i
+            y+=rect.h+9
         return elegido
 
     def icono(tipo, cx, cy, activo):
@@ -916,31 +896,24 @@ def Entrevista():
             pygame.draw.rect(capa, COL_PAPEL if activo else COL_APAGADO, (cx - b, cy - u(2), b * 2, max(2, u(4))))
 
     def fila_botones(y, etiquetas, iconos, color, mouse_pos, click, tecla):
-        sep = u(10)
-        ancho_btn = (SCREEN_ANCHO - 2 * sep) // 3
         elegido = None
-        for i, (etq, ico) in enumerate(zip(etiquetas, iconos)):
-            rect = pygame.Rect(SCREEN_X + i * (ancho_btn + sep), y, ancho_btn, u(74))
-            hover = rect.collidepoint(mouse_pos)
-            if hover:
-                ui["hover"] = True
-            h = anim((fase, "btn", i), 1.0 if hover else 0.0)
-            r = rect.move(0, -int(u(5) * h))                 # al pasar el mouse, el botón se eleva
-            pygame.draw.rect(capa, (*mezclar((25, 43, 46), mezclar(color, COL_POLVO, 0.45), h), 242),
-                             r, border_radius=u(12))
-            pygame.draw.rect(capa, mezclar(COL_ACERO, color, h), r, 2, border_radius=u(12))
-            pygame.draw.rect(capa, color, (r.x+u(9),r.y+u(5),r.width-u(18),max(2,u(3))), border_radius=u(2))
-            icono(ico, r.centerx, r.y + u(28), h > 0.5)
-            t = fuente.render(etq, True, mezclar(COL_PAPEL, (255, 244, 220), h))
-            capa.blit(t, t.get_rect(midbottom=(r.centerx, r.bottom - u(10))))
-            d = max(6, u(10))
-            rombo(capa, r.x + u(26), r.y + u(20), d, mezclar(COL_POLVO, color, h))
-            rombo(capa, r.x + u(26), r.y + u(20), d, mezclar(COL_APAGADO, color, h), 1)
-            n = fuente.render(str(i + 1), True, mezclar(COL_APAGADO, COL_POLVO, h))
-            capa.blit(n, n.get_rect(center=(r.x + u(26), r.y + u(20))))
-            if (hover and click) or tecla == i + 1:
-                elegido = i
+        gap = 12
+        width = (SCREEN_ANCHO - 2*gap)//3
+        for i, etq in enumerate(etiquetas):
+            r = pygame.Rect(SCREEN_X+i*(width+gap), y, width, 92)
+            hover = r.collidepoint(mouse_pos)
+            if hover: ui["hover"] = True
+            lamina(capa, "votacion_hover" if hover else "votacion", r)
+            fg = (251,226,175) if hover else (235,221,196)
+            fnum = tipo(27)
+            capa.blit(fnum.render(("I","II","III")[i], True, (238,175,92) if hover else (185,126,85)), (r.x+18,r.y+13))
+            texto = fuente.render(etq,True,fg)
+            if texto.get_width() > r.w-15:
+                texto = pygame.transform.smoothscale(texto,(r.w-15,texto.get_height()))
+            capa.blit(texto,(r.x+12,r.bottom-30))
+            if (hover and click) or tecla == i+1: elegido = i
         return elegido
+
 
     # ---- efectos de transmisión y de CIVITAS (se dibujan directo sobre el canvas)
 
@@ -949,18 +922,14 @@ def Entrevista():
         return f"{s // 3600:02d}:{(s // 60) % 60:02d}:{s % 60:02d}"
 
     def marco_emision(color, texto_derecha):
-        """Esquinas de cámara, punto REC parpadeando y reloj de la transmisión."""
-        largo_e, m = u(34), u(28)
-        for x, y, sx, sy in ((m, m, 1, 1), (ANCHO - m, m, -1, 1), (m, ALTO - m, 1, -1), (ANCHO - m, ALTO - m, -1, -1)):
-            pygame.draw.line(canvas, color, (x, y), (x + sx * largo_e, y), 3)
-            pygame.draw.line(canvas, color, (x, y), (x, y + sy * largo_e), 3)
-        if int(tiempo * 1.6) % 2 == 0:
-            pygame.draw.circle(canvas, COL_VIVO, (u(50), u(52)), max(3, u(6)))
-        canvas.blit(fuente.render("REC", True, COL_PAPEL), (u(64), u(44)))
-        reloj_t = fuente.render(timecode(), True, COL_PAPEL)
-        canvas.blit(reloj_t, reloj_t.get_rect(midtop=(ANCHO // 2, u(44))))
-        der = fuente.render(texto_derecha, True, color)
-        canvas.blit(der, der.get_rect(topright=(ANCHO - u(50), u(44))))
+        """Cabecera de expediente: evita las esquinas HUD de estética cyberpunk."""
+        barra = pygame.Surface((ANCHO, u(38)), pygame.SRCALPHA)
+        barra.fill((17, 17, 18, 225))
+        canvas.blit(barra, (0, u(20)))
+        pygame.draw.line(canvas, COL_OXIDO, (u(28), u(57)), (ANCHO-u(28), u(57)), 1)
+        canvas.blit(fuente.render("CRÓNICA  /  ARCHIVO EN DIRECTO", True, COL_PAPEL), (u(36), u(30)))
+        der = fuente.render(texto_derecha, True, COL_AMBAR)
+        canvas.blit(der, der.get_rect(topright=(ANCHO-u(36), u(30))))
 
     def barras_senal(x, base_y, activas, color):
         for i in range(4):
@@ -969,32 +938,11 @@ def Entrevista():
             pygame.draw.rect(canvas, c, (x + i * u(14), base_y - h, u(9), h))
 
     def dibujar_ojo(cx, cy, r):
-        """El ojo de CIVITAS: parpadea, mira de lado a lado y tiene rayos de 'escaneo' alrededor."""
-        ciclo = tiempo % 4.5
-        apertura = 1.0 if ciclo > 0.2 else abs(ciclo - 0.1) / 0.1
-        h = max(2, int(r * 0.58 * max(0.08, apertura)))
-        for k in range(12):
-            a = tiempo * 0.5 + k * math.tau / 12
-            largo_r = r * (1.32 + 0.08 * math.sin(tiempo * 3 + k))
-            pygame.draw.line(canvas, mezclar(COL_CIVITAS, COL_POLVO, 0.28),
-                             (cx + math.cos(a) * r * 1.18, cy + math.sin(a) * r * 1.18),
-                             (cx + math.cos(a) * largo_r, cy + math.sin(a) * largo_r), 2)
-        pts = []
-        pasos = 24
-        for i in range(pasos + 1):
-            x = -r + 2 * r * i / pasos
-            pts.append((cx + x, cy - h * (1 - (x / r) ** 2)))
-        for i in range(pasos, -1, -1):
-            x = -r + 2 * r * i / pasos
-            pts.append((cx + x, cy + h * (1 - (x / r) ** 2)))
-        pygame.draw.polygon(canvas, (14, 6, 10), pts)
-        iris = max(2, int(h * 0.82))
-        mirada = int(math.sin(tiempo * 0.9) * r * 0.1)
-        pygame.draw.circle(canvas, mezclar((190, 30, 50), (255, 90, 70), 0.5 + 0.5 * math.sin(tiempo * 3)),
-                           (cx + mirada, cy), iris)
-        pygame.draw.ellipse(canvas, (8, 4, 6), (cx + mirada - max(1, iris // 4), cy - iris, max(2, iris // 2), iris * 2))
-        pygame.draw.circle(canvas, (255, 200, 200), (cx + mirada - iris // 3, cy - iris // 3), max(1, iris // 6))
-        pygame.draw.polygon(canvas, (210, 55, 70), pts, 2)
+        """Marca de CIVITAS grabada, sin escáner ni neón."""
+        pygame.draw.circle(canvas, (36, 30, 29), (cx, cy), int(r*1.12))
+        pygame.draw.circle(canvas, COL_OXIDO, (cx, cy), int(r*1.12), 2)
+        pygame.draw.ellipse(canvas, COL_PAPEL, (cx-r,cy-int(r*.45),2*r,int(r*.9)), 2)
+        pygame.draw.circle(canvas, COL_CIVITAS, (cx,cy), max(3,int(r*.3)))
 
     def texto_glitch(txt, fte, color, pos, ancla="center"):
         """Titular estable de alerta: énfasis tipográfico, sin glitch cromático."""
@@ -1027,38 +975,41 @@ def Entrevista():
         pygame.draw.polygon(canvas, color, [(cx - u(6), cy - u(4) + b), (cx + u(6), cy - u(4) + b), (cx, cy + u(5) + b)])
 
     def dibujar_chat_en_vivo():
-        # Columna estrecha, como el chat de una emisión comunitaria junto al televisor.
-        w = u(174)
-        x = ANCHO - w - u(12)
-        y = ALTO - u(315)
-        h = u(292)
+        """Chat permanente en la columna derecha; no tapa decisiones."""
+        x, y, w, h = 654, 102, 238, 480
         panel = pygame.Surface((w, h), pygame.SRCALPHA)
-        pygame.draw.rect(panel, (*COL_POLVO, 205), (0, 0, w, h), border_radius=u(10))
-        pygame.draw.rect(panel, (*COL_ACERO, 220), (0, 0, w, h), 1, border_radius=u(10))
-        pygame.draw.rect(panel, COL_AMBAR, (u(10), u(10), u(3), u(18)), border_radius=u(2))
-        titulo = fuente_chat_nombre.render("CHAT EN VIVO", True, COL_PAPEL)
-        panel.blit(titulo, (u(19), u(10)))
-        pygame.draw.circle(panel, COL_VIVO, (w-u(15), u(18)), max(2, u(3)))
-        pygame.draw.line(panel, (*COL_ACERO, 190), (u(10), u(36)), (w-u(10), u(36)), 1)
-        yy = u(44)
+        lamina(panel, "chat", pygame.Rect(0,0,w,h))
+        pygame.draw.rect(panel, (66, 32, 28), (2, 2, w-4, 47))
+        cab = tipo(14)
+        sub = tipo(11)
+        panel.blit(cab.render("COMENTARIOS EN VIVO", True, (241, 213, 165)), (12, 11))
+        panel.blit(sub.render(f"{espectadores} espectadores  ·  CIVINET", True,
+                              (196, 166, 133)), (12, 30))
+        pygame.draw.line(panel, (132, 94, 61), (10, 51), (w-10, 51), 1)
+        yy = 61
+        # Se muestran los mensajes más recientes con un máximo de dos líneas cada uno.
         visibles = chat_feed[-6:]
+        if not visibles:
+            panel.blit(sub.render("Esperando comentarios...", True, (185, 175, 162)), (12, yy))
         for emoji, usuario, mensaje, edad in visibles:
-            # Los mensajes más antiguos se atenúan suavemente.
-            alfa = int(235 * max(0.48, min(1.0, 1.0 - edad / 22.0)))
-            icono_chat = fuente_chat_emoji.render(emoji, True, COL_PAPEL)
-            icono_chat.set_alpha(alfa)
-            panel.blit(icono_chat, (u(9), yy - u(1)))
-            nombre = fuente_chat_nombre.render(usuario, True, COL_AMBAR)
-            nombre.set_alpha(alfa)
-            panel.blit(nombre, (u(29), yy))
-            yy += u(15)
-            lineas = dividir_en_lineas(mensaje, fuente_chat, w-u(20))[:2]
-            for linea in lineas:
-                img = fuente_chat.render(linea, True, COL_PAPEL)
-                img.set_alpha(alfa)
-                panel.blit(img, (u(10), yy))
-                yy += u(14)
-            yy += u(8)
+            if yy > h-110:
+                break
+            nombre = tipo(12)
+            icono = fuente_chat_emoji.render(emoji, True, (210, 169, 115))
+            panel.blit(icono, (10, yy))
+            panel.blit(nombre.render(usuario, True, (232, 200, 154)), (35, yy+1))
+            yy += 20
+            f_msg = tipo(12)
+            for linea in dividir_en_lineas(mensaje, f_msg, w-27)[:2]:
+                panel.blit(f_msg.render(linea, True, (234, 231, 223)), (13, yy))
+                yy += 16
+            pygame.draw.line(panel, (68, 58, 50), (12, yy+6), (w-12, yy+6), 1)
+            yy += 17
+        # Tendencia dinámica, sin ocultar el historial de comentarios.
+        lamina(panel, "tendencia", pygame.Rect(9, h-59, w-18, 49))
+        etiqueta = "#EntrevistaCRÓNICA" if fase not in ("civinet", "civitas") else "#CIVINET"
+        panel.blit(tipo(14).render("EN TENDENCIA", True, (239, 174, 112)), (22, h-53))
+        panel.blit(tipo(14).render(etiqueta, True, (246, 226, 194)), (22, h-32))
         canvas.blit(panel, (x, y))
 
     # ------------------------------------------------------------ bucle principal
@@ -1116,10 +1067,10 @@ def Entrevista():
             fuente, fuente_grande = crear_fuentes()
             tam_actual = tam_fuentes()
 
-        SCREEN_ANCHO = u(540)
+        SCREEN_ANCHO = u(464)
         SCREEN_X = int(ajuste["x"]) - SCREEN_ANCHO // 2
         SCREEN_Y = int(ajuste["y"])
-        Y_CONTENIDO = SCREEN_Y + u(104)
+        Y_CONTENIDO = SCREEN_Y + u(65)
 
         if fase != fase_prev:
             fase_prev = fase
@@ -1147,6 +1098,7 @@ def Entrevista():
         fondo_actual = fondos[fondo_por_fase[fase]]
         fondo_actual.actualizar(dt)
         canvas.blit(fondo_actual.superficie(), (0, 0))
+        canvas.blit(escenario_velo, (0, 0))
         panel_cabecera()
         cabecera()
 
@@ -1180,14 +1132,14 @@ def Entrevista():
             canvas.blit(velo_oscuro, (0, 0))
             marco_emision(col_d, "ALERTA EDITORIAL" if es_civitas else "CRÓNICA · EN DIRECTO")
 
-            panel = pygame.Rect(u(95), ALTO - u(215), ANCHO - u(190), u(165))
-            jit = random.randint(-3, 3) if (es_civitas and int(tiempo * 9) % 11 == 0) else 0
+            panel = pygame.Rect(u(255), ALTO - u(245), ANCHO - u(282), u(190))
+            jit = 0
             marco_vn(canvas, panel, col_d, quien, "civitas" if es_civitas else "intro",
                      relleno=(5, 12, 13, 238), jitter=jit)
             av = pygame.Rect(panel.x + u(22), panel.y + u(28), u(104), u(104))
-            pygame.draw.rect(canvas, (3, 6, 7), av)
+            pygame.draw.rect(canvas, (227, 232, 235), av, border_radius=u(8))
             pygame.draw.rect(canvas, mezclar(col_d, COL_POLVO, 0.5), av, 1)
-            esquinas(canvas, av, col_d, u(10), 2, 3)
+            pygame.draw.rect(canvas, (151, 160, 168), av, 1, border_radius=u(8))
             if es_civitas:
                 dibujar_ojo(av.centerx, av.centery, u(38))
             else:
@@ -1196,18 +1148,17 @@ def Entrevista():
             lineas_d = dividir_en_lineas(dialogo, fuente, panel.width - u(172))
             total_d = sum(len(l) for l in lineas_d)
             n_vis = int(t_linea * (42 if es_civitas else 75))
-            escribir_tipeo(lineas_d, fuente, COL_PAPEL, texto_x, panel.y + u(26), u(22), n_vis, decodificar=es_civitas)
+            escribir_tipeo(lineas_d, fuente, (255, 255, 255) if es_civitas else COL_TINTA, texto_x, panel.y + u(26), u(22), n_vis, decodificar=es_civitas)
             completo = n_vis >= total_d
             pulso = 0.55 + 0.45 * math.sin(tiempo * 2.4)
             ind = fuente.render("CLIC / ESPACIO PARA CONTINUAR" if completo else "CLIC PARA SALTAR",
-                                True, mezclar(COL_PAPEL, col_d, pulso))
+                                True, (255, 255, 255) if es_civitas else (55, 68, 80))
             r_ind = ind.get_rect(bottomright=(panel.right - u(40), panel.bottom - u(12)))
             canvas.blit(ind, r_ind)
             if completo:
                 triangulo_siguiente(panel.right - u(24), r_ind.centery, col_d)
             # Una línea de escaneo muy sutil acompaña el diálogo, sin tapar el fondo.
-            scan_y = int((tiempo * 38) % ALTO)
-            pygame.draw.line(canvas, (112, 174, 157, 35), (0, scan_y), (ANCHO, scan_y), 1)
+
             if click or tecla == 1 or avanzar:
                 if not completo:
                     t_linea = 9999.0
@@ -1229,21 +1180,21 @@ def Entrevista():
             canvas.blit(velo_civitas, (0, 0))
             marco_emision(COL_CIVITAS, "SEÑAL COMPROMETIDA")
 
-            panel = pygame.Rect(u(75), u(110), ANCHO - u(150), ALTO - u(205))
-            jit = random.randint(-4, 4) if int(tiempo * 9) % 11 == 0 else 0
+            panel = pygame.Rect(u(255), u(145), ANCHO - u(283), ALTO - u(220))
+            jit = 0
             marco_vn(canvas, panel, (210, 55, 70), "CIVITAS // ACCESO NO AUTORIZADO", "civitas",
                      relleno=(8, 8, 13, 242), jitter=jit)
-            dibujar_ojo(panel.centerx, panel.y + u(95), u(54))
+            dibujar_ojo(panel.centerx, panel.y + u(95), u(42))
             texto_glitch(TITULOS_CIVITAS.get(preguntas_hechas, "NO TIENES EL CONTROL"), fuente_grande,
-                         (235, 70, 82), (panel.centerx, panel.y + u(168)))
+                         (145, 49, 47), (panel.centerx, panel.y + u(168)))
             lineas_d = dividir_en_lineas(dialogo, fuente_grande, panel.width - u(80))
             total_d = sum(len(l) for l in lineas_d)
             n_vis = int(t_linea * 40)
-            escribir_tipeo(lineas_d, fuente_grande, COL_PAPEL, panel.centerx, panel.y + u(204), u(31), n_vis,
+            escribir_tipeo(lineas_d, fuente_grande, (255, 255, 255), panel.centerx, panel.y + u(204), u(31), n_vis,
                            centro=True, decodificar=True)
             completo = n_vis >= total_d
             pie = fuente.render(f"mensaje {indice_dialogo + 1} de {len(lineas_civ)}   ·   "
-                                + ("clic / espacio" if completo else "clic para saltar"), True, COL_APAGADO)
+                                + ("clic / espacio" if completo else "clic para saltar"), True, (245, 238, 227))
             r_pie = pie.get_rect(centerx=panel.centerx, bottom=panel.bottom - u(16))
             canvas.blit(pie, r_pie)
             if completo:
@@ -1300,38 +1251,56 @@ def Entrevista():
                 else:
                     confianza_civinet = max(0, confianza_civinet - 1)
                     avisos["confianza"] = {"txt": "-1", "color": COL_MALO, "t": 1.4}
-                # Una sola valoración reúne la reacción ciudadana y la opinión de la audiencia.
-                cambios_audiencia = [8, 2, -6]
-                espectadores = max(0, espectadores + cambios_audiencia[i])
-                puntos_influencer += [2, 0, -2][i]
-                avisos["espectadores"] = {"txt": f"{cambios_audiencia[i]:+d}",
-                                          "color": COL_AGUA if cambios_audiencia[i] > 0 else COL_MALO, "t": 1.4}
+                # El ciudadano tiene una valoración propia: no sustituye al influencer.
                 if random.random() < 0.28:
                     lanzar_reaccion(["👏", "🤔", "⚠️"][i],
-                                    ["La audiencia respalda la respuesta",
-                                     "La conversación pide más contexto",
-                                     "La audiencia cuestiona lo que escuchó"][i],
+                                    ["Un ciudadano respalda la respuesta",
+                                     "La ciudadanía pide más contexto",
+                                     "Un ciudadano cuestiona lo que escuchó"][i],
                                     [COL_AGUA, COL_AMBAR, COL_VIVO][i])
                 ultima_pregunta = preguntas[id_pregunta_actual]
                 ultima_respuesta = respuestas[id_pregunta_actual][respuesta_elegida]
-                fase = "siguiente"
+                fase = "audiencia"
+
+        elif fase == "audiencia":
+            y = bloque_cita(Y_CONTENIDO, "Respuesta del presidente", ultima_respuesta,
+                            ROLES["respuesta"][1], "respuesta") + u(14)
+            cambios_audiencia = [8, 2, -6]
+            i = fila_botones(y, ["La respalda", "Tiene dudas", "La rechaza"],
+                             ["sube", "igual", "baja"], ROLES["audiencia"][1], mouse_pos, click, tecla)
+            if i is not None:
+                espectadores = max(0, espectadores + cambios_audiencia[i])
+                avisos["espectadores"] = {"txt": f"{cambios_audiencia[i]:+d}",
+                                          "color": COL_AGUA if cambios_audiencia[i] > 0 else COL_MALO, "t": 1.4}
+                if i == 0:
+                    puntos_ciudadano += 1
+                elif i == 2:
+                    puntos_ciudadano -= 1
+                if random.random() < 0.45:
+                    lanzar_reaccion(["👏", "🤔", "⚠️"][i],
+                                    ["La audiencia respalda la respuesta",
+                                     "La audiencia pide más contexto",
+                                     "La audiencia cuestiona lo que escuchó"][i],
+                                    [COL_AGUA, COL_AMBAR, COL_VIVO][i])
+                fase = "opinion"
 
         elif fase == "opinion":
             y = bloque_cita(Y_CONTENIDO, "Presidente respondió",
                             respuestas[id_pregunta_actual][respuesta_elegida], ROLES["respuesta"][1],
                             "respuesta") + u(14)
             cambios = [8, 2, -6]
-            i = fila_botones(y, ["Positiva", "Imparcial", "Mala"], ["sube", "igual", "baja"],
-                             ROLES["opinion"][1], mouse_pos, click, tecla)
+            puntos_opinion = [3, 1, -2]
+            i = fila_botones(y, ["Respaldar", "Ser neutral", "Cuestionar"],
+                             ["sube", "igual", "baja"], ROLES["opinion"][1], mouse_pos, click, tecla)
             if i is not None:
-                espectadores += cambios[i]
+                espectadores = max(0, espectadores + cambios[i])
+                puntos_influencer += puntos_opinion[i]
                 avisos["espectadores"] = {"txt": f"{cambios[i]:+d}",
                                           "color": COL_AGUA if cambios[i] > 0 else COL_MALO, "t": 1.4}
-                ultima_pregunta = preguntas[id_pregunta_actual]
-                ultima_respuesta = respuestas[id_pregunta_actual][respuesta_elegida]
                 lanzar_reaccion(["❤️", "➖", "👎"][i],
-                                ["La publicación gana apoyo", "La conversación se mantiene estable",
-                                 "La audiencia pierde interés"][i],
+                                ["El influencer respalda públicamente la respuesta",
+                                 "El influencer mantiene una postura equilibrada",
+                                 "El influencer cuestiona la respuesta ante sus seguidores"][i],
                                 [COL_AGUA, COL_AMBAR, COL_VIVO][i])
                 fase = "siguiente"
 
@@ -1483,6 +1452,23 @@ def Entrevista():
                 fase = "final"
             else:
                 fase = "pregunta"
+
+        # Tarjeta de cambio de turno: entra y se desvanece, sin bloquear controles.
+        if 0.06 < t_fase < 0.86 and fase not in ("intro", "siguiente"):
+            nombres_turno = {"pregunta":"PERIODISTA / PREGUNTA", "respuesta":"PRESIDENTE / RESPUESTA",
+                             "ciudadano":"CIUDADANO / VEREDICTO", "audiencia":"AUDIENCIA / REACCIÓN",
+                             "opinion":"INFLUENCER / OPINIÓN", "civinet":"CIVINET / EN CIRCULACIÓN",
+                             "verificacion":"VERIFICACIÓN / CONTEXTO", "civitas":"CIVITAS / INTERVENCIÓN",
+                             "final":"RESULTADO / TRANSMISIÓN"}
+            banner = pygame.Surface((440, 76), pygame.SRCALPHA)
+            lamina(banner, "banner_civitas" if fase == "civitas" else "banner_transicion",
+                   pygame.Rect(0, 0, 440, 76))
+            nombre_turno = nombres_turno.get(fase, "TRANSMISIÓN")
+            texto_turno = tipo(22).render(nombre_turno, True, (250, 223, 178))
+            banner.blit(texto_turno, texto_turno.get_rect(center=(220, 38)))
+            a = min(1.0, t_fase / 0.18, (0.86-t_fase)/0.26)
+            banner.set_alpha(int(235 * max(0.0, a)))
+            canvas.blit(banner, (164, 280-int((1-a)*14)))
 
         # cursor de mano al pasar sobre una opción
         if ui["hover"] != cursor_mano:

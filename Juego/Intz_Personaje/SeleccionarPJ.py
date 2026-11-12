@@ -1,187 +1,161 @@
+# -*- coding: utf-8 -*-
+"""Selector de roles de The Leader con ilustraciones originales.
+
+Clic en expediente: muestra su ficha y pregunta si desea elegirlo.
+Confirmar entra al rol; Elegir otro regresa al tablero.
+"""
 import sys
 from pathlib import Path
-
-import cv2
 import pygame
-
-from Intz_Personaje import Intz_Ciudadano, Intz_Influencer, Intz_Periodista, Intz_Presidente
 import Metodos
+from Intz_Personaje import Intz_Ciudadano, Intz_Influencer, Intz_Periodista, Intz_Presidente
 
-RUTA_INTERFAZ = Path(__file__).parent.parent / "Assets" / "Interfaz"
-ANCHO, ALTO = 900, 675            # mismo formato que los videos (800 x 600)
-
-# PERSONAJES: cada uno sale de su video de "Selecciona el género", recortando su retrato.
-# recorte = (x1, y1, x2, y2) dentro del video de 800 x 600. Cada recorte está medido para que
-# las 4 caras queden del mismo tamaño y a la misma altura (mismo acercamiento).
-PERSONAJES = [
-    {"rol": "PRESIDENTE", "video": "Genero_Presidente.mp4", "recorte": (470, 207, 673, 421), "genero": "Masculino"},
-    {"rol": "CIUDADANO",  "video": "Genero_Ciudadano.mp4",  "recorte": (118, 206, 358, 458), "genero": "Femenino"},
-    {"rol": "PERIODISTA", "video": "Genero_Periodista.mp4", "recorte": (452, 198, 696, 452), "genero": "Masculino"},
-    {"rol": "INFLUENCER", "video": "Genero_Influencer.mp4", "recorte": (96, 243, 332, 491), "genero": "Femenino"},
+ANCHO, ALTO = 800, 600
+IMAGENES = Path(__file__).resolve().parent.parent / 'Assets' / 'Interfaz' / 'SeleccionNovia'
+# Orden exacto de los expedientes en 3.png (de izquierda a derecha).
+ROLES = [
+    ('PERIODISTA', '11.png', pygame.Rect(78, 163, 159, 241)),
+    ('INFLUENCER', '8.png', pygame.Rect(246, 163, 159, 241)),
+    ('CIUDADANO', '12.png', pygame.Rect(414, 163, 159, 241)),
+    ('PRESIDENTE', '15.png', pygame.Rect(582, 163, 159, 241)),
 ]
-FONDO = "Fondo_Seleccion.mp4"     # la ciudad destruida, sin los botones viejos
-
-BLANCO = (245, 245, 245)
-
-
-# VIDEOS
-class VideoEnBucle:
-    """Lee un video y vuelve a empezar cuando se acaba."""
-
-    def __init__(self, ruta):
-        self.video = cv2.VideoCapture(str(ruta))
-
-    def cuadro(self):
-        ok, cuadro = self.video.read()
-        if not ok:
-            self.video.set(cv2.CAP_PROP_POS_FRAMES, 0)
-            ok, cuadro = self.video.read()
-        return cuadro if ok else None
-
-    def cerrar(self):
-        self.video.release()
+# Pequeña barra en la esquina inferior derecha de la ficha.
+# La información del personaje termina por encima de esta zona.
+PANEL = pygame.Rect(512, 533, 276, 59)
+CONFIRMAR = pygame.Rect(522, 555, 126, 31)
+OTRO = pygame.Rect(655, 555, 126, 31)
+REGRESAR_TABLERO = pygame.Rect(5, 533, 108, 47)
 
 
-def a_superficie(cuadro, tam):
-    cuadro = cv2.cvtColor(cv2.resize(cuadro, tam, interpolation=cv2.INTER_AREA), cv2.COLOR_BGR2RGB)
-    return pygame.image.frombuffer(cuadro.tobytes(), tam, "RGB").copy()
+def dibujar_brillo(canvas, area, tiempo):
+    """Halo cálido ajustado al expediente bajo el cursor, sin moverlo."""
+    import math
+    intensidad = 0.72 + 0.28 * math.sin(tiempo * 4)
+    halo = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)
+    for grosor, alpha, margen in ((14, 13, 11), (9, 27, 7), (5, 55, 4)):
+        pygame.draw.rect(halo, (255, 190, 91, int(alpha * (1 + intensidad))),
+                         area.inflate(margen * 2, margen * 2), grosor,
+                         border_radius=6)
+    canvas.blit(halo, (0, 0))
+    pygame.draw.rect(canvas, (255, 218, 135), area, 3, border_radius=4)
+    # Esquinas metálicas del expediente, alineadas con su contorno.
+    for x, sx in ((area.left, 1), (area.right, -1)):
+        for y, sy in ((area.top, 1), (area.bottom, -1)):
+            pygame.draw.line(canvas, (255, 237, 175), (x, y), (x + sx * 17, y), 3)
+            pygame.draw.line(canvas, (255, 237, 175), (x, y), (x, y + sy * 17), 3)
 
 
-def tarjeta(canvas, retrato, rect, encima):
-    """Retrato con borde de papel blanco y una hoja detrás, igual para los 4."""
-    atras = rect.move(7, -7)
-    pygame.draw.rect(canvas, (205, 208, 210), atras)
-    pygame.draw.rect(canvas, (245, 245, 243), rect)
-    adentro = rect.inflate(-14, -14)
-    canvas.blit(pygame.transform.smoothscale(retrato, adentro.size), adentro)
-    if encima:
-        pygame.draw.rect(canvas, (255, 225, 170), rect.inflate(8, 8), 3)
+def posicion_en_canvas(display, pos):
+    """Convierte coordenadas de ventana a 800x600, respetando bandas negras."""
+    w, h = display.get_size()
+    escala = min(w / ANCHO, h / ALTO)
+    ox, oy = (w - ANCHO * escala) / 2, (h - ALTO * escala) / 2
+    return ((pos[0] - ox) / escala, (pos[1] - oy) / escala)
 
 
-# DIBUJO
-def fuente(tam):
-    ruta = RUTA_INTERFAZ / "upheavtt.ttf"
-    if ruta.exists():
-        return pygame.font.Font(str(ruta), tam)
-    return pygame.font.SysFont("consolas", tam, bold=True)
+def abrir_rol(nombre):
+    if nombre == 'PRESIDENTE':
+        return Intz_Presidente.Presidente()
+    if nombre == 'CIUDADANO':
+        return Intz_Ciudadano.Ciudadano()
+    if nombre == 'PERIODISTA':
+        return Intz_Periodista.Periodista()
+    # Mantener la cinemática original de la influencer y su género.
+    Metodos.ReproducirVideo('Video_Influencer_F.mp4')
+    Intz_Influencer.Influencer('Femenino')
+    return SeleccionarPJ()
 
 
-def texto_brillante(canvas, texto, f, centro):
-    """Texto blanco con un brillo suave alrededor (como los títulos de los videos)."""
-    img = f.render(texto, True, BLANCO)
-    brillo = f.render(texto, True, (200, 210, 225))
-    for dx, dy in ((-3, 0), (3, 0), (0, -3), (0, 3), (-2, -2), (2, 2), (-2, 2), (2, -2)):
-        brillo.set_alpha(45)
-        canvas.blit(brillo, brillo.get_rect(center=(centro[0] + dx, centro[1] + dy)))
-    canvas.blit(img, img.get_rect(center=centro))
-
-
-def marco_doble(canvas, rect, color):
-    """El marco de dos líneas cruzadas de los botones del juego."""
-    pygame.draw.rect(canvas, color, rect, 3)
-    pygame.draw.rect(canvas, color, rect.inflate(-12, -12), 2)
-    pygame.draw.line(canvas, color, (rect.x - 10, rect.bottom - 6), (rect.x + 40, rect.bottom - 6), 2)
-    pygame.draw.line(canvas, color, (rect.right - 6, rect.y - 8), (rect.right - 6, rect.y + 30), 2)
-
-
-def flecha(canvas, rect, encima):
-    color = BLANCO if not encima else (255, 220, 160)
-    cx, cy = rect.center
-    pygame.draw.polygon(canvas, color, [(cx - 26, cy), (cx - 6, cy - 20), (cx - 6, cy - 8),
-                                        (cx + 26, cy - 8), (cx + 26, cy + 8), (cx - 6, cy + 8), (cx - 6, cy + 20)])
-
-
-# PANTALLA
 def SeleccionarPJ():
     pygame.init()
-    display, canvas = Metodos.crear_ventana(ANCHO, ALTO, "The Leader")
+    display, canvas = Metodos.crear_ventana(ANCHO, ALTO, 'The Leader')
     reloj = pygame.time.Clock()
+    imagenes = {}
+    for nombre in ['3.png'] + [r[1] for r in ROLES]:
+        ruta = IMAGENES / nombre
+        if not ruta.is_file():
+            raise FileNotFoundError(f'Falta la imagen de selección: {ruta}')
+        imagenes[nombre] = pygame.image.load(str(ruta)).convert()
+        if imagenes[nombre].get_size() != (ANCHO, ALTO):
+            imagenes[nombre] = pygame.transform.smoothscale(imagenes[nombre], (ANCHO, ALTO))
 
-    fondo = VideoEnBucle(RUTA_INTERFAZ / FONDO)
-    videos = [VideoEnBucle(RUTA_INTERFAZ / p["video"]) for p in PERSONAJES]
+    seleccionado = None
+    fuente_pregunta = pygame.font.SysFont('timesnewroman', 14, bold=True)
+    fuente_boton = pygame.font.SysFont('timesnewroman', 15, bold=True)
+    tiempo = 0.0
 
-    ancho_t, alto_t = 190, 198
-    espacio = 22
-    x0 = (ANCHO - (4 * ancho_t + 3 * espacio)) // 2
-    tarjetas = [pygame.Rect(x0 + i * (ancho_t + espacio), 190, ancho_t, alto_t) for i in range(4)]
-    etiquetas = [pygame.Rect(r.x - 4, r.bottom + 26, r.w + 8, 58) for r in tarjetas]
-    boton_salir = pygame.Rect(30, 90, 70, 50)
-    f_titulo, f_rol = fuente(44), fuente(24)
-
-    def cerrar_todo():
-        fondo.cerrar()
-        for v in videos:
-            v.cerrar()
+    def dibujar_pregunta(indice):
+        # Barra mínima, sobre la madera inferior derecha y NO sobre la biografía.
+        capa = pygame.Surface(PANEL.size, pygame.SRCALPHA)
+        capa.fill((23, 19, 18, 239))
+        pygame.draw.rect(capa, (173, 125, 77), capa.get_rect(), 2,
+                         border_radius=5)
+        canvas.blit(capa, PANEL.topleft)
+        mensaje = '¿Elegir a ' + ROLES[indice][0].title() + '?'
+        titulo = fuente_pregunta.render(mensaje, True, (245, 220, 179))
+        canvas.blit(titulo, titulo.get_rect(center=(PANEL.centerx, PANEL.y + 12)))
+        mouse = posicion_en_canvas(display, pygame.mouse.get_pos())
+        for rect, titulo in ((CONFIRMAR, 'CONFIRMAR'), (OTRO, 'ELEGIR OTRO')):
+            hover = rect.collidepoint(mouse)
+            pygame.draw.rect(canvas, (112, 62, 43) if hover else (56, 44, 37),
+                             rect, border_radius=4)
+            pygame.draw.rect(canvas, (246, 199, 122) if hover else (150, 109, 72),
+                             rect, 2, border_radius=4)
+            label = fuente_boton.render(titulo, True, (249, 225, 189))
+            canvas.blit(label, label.get_rect(center=rect.center))
 
     while True:
-        click = False
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                cerrar_todo()
+        tiempo += min(reloj.tick(60) / 1000.0, 0.1)
+        accion = None
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            if event.type == pygame.VIDEORESIZE:
-                display = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                click = True
-
-        ancho_v, alto_v = display.get_size()
-        escala = min(ancho_v / ANCHO, alto_v / ALTO)
-        mouse = Metodos.mouse_en_canvas(escala, (ancho_v - int(ANCHO * escala)) // 2,
-                                        (alto_v - int(ALTO * escala)) // 2)
-
-        # 1. la ciudad destruida de fondo (ya viene un poco desenfocada) y franjas negras
-        cuadro = fondo.cuadro()
-        if cuadro is not None:
-            canvas.blit(a_superficie(cuadro, (ANCHO, ALTO)), (0, 0))
+            if evento.type == pygame.VIDEORESIZE:
+                display = pygame.display.set_mode(
+                    (max(320, evento.w), max(240, evento.h)), pygame.RESIZABLE)
+            elif evento.type == pygame.KEYDOWN:
+                if evento.key == pygame.K_ESCAPE:
+                    if seleccionado is not None:
+                        seleccionado = None
+                    else:
+                        pygame.quit()
+                        sys.exit()
+                elif evento.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                    if seleccionado is not None:
+                        accion = seleccionado
+                elif evento.key == pygame.K_BACKSPACE:
+                    seleccionado = None
+            elif evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
+                punto = posicion_en_canvas(display, evento.pos)
+                if seleccionado is None:
+                    # Solo el clic (no hover) abre la ficha de detalles.
+                    for i, (_, _, area) in enumerate(ROLES):
+                        if area.collidepoint(punto):
+                            seleccionado = i
+                            break
+                    # La flecha inferior izquierda del tablero original:
+                    # se conserva su comportamiento de salida.
+                    if seleccionado is None and REGRESAR_TABLERO.collidepoint(punto):
+                        pygame.quit()
+                        sys.exit()
+                else:
+                    if CONFIRMAR.collidepoint(punto):
+                        accion = seleccionado
+                    elif OTRO.collidepoint(punto):
+                        seleccionado = None
+                    # Los demás clics sobre la ficha no hacen nada.
+        if accion is not None:
+            return abrir_rol(ROLES[accion][0])
+        archivo = '3.png' if seleccionado is None else ROLES[seleccionado][1]
+        canvas.blit(imagenes[archivo], (0, 0))
+        if seleccionado is None:
+            mouse = posicion_en_canvas(display, pygame.mouse.get_pos())
+            for _, _, area in ROLES:
+                if area.collidepoint(mouse):
+                    dibujar_brillo(canvas, area, tiempo)
+                    break
         else:
-            canvas.fill((60, 66, 72))
-        velo = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)
-        velo.fill((0, 0, 0, 35))
-        canvas.blit(velo, (0, 0))
-        pygame.draw.rect(canvas, (0, 0, 0), (0, 0, ANCHO, 62))
-        pygame.draw.rect(canvas, (0, 0, 0), (0, ALTO - 62, ANCHO, 62))
-
-        texto_brillante(canvas, "SELECCIONA TU PERSONAJE", f_titulo, (ANCHO // 2 + 30, 116))
-        flecha(canvas, boton_salir, boton_salir.collidepoint(mouse))
-
-        # 2. las 4 tarjetas animadas (cada una es un pedazo de su video)
-        elegido = None
-        for i, (p, video, r, e) in enumerate(zip(PERSONAJES, videos, tarjetas, etiquetas)):
-            encima = r.collidepoint(mouse) or e.collidepoint(mouse)
-            cuadro = video.cuadro()
-            destino = r.inflate(14, 14) if encima else r
-            if cuadro is not None:
-                x1, y1, x2, y2 = p["recorte"]
-                tarjeta(canvas, a_superficie(cuadro[y1:y2, x1:x2], (x2 - x1, y2 - y1)), destino, encima)
-            color = (255, 225, 170) if encima else BLANCO
-            marco_doble(canvas, e, color)
-            texto_brillante(canvas, p["rol"], f_rol, e.center)
-            if encima and click:
-                elegido = p
-
+            dibujar_pregunta(seleccionado)
         Metodos.mostrar_canvas(display, canvas)
-        pygame.display.update()
-        reloj.tick(30)
-
-        # 3. qué pasa al elegir
-        if click and boton_salir.collidepoint(mouse):
-            cerrar_todo()
-            pygame.quit()
-            sys.exit()
-
-        if elegido:
-            cerrar_todo()
-            if elegido["rol"] == "PRESIDENTE":
-                Intz_Presidente.Presidente()
-                return
-            if elegido["rol"] == "CIUDADANO":
-                Intz_Ciudadano.Ciudadano()
-                return
-            if elegido["rol"] == "PERIODISTA":
-                Intz_Periodista.Periodista()
-                return
-            # La influencer tiene su video antes de entrar; al salir vuelve a esta pantalla
-            Metodos.ReproducirVideo("Video_Influencer_F.mp4")
-            Intz_Influencer.Influencer(elegido["genero"])
-            return SeleccionarPJ()
+        pygame.display.flip()

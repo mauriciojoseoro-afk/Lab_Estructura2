@@ -576,6 +576,7 @@ def escena(guion, modo, valores=None, antes=None, despues=None):
     tam_imagen = None
     video_terminado = False
     ultimo_clic = -1000
+    ultimo_espacio = -1000
     fin_escritura = None           # cuándo terminó de escribirse la consecuencia
     completar_texto = False
     pantalla = pygame.display.get_surface()
@@ -597,8 +598,19 @@ def escena(guion, modo, valores=None, antes=None, despues=None):
                 sys.exit()
             if evento.type == pygame.VIDEORESIZE:
                 pygame.display.set_mode((evento.w, evento.h), pygame.RESIZABLE)
-            if evento.type == pygame.KEYDOWN and evento.key in (pygame.K_SPACE, pygame.K_RETURN):
+            if evento.type == pygame.KEYDOWN and evento.key == pygame.K_RETURN:
                 clic = True
+            if evento.type == pygame.KEYDOWN and evento.key == pygame.K_SPACE:
+                clic = True
+                ahora = pygame.time.get_ticks()
+                if tl < 0 and ahora - ultimo_espacio < 400:    # doble espacio: saltar
+                    adelanto += guion["pantalla"] - t
+                    video.set(cv2.CAP_PROP_POS_FRAMES, int(guion["pantalla"] * fps))
+                    leidos = int(guion["pantalla"] * fps)
+                    if hay_audio:
+                        pygame.mixer.music.play(start=guion["pantalla"])
+                    clic = False
+                ultimo_espacio = ahora
             if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
                 clic = True
                 zona_saltar = pygame.Rect(int(pantalla.get_width() * 0.80), 0,

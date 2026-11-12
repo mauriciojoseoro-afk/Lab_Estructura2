@@ -371,12 +371,34 @@ CONFRONTACION = {
         (9.6, 10.1, 11.7, 'MARIE: "¿Cómo pudiste no decirnos?"'),
     ],
 }
+
+
+# ESCENA ANTES DE LA ENTREVISTA
+# subtitulos: (empieza, termina de escribirse, desaparece, texto) en segundos del video
+ESCENA_ENTREVISTA = {
+    "video": "escena_entrevista.mp4",
+    "subtitulos": [
+        (0.3, 1.8, 3.7, "En la plaza, el agua ya no alcanzaba para todos."),
+        (4.6, 6.6, 10.8, "Sobrevivir no era suficiente. Ciudad Nova necesitaba a alguien que la guiara."),
+        (12.3, 13.3, 15.6, 'OSAMU: "¿Tú eres del que hablan, no? ¿El próximo líder?"'),
+        (15.9, 17.2, 19.2, 'OSAMU: "Antes de todo esto, yo contaba lo que pasaba en esta ciudad."'),
+        (19.4, 20.8, 22.3, 'OSAMU: "Era periodista… y lo sigo siendo, aunque ya casi nadie quiera escuchar la verdad."'),
+        (22.7, 23.8, 25.6, 'OSAMU: "¿Escuchas eso? Están a un rumor de destruirse entre ellos."'),
+        (25.8, 27.0, 28.8, 'OSAMU: "Civitas les dice qué creer, y nadie le responde."'),
+        (29.2, 30.6, 32.6, 'OSAMU: "Tú dices que quieres arreglar esta ciudad y encontrar quién la guíe."'),
+        (32.8, 33.8, 35.3, 'OSAMU: "Pues demuéstralo. Esta noche, en vivo, frente a todos."'),
+        (35.4, 36.3, 37.4, 'OSAMU: "Yo pregunto, tú respondes… y Ciudad Nova decide."'),
+    ],
+}
+
+
+
 # LA PÁGINA QUE EXPLICA LO QUE PASÓ
 VERDAD = ("Llegar a este lugar fue una trampa. Civitas te dejó encontrar esta oficina para que el grupo "
           "supiera quién eres... y se separara.")
-VERDAD_TORRE = "Pero sabes algo que Civitas no quería que supieras: cómo detenerla. Les cuentas lo de la Torre."
+VERDAD_TORRE = "Pero ahora sabes algo que Civitas no quería que supieras: cómo detenerla."
 VERDAD_SIN_TORRE = "Ahora todos saben la verdad."
-VERDAD_FINAL = "¿El grupo te seguirá?"
+VERDAD_FINAL = "¿El grupo estará dispuesto a escucharte?"
 NOTA_TORRE = ("No guardé esto en el computador: ella lo lee todo.\n\n"
               "Todo lo que Civitas dice sale de un solo servidor, en la Torre Civitas. No tiene copia. "
               "Si se desconecta, Civitas se queda muda: no más alertas, no más rumores.\n\n"
@@ -1460,6 +1482,7 @@ class Oficina:
                 pass
         inicio = pygame.time.get_ticks()
         leidos, imagen, tam, cuadro = 0, None, None, None
+        ultimo_espacio = -1000
         termino = not video.isOpened()
         fin_video = None
         while True:
@@ -1496,10 +1519,14 @@ class Oficina:
                 pantalla.blit(ayuda, ayuda.get_rect(center=(rect.centerx, rect.y + int(0.95 * rect.h))))
             pygame.display.update()
             self.v.reloj.tick(60)
-            if clic(eventos) or tecla(eventos, pygame.K_SPACE, pygame.K_RETURN):
-                if listo:
-                    break
-                if not termino:                       # saltar el video
+            espacio = tecla(eventos, pygame.K_SPACE)
+            ahora = pygame.time.get_ticks()
+            doble = espacio and ahora - ultimo_espacio < 400
+            if espacio:
+                ultimo_espacio = ahora
+            if listo and (clic(eventos) or espacio or tecla(eventos, pygame.K_RETURN)):
+                break
+            if doble and not termino:                 # doble espacio: saltar el video
                     termino, fin_video = True, t
                     video.set(cv2.CAP_PROP_POS_FRAMES, max(0, int(video.get(cv2.CAP_PROP_FRAME_COUNT)) - 2))
                     ok, sig = video.read()
@@ -1652,3 +1679,12 @@ if __name__ == "__main__":
     else:
         print(jugar(None, None, Evento1_Pozo.Indicadores(), random.choice(
             ["COMPARTIR", "IGNORAR", "REPORTAR", "VERIFICAR_FALSO", "VERIFICAR_VERDADERO"])))
+
+
+
+# ESCENA ANTES DE LA ENTREVISTA
+def reproducir_escena(guion):
+    o = Oficina.__new__(Oficina)
+    o.v = Ventana()
+    o.fondo = pygame.Surface((ANCHO, ALTO))
+    o.video(guion)

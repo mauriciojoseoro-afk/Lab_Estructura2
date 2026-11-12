@@ -80,9 +80,9 @@ FPS_ANIMACION = 12
 ESCALA_SPRITE = 1.0
 
 # --- PRUEBA DE SPRITES: usa el cuerpo de otro personaje sin cambiar nombres ni HUD ---
-# {"Periodista": "Sobreviviente"} = el Periodista (punto amarillo) se dibuja con los sprites de Sobreviviente.
+# {"Ciudadano": "Sobreviviente"} = el Ciudadano (punto verde) se dibuja con los sprites de Sobreviviente.
 # Deja el diccionario vacio ({}) para volver a la normalidad.
-SPRITES_PRUEBA = {"Periodista": "Sobreviviente"}
+SPRITES_PRUEBA = {"Ciudadano": "Sobreviviente"}
 # ---------------------------------------------------------------------------------------
 
 ALTURA_SPRITE = int(RADIO_SPRITE_VISUAL * 2 * ESCALA_SPRITE)
@@ -117,7 +117,11 @@ def cargar_frames(carpeta):
     originales = []
     idx = 1
     while True:
-        archivo = carpeta / f"frame_{idx}.png"
+        archivo = carpeta / f"frame_{idx:02d}.png"
+        if not archivo.exists():
+            archivo = carpeta / f"frame_{idx:02d}.PNG"
+        if not archivo.exists():
+            archivo = carpeta / f"frame_{idx}.png"
         if not archivo.exists():
             archivo = carpeta / f"frame_{idx}.PNG"
         if not archivo.exists():
@@ -159,13 +163,19 @@ def cargar_animaciones():
     for pareja in PAREJAS:
         for nombre, color, teclas in pareja:
             ANIMACIONES[nombre] = {}
-            ruta_personaje = ruta_base / SPRITES_PRUEBA.get(nombre, nombre)
+            carpeta = SPRITES_PRUEBA.get(nombre, nombre)      # p.ej. el Ciudadano usa los sprites de Sobreviviente
+            ruta_personaje = ruta_base / carpeta / "Hombre" if carpeta == "Periodista" else ruta_base / carpeta
             if not ruta_personaje.exists():
+                if nombre == "Periodista":
+                    print(f"[Evento_2] No se encuentra el periodista hombre en: {ruta_personaje}")
                 continue
 
             for estado in ESTADOS_MOVIMIENTO + ESTADOS_QUIETO:
                 ruta_estado = ruta_personaje / estado
                 ANIMACIONES[nombre][estado] = cargar_frames(ruta_estado) if ruta_estado.exists() else []
+            if nombre == "Periodista":
+                cantidad = sum(len(v) for v in ANIMACIONES[nombre].values())
+                print(f"[Evento_2] Periodista hombre: {cantidad} fotogramas cargados")
 
             # si falta una animación de movimiento, usa otra de movimiento que sí exista
             respaldo = next((ANIMACIONES[nombre][e] for e in ESTADOS_MOVIMIENTO if ANIMACIONES[nombre][e]), [])

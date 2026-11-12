@@ -35,6 +35,11 @@ def Presidente():
 
     # Evento 2 pone pantalla completa: volvemos a la ventana normal
     display, canvas = Metodos.crear_ventana(ANCHO, ALTO, "My Game")
+        # ESCENA DEL PERIODISTA Y ENTREVISTA
+    Evento3_Oficina.reproducir_escena(Evento3_Oficina.ESCENA_ENTREVISTA)
+    Periodista_Presidente.Entrevista()
+    display, canvas = Metodos.crear_ventana(ANCHO, ALTO, "My Game")
+
     
     # ---------- MAPA: X en el Campo Sembrado y se abre el camino al Almacén del Este ----------
     Mapa.mostrar_mapa(display, mapa)
