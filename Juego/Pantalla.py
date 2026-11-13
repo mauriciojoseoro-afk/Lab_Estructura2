@@ -184,8 +184,8 @@ def main():
      t=pygame.font.SysFont('timesnewroman',17).render('jugadores',True,(203,178,140))
      canvas.blit(t,t.get_rect(center=(r.centerx,r.bottom-18)))
     label(canvas,'Jugador 1: W A S D   ·   Jugador 2: flechas',150,365,20)
-    label(canvas,'Jugador 3: I J K L   ·   Jugador 4: 8 4 5 6 (teclado numérico)',150,393,20)
-    label(canvas,'En el campo minado juegan todos a la vez; en lo demás se pasan el control.',150,431,18,(170,160,145),italic=True)
+    label(canvas,'Jugador 3: I J K L   ·   Con 4: por parejas y por turnos',150,393,20)
+    label(canvas,'Con 2 o 3 el campo minado es a la vez; en lo demás se pasan el control.',150,431,18,(170,160,145),italic=True)
    elif page=='SALA_HOST':
     modal(canvas,'SALA DE ESPERA')
     label(canvas,'Tus compañeros deben pulsar UNIRSE A PARTIDA y escribir:',150,178,21)

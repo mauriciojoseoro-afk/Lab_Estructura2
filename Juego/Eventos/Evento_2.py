@@ -1758,9 +1758,16 @@ def Evento_2(rol=None):
     global TEXTO_CONTROLES
     colores = {n: c for pareja in PAREJAS for n, c, _ in pareja}
     nombre_pj = NOMBRE_POR_ROL.get(rol, "Presidente")
-    if red is None and modo == "local":
-        # todos a la vez, cada uno con sus teclas; el jugador 1 lleva el personaje elegido
-        orden = [nombre_pj] + [n for n in ("Presidente", "Ciudadano", "Periodista", "Influencer") if n != nombre_pj]
+    orden = [nombre_pj] + [n for n in ("Presidente", "Ciudadano", "Periodista", "Influencer") if n != nombre_pj]
+    if red is None and modo == "local" and locales == 4:
+        # 4 jugadores: por parejas y por turnos, como el clásico (cada pareja con WASD y flechas)
+        parejas = [[(orden[0], colores[orden[0]], WASD), (orden[1], colores[orden[1]], FLECHAS)],
+                   [(orden[2], colores[orden[2]], WASD), (orden[3], colores[orden[3]], FLECHAS)]]
+        TEXTO_CONTROLES = ("Juegan por parejas y por turnos: primero " + orden[0] + " y " + orden[1] +
+                           ", luego " + orden[2] + " y " + orden[3] +
+                           ". En cada pareja, uno usa W, A, S, D y el otro las flechas.")
+    elif red is None and modo == "local":
+        # 2 o 3: todos a la vez, cada uno con sus teclas; el jugador 1 lleva el personaje elegido
         grupo = [(n, colores[n], TECLAS_LOCALES[k]) for k, n in enumerate(orden[:locales])]
         parejas = [grupo]
         TEXTO_CONTROLES = "Controles: " + "; ".join(
