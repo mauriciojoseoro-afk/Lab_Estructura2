@@ -77,6 +77,17 @@ NOMBRE_ROL_RED = {"PERIODISTA": "Periodista", "PRESIDENTE": "Presidente",
                   "CIUDADANO": "Ciudadano", "INFLUENCER": "Influencer"}
 ROLES_VERIFICACION = ["ciudadano"]
 ESPERA_AUTO = 1.8   # UN JUGADOR: segundos que "piensa" el juego antes de elegir por otro personaje
+# UN JUGADOR: personalidad de los personajes que maneja el juego
+PESOS_PRESIDENTE = [30, 50, 20]   # % de veces que responde muy buena / regular / mala
+COHERENCIA_INFLUENCER = 0.75      # prob. de reaccionar según la calidad de la respuesta (respaldar/neutral/cuestionar)
+ACIERTO_CIUDADANO = 0.80          # prob. de juzgar bien la respuesta y de elegir la mejor verificación
+
+
+def _casi_siempre(correcta, n, probabilidad):
+    """Devuelve 'correcta' con esa probabilidad; si no, otra opción al azar."""
+    if random.random() < probabilidad or n <= 1:
+        return correcta
+    return random.choice([k for k in range(n) if k != correcta])
 
 # CIVINET interviene después de las preguntas 3, 6 y 9. La entrevista original
 # permanece intacta: la manipulación aparece como una publicación paralela.
@@ -1070,6 +1081,22 @@ def Entrevista(rol=None):
             pygame.display.update()
         return True
 
+    def eleccion_auto(clave, n):
+        """UN JUGADOR: lo que elegiría cada personaje que maneja el juego."""
+        calidad = ["muy_buena", "regular", "mala"].index(respuesta_elegida) \
+            if respuesta_elegida in ("muy_buena", "regular", "mala") else 1
+        if clave == "respuesta":        # Presidente: casi siempre regular, a veces sincero o evasivo
+            return random.choices(range(n), weights=PESOS_PRESIDENTE[:n])[0]
+        if clave == "opinion":          # Influencer: respalda lo bueno, cuestiona lo malo
+            return _casi_siempre(min(calidad, n - 1), n, COHERENCIA_INFLUENCER)
+        if clave == "ciudadano":        # Ciudadano: juzga bien la respuesta casi siempre
+            return _casi_siempre(min(calidad, n - 1), n, ACIERTO_CIUDADANO)
+        if clave == "verificacion":     # Ciudadano: la acción que más sube la confianza
+            acciones = ACCIONES_VERIFICACION[ROLES_VERIFICACION[indice_verificacion]][:n]
+            mejor = max(range(len(acciones)), key=lambda k: acciones[k][1])
+            return _casi_siempre(mejor, n, ACIERTO_CIUDADANO)
+        return random.randrange(n)      # Periodista: cualquiera de las preguntas disponibles
+
     def turno(clave, i, n=3):
         """Recibe la opción que el jugador tocó en esta pantalla (o None) y devuelve
         la decisión que vale para todos (o None mientras no se haya decidido)."""
@@ -1080,7 +1107,7 @@ def Entrevista(rol=None):
                 turnos["color"] = COL_APAGADO
                 if t_fase >= ESPERA_AUTO:
                     turnos["aviso"] = ""
-                    return random.randrange(n)
+                    return eleccion_auto(clave, n)
                 return None
             turnos["aviso"] = "TU TURNO · elige una opción" if auto else ""
             turnos["color"] = COL_AMBAR
