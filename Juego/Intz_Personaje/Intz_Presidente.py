@@ -7,6 +7,7 @@ from Eventos import Evento_2
 from Eventos import Evento3_Oficina
 from Eventos import Mapa
 import Metodos
+from Red import cliente      # multijugador: avisa al grupo al terminar cada evento
 
 
 def Presidente():
@@ -25,19 +26,23 @@ def Presidente():
     Mapa.mostrar_mapa(display, mapa, terminar=False)   # "Estás aquí: El Cruce del Pozo"
 
     # ---------- EVENTO 1: el pozo ----------
+    cliente.reportar("Empezando", Evento1_Pozo.Indicadores())
     resultado_evento1 = Evento1_Pozo.jugar(display, canvas)
+    cliente.reportar("Terminó el Evento 1", resultado_evento1["indicadores"], resultado_evento1["resultado"])
 
     # ---------- MAPA: X en el Cruce del Pozo y se abre el camino al Campo Sembrado ----------
     Mapa.mostrar_mapa(display, mapa)
 
     # ---------- EVENTO 2: campo minado ----------
-    resultado_evento2 = Evento_2.Evento_2()
+    resultado_evento2 = Evento_2.Evento_2("PRESIDENTE")
+    cliente.reportar("Cruzó el campo minado")
 
     # Evento 2 pone pantalla completa: volvemos a la ventana normal
     display, canvas = Metodos.crear_ventana(ANCHO, ALTO, "My Game")
         # ESCENA DEL PERIODISTA Y ENTREVISTA
     Evento3_Oficina.reproducir_escena(Evento3_Oficina.ESCENA_ENTREVISTA)
-    Periodista_Presidente.Entrevista()
+    Periodista_Presidente.Entrevista("PRESIDENTE")
+    cliente.reportar("Terminó la entrevista")
     display, canvas = Metodos.crear_ventana(ANCHO, ALTO, "My Game")
 
     
@@ -49,6 +54,7 @@ def Presidente():
                                               resultado_evento1["indicadores"],
                                               resultado_evento1["resultado"],
                                               "LÍDER")
+    cliente.reportar("Terminó la partida", resultado_evento1["indicadores"])
     display, canvas = Metodos.crear_ventana(ANCHO, ALTO, "My Game")
     fondo = pygame.transform.smoothscale(fondo_original.convert(), (ANCHO, ALTO))
 
@@ -78,4 +84,4 @@ def Presidente():
             Periodista_Presidente.Entrevista()
 
         Metodos.mostrar_canvas(display, canvas)
-        pygame.display.update()
+        pygame.display.update()

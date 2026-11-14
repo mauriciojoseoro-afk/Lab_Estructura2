@@ -1616,11 +1616,89 @@ class Oficina:
         pygame.mixer.music.stop()
 
     # FINAL: CONFRONTACIÓN, REACCIÓN DEL GRUPO Y CLIFFHANGER
+    # MULTIJUGADOR: el final depende del PROMEDIO del grupo
+    def final_del_grupo(self, valores, puntaje):
+        """Si hay 2 o más jugadores en red: envía mis resultados, espera a que todos terminen
+        y muestra la tabla. Devuelve el FINAL del servidor, o None para jugar el final individual."""
+        try:
+            from Red import cliente
+        except ImportError:
+            return None
+        red = cliente.actual()
+        if red is None or red.jugando() < 2:
+            return None
+        red.terminar(valores, puntaje)
+
+        # 1. esperando al grupo
+        inicio = pygame.time.get_ticks()
+        while red.final is None:
+            if not red.conectado:
+                return None                          # se cayó el servidor: final individual
+            self.v.eventos()
+            seg = (pygame.time.get_ticks() - inicio) / 1000
+            c = self.v.canvas
+            c.blit(self.fondo, (0, 0))
+            c.blit(self.oscuro, (0, 0))
+            puntos = "." * (1 + int(seg * 2) % 3)
+            escribir(c, "Esperando al grupo" + puntos, fuente("mono_negrita", 52), AMBAR,
+                     (ANCHO // 2, 200), "midtop")
+            escribir(c, "El final depende de lo que hicieron todos.", fuente("narracion", 36), PAPEL,
+                     (ANCHO // 2, 290), "midtop")
+            espera = red.espera or {"listos": [red.nombre], "faltan": []}
+            y = 400
+            for nombre in espera["listos"]:
+                escribir(c, "[listo]  " + nombre, fuente("mono", 32), (120, 210, 130), (ANCHO // 2, y), "midtop")
+                y += 50
+            for nombre in espera["faltan"]:
+                escribir(c, "[jugando]  " + nombre, fuente("mono", 32), GRIS, (ANCHO // 2, y), "midtop")
+                y += 50
+            self.v.mostrar()
+        grupo = red.final
+
+        # 2. tabla de resultados del grupo
+        def tabla(c, seg):
+            c.blit(self.fondo, (0, 0))
+            c.blit(self.oscuro, (0, 0))
+            nota = pygame.Rect(0, 0, 1240, 700)
+            nota.center = (ANCHO // 2, ALTO // 2 - 20)
+            hoja(c, nota, color=(226, 214, 184), giro=0)
+            escribir(c, "Resultado del grupo", fuente("mono_negrita", 44), TINTA, (nota.x + 60, nota.y + 45), sombra=False)
+            pygame.draw.line(c, OXIDO, (nota.x + 60, nota.y + 108), (nota.right - 60, nota.y + 108), 3)
+            columnas = [("JUGADOR", 60), ("ROL", 380), ("CONFIANZA", 600), ("CAOS", 800), ("COHESIÓN", 940), ("PUNTAJE", 1110)]
+            for titulo, x in columnas:
+                escribir(c, titulo, fuente("mono_negrita", 24), OXIDO, (nota.x + x, nota.y + 130), sombra=False)
+            y = nota.y + 180
+            for fila in grupo["tabla"]:
+                ind = fila["indicadores"]
+                datos_fila = [fila["nombre"], str(fila["rol"]).title(), str(int(ind.get("Confianza", 0))),
+                              str(int(ind.get("Caos", 0))), str(int(ind.get("Cohesión", 0))), str(fila["puntaje"])]
+                for (_, x), texto in zip(columnas, datos_fila):
+                    escribir(c, texto, fuente("mono", 30), TINTA, (nota.x + x, y), sombra=False)
+                y += 52
+            pygame.draw.line(c, OXIDO, (nota.x + 60, y + 6), (nota.right - 60, y + 6), 2)
+            prom = grupo["promedio"]
+            datos_prom = ["PROMEDIO", "", str(prom["Confianza"]), str(prom["Caos"]), str(prom["Cohesión"]), str(grupo["puntaje"])]
+            for (_, x), texto in zip(columnas, datos_prom):
+                escribir(c, texto, fuente("mono_negrita", 30), ROJO, (nota.x + x, y + 24), sombra=False)
+            if seg > 1.0:
+                escribir(c, "El final de la historia se decide con el puntaje del grupo.", fuente("narracion", 34),
+                         TINTA, (nota.centerx, nota.bottom - 80), "midtop", sombra=False)
+
+        self.esperar_pantalla(tabla, 1.2)
+        return grupo
+
     def final(self):
         valores = self.indicadores.copia() if self.indicadores is not None else {"Confianza": 50, "Caos": 50, "Cohesión": 50}
         puntaje = valores["Confianza"] + valores["Cohesión"] - valores["Caos"]
         if self.dato_torre:
             puntaje += BONO_TORRE                    # les contaste cómo detener a Civitas
+
+        # MULTIJUGADOR: si se juega en grupo, manda el promedio de todos (sin servidor: igual que antes)
+        grupo = self.final_del_grupo(valores, puntaje)
+        if grupo is not None:
+            valores = dict(grupo["promedio"])
+            puntaje = grupo["puntaje"]
+
         if puntaje < 40:
             clave = "disuelto"
         elif puntaje < 75:
@@ -1701,7 +1779,8 @@ class Oficina:
                 break
             self.v.mostrar()
         return {"final": clave, "puntaje": puntaje, "alcanzados": self.red["alcanzados"],
-                "rondas": self.red["rondas"], "logros": logros, "indicadores": self.indicadores}
+                "rondas": self.red["rondas"], "logros": logros, "indicadores": self.indicadores,
+                "grupo": grupo}
 
 
 def estrella(superficie, centro, radio, color):

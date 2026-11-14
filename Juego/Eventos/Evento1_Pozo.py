@@ -116,6 +116,71 @@ ALERTA_LINEAS = [
 ]
 
 
+# ---------------------------------------------------------------------------
+# GUION DEL SOBREVIVIENTE (personaje CIUDADANO = Estella): el mercado de Barrio Las Acacias.
+# Estella vive sola en una cueva y casi nunca baja; antes del colapso compartió sin verificar.
+# Mismo sistema que el del Líder; cambian los videos, los textos y la alerta.
+# VERIFICAR no tiene final falso/verdadero: ella se va con el hombre hacia el
+# campo minado (Evento 2), así que el resultado se guarda como "VERIFICAR".
+# ---------------------------------------------------------------------------
+INTRO_SOBREVIVIENTE = {
+    "video": "ciudadano_llegada.mp4",
+    "subtitulos": [
+        (1.00, 3.20, 6.50, "Hacía semanas que no bajabas de la cueva al mercado."),
+        (11.00, 13.00, 16.50, "Solo vienes cuando el agua se acaba. Y hoy ya no queda nada."),
+        (28.20, 29.40, 31.40, "Todos te miran. A ti, que nunca hablas con nadie."),
+    ],
+    "alerta": (20.60, 25.80),
+    "alerta_lineas": [
+        "ALGUIEN VA CAMINO AL DEPÓSITO A LLEVARSE",
+        "TODA EL AGUA PARA ÉL Y LOS SUYOS.",
+        "COMPÁRTANLO ANTES DE QUE SEA TARDE.",
+    ],
+    "pantalla": 31.50,
+}
+
+CONSECUENCIAS_SOBREVIVIENTE = {
+    "COMPARTIR": {
+        "video": "ciudadano_compartir.mp4",
+        "subtitulos": [],
+        "pantalla": 3.70,
+        "opcion": "COMPARTIR",
+        "texto": "Otra vez compartiste sin verificar.\nEl mercado entró en pánico...\ncomo aquella vez.",
+        "efectos": {"Confianza": -15, "Caos": +20, "Cohesión": -10},
+    },
+    "IGNORAR": {
+        "video": "ciudadano_ignorar.mp4",
+        "subtitulos": [],
+        "pantalla": 3.70,
+        "opcion": "IGNORAR",
+        "texto": "Guardaste silencio. El rumor\nsiguió corriendo sin ti.",
+        "efectos": {"Confianza": -10, "Caos": +10, "Cohesión": -5},
+    },
+    "REPORTAR": {
+        "video": "ciudadano_reportar.mp4",
+        "subtitulos": [],
+        "pantalla": 3.70,
+        "opcion": "REPORTAR",
+        "texto": "Marcaste el mensaje como no confiable.\nEl rumor se detuvo... pero nadie\nsabe la verdad.",
+        "efectos": {"Confianza": 0, "Caos": -10, "Cohesión": +5},
+    },
+    "VERIFICAR": {
+        "video": "ciudadano_verificar.mp4",
+        "subtitulos": [],
+        "pantalla": 7.60,
+        "opcion": "VERIFICAR",
+        "texto": "Esta vez no te dejaste llevar.\nPara llegar al agua, primero hay\nque cruzar el campo.",
+        "efectos": {"Confianza": +15, "Caos": -10, "Cohesión": +10},
+    },
+}
+
+# Qué guion usa cada personaje del mapa (los demás usan el del Líder)
+GUIONES = {
+    "LÍDER": (INTRO, CONSECUENCIAS),
+    "SOBREVIVIENTE": (INTRO_SOBREVIVIENTE, CONSECUENCIAS_SOBREVIVIENTE),
+}
+
+
 # FUENTES
 _fuentes = {}
 
@@ -219,7 +284,7 @@ def dibujar_subtitulos(pantalla, rect, s, t, subtitulos):
 
 
 # NOTIFICACIÓN DE CIVITAS
-def caja_alerta(s, tl, dur):
+def caja_alerta(s, tl, dur, lineas=None):
     """Dibuja la ventana de alerta completa (sin efectos) en su tamaño final."""
     ancho, alto = int(1360 * s), int(551 * s)
     alto_barra = int(93 * s)
@@ -259,9 +324,10 @@ def caja_alerta(s, tl, dur):
             caja.blit(f_titulo.render(ALERTA_TITULO[:n], True, ROJO),
                       (int(357 * s), int(181 * s) - f_titulo.get_height() // 2))
         f_cuerpo = fuente("mono", 36 * s)
-        todo = sum(len(l) for l in ALERTA_LINEAS)
+        lineas = lineas or ALERTA_LINEAS
+        todo = sum(len(l) for l in lineas)
         quedan = letras_visibles("x" * todo, tl, 0.15, 1.8)
-        for i, linea in enumerate(ALERTA_LINEAS):
+        for i, linea in enumerate(lineas):
             parte = linea[:max(0, quedan)]
             quedan -= len(linea)
             if parte:
@@ -270,7 +336,7 @@ def caja_alerta(s, tl, dur):
     return caja
 
 
-def dibujar_alerta(pantalla, rect, s, t, inicio, fin):
+def dibujar_alerta(pantalla, rect, s, t, inicio, fin, lineas=None):
     if not (inicio <= t < fin):
         return
     tl, dur = t - inicio, fin - inicio
@@ -281,7 +347,7 @@ def dibujar_alerta(pantalla, rect, s, t, inicio, fin):
     # interferencia fuerte al aparecer y al desaparecer
     glitch = max(0.0, 1 - tl / 0.6) if tl < 0.6 else max(0.0, 1 - (dur - tl) / 0.4)
 
-    caja = caja_alerta(s, tl, dur)
+    caja = caja_alerta(s, tl, dur, lineas)
     ancho = max(4, int(caja.get_width() * (0.22 + 0.78 * k)))
     alto = max(3, int(caja.get_height() * (0.08 + 0.92 * k)))
     if (ancho, alto) != caja.get_size():
@@ -582,7 +648,7 @@ def escena(guion, modo, valores=None, antes=None, despues=None):
             pantalla.blit(imagen, rect)
         dibujar_subtitulos(pantalla, rect, s, t, guion["subtitulos"])
         if "alerta" in guion:
-            dibujar_alerta(pantalla, rect, s, t, *guion["alerta"])
+            dibujar_alerta(pantalla, rect, s, t, *guion["alerta"], guion.get("alerta_lineas"))
 
         if tl >= 0 and modo == "decision":
             zonas = dibujar_decision(pantalla, rect, s, tl, mouse)
@@ -629,20 +695,22 @@ def escena(guion, modo, valores=None, antes=None, despues=None):
 
 
 # EVENTO COMPLETO
-def jugar(display, canvas, indicadores=None):
-    """indicadores: los que vienen del evento anterior. Si no hay, empiezan en 50."""
+def jugar(display, canvas, indicadores=None, personaje="LÍDER"):
+    """indicadores: los que vienen del evento anterior. Si no hay, empiezan en 50.
+    personaje: la ruta del mapa ("LÍDER", "SOBREVIVIENTE"...). Elige el guion de la escena."""
     if indicadores is None:
         indicadores = Indicadores()
+    intro, consecuencias = GUIONES.get(personaje, GUIONES["LÍDER"])
 
     # 1. Intro: llegada, alerta de Civitas y la pregunta
-    eleccion = escena(INTRO, "decision", valores=indicadores.copia())
+    eleccion = escena(intro, "decision", valores=indicadores.copia())
 
-    # 2. Qué pasó (si verifica, el juego decide al azar si el rumor era falso)
-    if eleccion == "VERIFICAR":
+    # 2. Qué pasó (si verifica y el guion tiene dos finales, el juego decide al azar si el rumor era falso)
+    if eleccion == "VERIFICAR" and "VERIFICAR" not in consecuencias:
         clave = "VERIFICAR_FALSO" if random.random() < PROBABILIDAD_FALSO else "VERIFICAR_VERDADERO"
     else:
         clave = eleccion
-    datos = CONSECUENCIAS[clave]
+    datos = consecuencias[clave]
 
     antes = indicadores.copia()
     indicadores.aplicar(datos["efectos"])

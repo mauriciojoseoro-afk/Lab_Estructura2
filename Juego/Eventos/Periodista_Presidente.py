@@ -5,6 +5,10 @@ from pathlib import Path
 from Arbol.Arbol_AVL import ArbolAVL
 from Arbol import Preguntas
 import Metodos
+try:
+    from Red import cliente as red_cliente     # multijugador: entrevista por turnos
+except ImportError:
+    red_cliente = None
 
 try:
     import cv2          # pip install opencv-python   (solo hace falta si vas a usar videos)
@@ -64,7 +68,26 @@ ROLES = {
     "final": ("Cierre de la entrevista", (193, 200, 211), "revisa el resultado de tus decisiones"),
 }
 ORDEN_FASES = ["pregunta", "respuesta", "ciudadano", "audiencia", "opinion"]
+
+# MULTIJUGADOR: de quién es cada decisión. None = la decide el grupo votando.
+# Si nadie eligió ese personaje, esa fase también se vota.
+DUENO_FASE = {"pregunta": "PERIODISTA", "respuesta": "PRESIDENTE", "ciudadano": "CIUDADANO",
+              "audiencia": None, "opinion": "INFLUENCER", "verificacion": "CIUDADANO"}
+NOMBRE_ROL_RED = {"PERIODISTA": "Periodista", "PRESIDENTE": "Presidente",
+                  "CIUDADANO": "Ciudadano", "INFLUENCER": "Influencer"}
 ROLES_VERIFICACION = ["ciudadano"]
+ESPERA_AUTO = 1.8   # UN JUGADOR: segundos que "piensa" el juego antes de elegir por otro personaje
+# UN JUGADOR: personalidad de los personajes que maneja el juego
+PESOS_PRESIDENTE = [30, 50, 20]   # % de veces que responde muy buena / regular / mala
+COHERENCIA_INFLUENCER = 0.75      # prob. de reaccionar según la calidad de la respuesta (respaldar/neutral/cuestionar)
+ACIERTO_CIUDADANO = 0.80          # prob. de juzgar bien la respuesta y de elegir la mejor verificación
+
+
+def _casi_siempre(correcta, n, probabilidad):
+    """Devuelve 'correcta' con esa probabilidad; si no, otra opción al azar."""
+    if random.random() < probabilidad or n <= 1:
+        return correcta
+    return random.choice([k for k in range(n) if k != correcta])
 
 # CIVINET interviene después de las preguntas 3, 6 y 9. La entrevista original
 # permanece intacta: la manipulación aparece como una publicación paralela.
@@ -343,7 +366,7 @@ class FondoVideo:
         self.cap.release()
 
 
-def Entrevista():
+def Entrevista(rol=None):
     pygame.init()
 
     ruta_assets = Path(__file__).parent.parent / "Assets" / "Interfaz"
@@ -1012,9 +1035,117 @@ def Entrevista():
         panel.blit(tipo(14).render(etiqueta, True, (246, 226, 194)), (22, h-32))
         canvas.blit(panel, (x, y))
 
+    # ------------------------------------------------------------ MULTIJUGADOR: turnos
+    # Con 2 o más jugadores en red, todos ven la misma entrevista: cada decisión la toma
+    # el dueño de la fase (o el grupo votando) y el servidor la reparte en orden.
+    red = red_cliente.actual() if red_cliente is not None else None
+    if red is not None and red.jugando() < 2:
+        red = None
+    turnos = {"numero": 0, "enviado": None, "aviso": "", "color": COL_AMBAR}
+    # UN JUGADOR (elegido en el menú): tú decides las fases de tu personaje y la audiencia;
+    # las de los otros personajes las decide el juego.
+    modo_menu = red_cliente.modo() if red_cliente is not None else None
+    auto = red is None and modo_menu == "solo" and rol in NOMBRE_ROL_RED
+
+    def sala_de_espera():
+        """Espera a que lleguen todos los que juegan. Devuelve False si cierran la ventana."""
+        nonlocal display
+        red.llegar_a_entrevista()
+        t = 0.0
+        while not red.entrevista_inicio:
+            if not red.conectado:
+                return True                      # se cayó el servidor: se juega solo
+            t += reloj.tick(60) / 1000
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    return False
+                if event.type == pygame.VIDEORESIZE:
+                    display = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
+            canvas.blit(respaldo, (0, 0))
+            canvas.blit(velo_oscuro, (0, 0))
+            titulo = tipo(30).render("Esperando al resto del equipo" + "." * (1 + int(t * 2) % 3), True, COL_AMBAR)
+            canvas.blit(titulo, titulo.get_rect(center=(ANCHO // 2, ALTO // 2 - 90)))
+            sub = tipo(16).render("La entrevista se juega por turnos: empieza cuando lleguen todos.", True, COL_PAPEL)
+            canvas.blit(sub, sub.get_rect(center=(ANCHO // 2, ALTO // 2 - 50)))
+            espera = red.entrevista_espera or {"listos": [red.nombre], "faltan": []}
+            y = ALTO // 2 - 5
+            for nombre in espera["listos"]:
+                img = tipo(18).render("[listo]  " + nombre, True, COL_AGUA)
+                canvas.blit(img, img.get_rect(center=(ANCHO // 2, y)))
+                y += 30
+            for nombre in espera["faltan"]:
+                img = tipo(18).render("[en camino]  " + nombre, True, COL_APAGADO)
+                canvas.blit(img, img.get_rect(center=(ANCHO // 2, y)))
+                y += 30
+            display.blit(pygame.transform.smoothscale(canvas, display.get_size()), (0, 0))
+            pygame.display.update()
+        return True
+
+    def eleccion_auto(clave, n):
+        """UN JUGADOR: lo que elegiría cada personaje que maneja el juego."""
+        calidad = ["muy_buena", "regular", "mala"].index(respuesta_elegida) \
+            if respuesta_elegida in ("muy_buena", "regular", "mala") else 1
+        if clave == "respuesta":        # Presidente: casi siempre regular, a veces sincero o evasivo
+            return random.choices(range(n), weights=PESOS_PRESIDENTE[:n])[0]
+        if clave == "opinion":          # Influencer: respalda lo bueno, cuestiona lo malo
+            return _casi_siempre(min(calidad, n - 1), n, COHERENCIA_INFLUENCER)
+        if clave == "ciudadano":        # Ciudadano: juzga bien la respuesta casi siempre
+            return _casi_siempre(min(calidad, n - 1), n, ACIERTO_CIUDADANO)
+        if clave == "verificacion":     # Ciudadano: la acción que más sube la confianza
+            acciones = ACCIONES_VERIFICACION[ROLES_VERIFICACION[indice_verificacion]][:n]
+            mejor = max(range(len(acciones)), key=lambda k: acciones[k][1])
+            return _casi_siempre(mejor, n, ACIERTO_CIUDADANO)
+        return random.randrange(n)      # Periodista: cualquiera de las preguntas disponibles
+
+    def turno(clave, i, n=3):
+        """Recibe la opción que el jugador tocó en esta pantalla (o None) y devuelve
+        la decisión que vale para todos (o None mientras no se haya decidido)."""
+        if red is None or not red.conectado:
+            dueno = DUENO_FASE.get(clave)
+            if auto and dueno is not None and dueno != rol:
+                turnos["aviso"] = f"Turno de {NOMBRE_ROL_RED[dueno]} · el juego está eligiendo..."
+                turnos["color"] = COL_APAGADO
+                if t_fase >= ESPERA_AUTO:
+                    turnos["aviso"] = ""
+                    return eleccion_auto(clave, n)
+                return None
+            turnos["aviso"] = "TU TURNO · elige una opción" if auto else ""
+            turnos["color"] = COL_AMBAR
+            return i                             # sin menú o multijugador local: igual que siempre
+        n = turnos["numero"]
+        if n in red.decisiones:                  # ya se decidió: todos aplican lo mismo
+            turnos["numero"] += 1
+            turnos["aviso"] = ""
+            return red.decisiones[n]
+        dueno = DUENO_FASE.get(clave)
+        if dueno is None or dueno not in red.roles_en_juego():
+            if i is not None and turnos["enviado"] != n:
+                red.elegir_en_entrevista(n, i, "voto")
+                turnos["enviado"] = n
+            if turnos["enviado"] == n:
+                votaron, total = red.votos.get(n, (1, 0))
+                turnos["aviso"] = "Votaste · esperando a los demás" + (f" ({votaron}/{total})" if total else "")
+                turnos["color"] = COL_APAGADO
+            else:
+                turnos["aviso"] = "VOTACIÓN DEL GRUPO · todos eligen una opción"
+                turnos["color"] = COL_AGUA
+        elif dueno == red.rol:
+            if i is not None and turnos["enviado"] != n:
+                red.elegir_en_entrevista(n, i, "dueño")
+                turnos["enviado"] = n
+            turnos["aviso"] = "TU TURNO · elige una opción"
+            turnos["color"] = COL_AMBAR
+        else:
+            quien = next((j.get("nombre", "") for j in red.jugadores if j.get("rol") == dueno), "")
+            turnos["aviso"] = f"Turno de {quien} ({NOMBRE_ROL_RED.get(dueno, dueno)}) · esperando su elección"
+            turnos["color"] = COL_APAGADO
+        return None
+
     # ------------------------------------------------------------ bucle principal
 
     running = True
+    if red is not None:
+        running = sala_de_espera()
     while running:
         dt = reloj.tick(60) / 1000
         tiempo += dt
@@ -1214,6 +1345,7 @@ def Entrevista():
             visibles = ids_disponibles[:3]
             i = lista_opciones(Y_CONTENIDO, [preguntas[id_p] for id_p in visibles],
                                ROLES["pregunta"][1], mouse_pos, click, tecla)
+            i = turno("pregunta", i, len(visibles))
             if i is not None:
                 id_p = visibles[i]
                 if arbol_preguntas.get(id_p) is not None:
@@ -1232,6 +1364,7 @@ def Entrevista():
 
             i = lista_opciones(y, [opciones.get(c, "") for c in claves],
                                ROLES["respuesta"][1], mouse_pos, click, tecla)
+            i = turno("respuesta", i)
             if i is not None:
                 respuesta_elegida = claves[i]
                 fase = "ciudadano"
@@ -1243,6 +1376,7 @@ def Entrevista():
             claves_juicio = ["muy_buena", "regular", "mala"]
             i = fila_botones(y, ["Muy buena", "Regular", "Mala"], ["gotas3", "gotas2", "gotas1"],
                              ROLES["ciudadano"][1], mouse_pos, click, tecla)
+            i = turno("ciudadano", i)
             if i is not None:
                 if respuesta_elegida == claves_juicio[i]:
                     puntos_ciudadano += 5
@@ -1268,6 +1402,7 @@ def Entrevista():
             cambios_audiencia = [8, 2, -6]
             i = fila_botones(y, ["La respalda", "Tiene dudas", "La rechaza"],
                              ["sube", "igual", "baja"], ROLES["audiencia"][1], mouse_pos, click, tecla)
+            i = turno("audiencia", i)
             if i is not None:
                 espectadores = max(0, espectadores + cambios_audiencia[i])
                 avisos["espectadores"] = {"txt": f"{cambios_audiencia[i]:+d}",
@@ -1292,6 +1427,7 @@ def Entrevista():
             puntos_opinion = [3, 1, -2]
             i = fila_botones(y, ["Respaldar", "Ser neutral", "Cuestionar"],
                              ["sube", "igual", "baja"], ROLES["opinion"][1], mouse_pos, click, tecla)
+            i = turno("opinion", i)
             if i is not None:
                 espectadores = max(0, espectadores + cambios[i])
                 puntos_influencer += puntos_opinion[i]
@@ -1338,6 +1474,7 @@ def Entrevista():
             opciones_accion = ACCIONES_VERIFICACION[rol]
             i = lista_opciones(y, [opcion[0] for opcion in opciones_accion],
                                ROLES[rol][1], mouse_pos, click, tecla)
+            i = turno("verificacion", i, len(opciones_accion))
             if i is not None:
                 _, delta_confianza, delta_falso, delta_espectadores, delta_influencer, delta_ciudadano = opciones_accion[i]
                 confianza_civinet = max(0, min(100, confianza_civinet + delta_confianza))
@@ -1470,6 +1607,14 @@ def Entrevista():
             banner.set_alpha(int(235 * max(0.0, a)))
             canvas.blit(banner, (164, 280-int((1-a)*14)))
 
+        # MULTIJUGADOR: a quién le toca decidir
+        if (red is not None or auto) and turnos["aviso"] and fase in DUENO_FASE:
+            texto_t = tipo(16).render(turnos["aviso"], True, COL_POLVO)
+            barra_t = pygame.Rect(0, 0, texto_t.get_width() + 36, texto_t.get_height() + 12)
+            barra_t.midtop = (ANCHO // 2, u(64))
+            pygame.draw.rect(canvas, turnos["color"], barra_t, border_radius=6)
+            canvas.blit(texto_t, texto_t.get_rect(center=barra_t.center))
+
         # cursor de mano al pasar sobre una opción
         if ui["hover"] != cursor_mano:
             cursor_mano = ui["hover"]
@@ -1499,4 +1644,4 @@ def Entrevista():
 
     for f in fondos.values():
         f.cerrar()
-    return puntos_influencer, puntos_ciudadano
+    return puntos_influencer, puntos_ciudadano

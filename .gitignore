@@ -216,3 +216,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Hojas originales generadas por IA (se regeneran, no se suben)
+Juego/herramientas/originales/
