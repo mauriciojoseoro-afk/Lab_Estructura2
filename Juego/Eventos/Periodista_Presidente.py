@@ -1068,7 +1068,15 @@ def Entrevista(rol=None):
     # UN JUGADOR (elegido en el menú): tú decides las fases de tu personaje y la audiencia;
     # las de los otros personajes las decide el juego.
     modo_menu = red_cliente.modo() if red_cliente is not None else None
-    auto = red is None and modo_menu == "solo" and rol in NOMBRE_ROL_RED
+    # MULTIJUGADOR LOCAL: el jugador 1 lleva el personaje elegido y los demás, los siguientes
+    # (mismo orden que en el campo minado). Cada fase la decide el jugador de ese personaje;
+    # las de personajes que nadie lleva, las decide el juego.
+    locales_roles = []
+    if red is None and modo_menu == "local" and rol in NOMBRE_ROL_RED:
+        orden = [rol] + [r for r in ("PRESIDENTE", "CIUDADANO", "PERIODISTA", "INFLUENCER") if r != rol]
+        locales_roles = orden[:red_cliente.jugadores_locales()]
+    auto = red is None and rol in NOMBRE_ROL_RED and (modo_menu == "solo" or bool(locales_roles))
+    humanos = locales_roles or [rol]          # personajes que maneja una persona en este PC
 
     def sala_de_espera():
         """Espera a que lleguen todos los que juegan. Devuelve False si cierran la ventana."""
@@ -1125,15 +1133,23 @@ def Entrevista(rol=None):
         la decisión que vale para todos (o None mientras no se haya decidido)."""
         if red is None or not red.conectado:
             dueno = DUENO_FASE.get(clave)
-            if auto and dueno is not None and dueno != rol:
+            if auto and dueno is not None and dueno not in humanos:
                 turnos["aviso"] = f"Turno de {NOMBRE_ROL_RED[dueno]} · el juego está eligiendo..."
                 turnos["color"] = COL_APAGADO
                 if t_fase >= ESPERA_AUTO:
                     turnos["aviso"] = ""
                     return eleccion_auto(clave, n)
                 return None
-            turnos["aviso"] = "TU TURNO · elige una opción" if auto else ""
-            turnos["color"] = COL_AMBAR
+            if locales_roles and dueno is None:
+                turnos["aviso"] = "VOTACIÓN DEL GRUPO · pónganse de acuerdo y elijan"
+                turnos["color"] = COL_AGUA
+            elif locales_roles:
+                k = locales_roles.index(dueno) + 1
+                turnos["aviso"] = f"TURNO DEL JUGADOR {k} · {NOMBRE_ROL_RED[dueno]} · elige una opción"
+                turnos["color"] = COL_AMBAR
+            else:
+                turnos["aviso"] = "TU TURNO · elige una opción" if auto else ""
+                turnos["color"] = COL_AMBAR
             return i                             # sin menú o multijugador local: igual que siempre
         n = turnos["numero"]
         if n in red.decisiones:                  # ya se decidió: todos aplican lo mismo
@@ -1488,15 +1504,15 @@ def Entrevista(rol=None):
                 fase = "verificacion"
 
         elif fase == "verificacion":
-            rol = ROLES_VERIFICACION[indice_verificacion]
-            nombre_rol = ROLES[rol][0]
+            rol_verif = ROLES_VERIFICACION[indice_verificacion]
+            nombre_rol = ROLES[rol_verif][0]
             datos = INTERVENCIONES_CIVINET[preguntas_hechas]
             y = bloque_cita(Y_CONTENIDO, "Publicación de CIVINET", datos["publicacion"], COL_MALO,
                             "civinet") + u(8)
             y = medidores(y)
-            opciones_accion = ACCIONES_VERIFICACION[rol]
+            opciones_accion = ACCIONES_VERIFICACION[rol_verif]
             i = lista_opciones(y, [opcion[0] for opcion in opciones_accion],
-                               ROLES[rol][1], mouse_pos, click, tecla)
+                               ROLES[rol_verif][1], mouse_pos, click, tecla)
             i = turno("verificacion", i, len(opciones_accion))
             if i is not None:
                 _, delta_confianza, delta_falso, delta_espectadores, delta_influencer, delta_ciudadano = opciones_accion[i]
