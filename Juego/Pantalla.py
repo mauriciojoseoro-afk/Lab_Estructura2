@@ -1,4 +1,3 @@
-"""The Leader: menú transparente; usa el fondo con textos ya incorporados."""
 import sys
 from pathlib import Path
 import cv2
