@@ -25,9 +25,36 @@ SOLO=pygame.Rect(160,176,580,86)
 LOCAL=pygame.Rect(160,272,580,86)
 RED=pygame.Rect(160,368,580,86)
 CANTIDADES={n:pygame.Rect(190+(n-2)*185,232,150,110) for n in (2,3,4)}
-INICIAR=pygame.Rect(300,420,300,54)
+INICIAR=pygame.Rect(300,412,300,62)
 CAMPO_IP=pygame.Rect(160,252,580,58)
-ENTRAR=pygame.Rect(300,420,300,54)
+ENTRAR=pygame.Rect(300,412,300,62)
+# ESTÉTICA DEL PROYECTO: marcos industriales de las escenas (HistoriaIndustrial / CronicaUI)
+INTERFAZ=BASE/'Assets'/'Interfaz'
+PAPEL=(236,229,211);AMBAR=(214,180,112);OXIDO=(166,133,86);VIVO=(184,73,66)
+AGUA=(169,188,171);APAGADO=(182,175,160);TENUE=(120,114,104)
+_IMG={}
+def _img(nombre):
+ if nombre not in _IMG:
+  try:_IMG[nombre]=pygame.image.load(str(INTERFAZ/nombre)).convert_alpha()
+  except Exception:_IMG[nombre]=None
+ return _IMG[nombre]
+def marco(s,nombre,r,b):
+ """Estira un marco PNG a cualquier tamaño sin deformar sus esquinas (9-slice). b=(izq,arr,der,aba)."""
+ img=_img(nombre)
+ if img is None:return False
+ w,h=img.get_size();l,t,d,a=b
+ xs,ys=(0,l,w-d,w),(0,t,h-a,h)
+ xd,yd=(r.x,r.x+l,r.right-d,r.right),(r.y,r.y+t,r.bottom-a,r.bottom)
+ for i in range(3):
+  for j in range(3):
+   sw,sh=xs[i+1]-xs[i],ys[j+1]-ys[j];dw,dh=xd[i+1]-xd[i],yd[j+1]-yd[j]
+   if sw<=0 or sh<=0 or dw<=0 or dh<=0:continue
+   pieza=img.subsurface((xs[i],ys[j],sw,sh))
+   s.blit(pieza if (sw,sh)==(dw,dh) else pygame.transform.smoothscale(pieza,(dw,dh)),(xd[i],yd[j]))
+ return True
+def rotulo(s,msg,x,y,color=OXIDO,size=14):
+ """Texto pequeño en mayúsculas espaciadas, como las etiquetas de los expedientes."""
+ label(s,' '.join(msg.upper()).replace('   ','     '),x,y,size,color,bold=True)
 def a_canvas(display,pos):
  ww,hh=display.get_size();scale=min(ww/W,hh/H)
  return ((pos[0]-(ww-W*scale)/2)/scale,(pos[1]-(hh-H*scale)/2)/scale)
@@ -50,10 +77,13 @@ def label(s,msg,x,y,size=22,color=(238,222,197),bold=False,italic=False):
  s.blit(f.render(msg,True,color),(x,y))
 def modal(s,page):
  r=pygame.Rect(105,65,690,475)
- pygame.draw.rect(s,(23,22,25),r,border_radius=6)
- pygame.draw.rect(s,(175,130,91),r,3,border_radius=6)
- label(s,page,140,104,34,bold=True)
- pygame.draw.line(s,(163,80,59),(138,155),(760,155),2)
+ if not marco(s,'HistoriaIndustrial/panel_narracion.png',r,(46,46,118,46)):
+  pygame.draw.rect(s,(23,22,25),r,border_radius=6)
+  pygame.draw.rect(s,(175,130,91),r,3,border_radius=6)
+ rotulo(s,'The Leader · expediente',142,90,OXIDO,12)
+ label(s,page,140,108,34,PAPEL,bold=True)
+ pygame.draw.line(s,OXIDO,(138,156),(760,156),1)
+ pygame.draw.rect(s,VIVO,(138,155,64,3))
  if page=='INSTRUCCIONES':
   for i,line in enumerate(('Cuatro perspectivas. Una ciudad.','Completa las misiones y toma decisiones.',
       'CAMPO MINADO: B activa el escáner cuando esté listo.',
@@ -74,22 +104,36 @@ def modal(s,page):
   for i,line in enumerate(('THE LEADER','Videojuego narrativo sobre liderazgo y confianza',
       'Isaac Gonzalez · Laura Lanchero','Mauricio Orozco · Karla Paredes')):
    label(s,line,147,200+i*62,25)
- label(s,'ESC — VOLVER',142,501,20,(203,158,110),italic=True)
-def boton(s,r,titulo,sub=None,hover=False):
- pygame.draw.rect(s,(91,47,39) if hover else (43,40,41),r,border_radius=4)
- pygame.draw.rect(s,(195,142,93) if hover else (91,81,73),r,2,border_radius=4)
- t=pygame.font.SysFont('timesnewroman',28,bold=True).render(titulo,True,(238,222,197))
+ rotulo(s,'Esc · volver',142,503,AMBAR,13)
+def boton(s,r,titulo,sub=None,hover=False,etiqueta=None,activo=True):
+ """Tarjeta de decisión, igual que las opciones de la entrevista."""
+ b=min(34,r.h//2-1)
+ nombre='CronicaUI/decision_hover.png' if hover and activo else 'CronicaUI/decision.png'
+ if not marco(s,nombre,r,(b,b,b,b)):
+  pygame.draw.rect(s,(91,47,39) if hover else (43,40,41),r,border_radius=4)
+  pygame.draw.rect(s,(195,142,93) if hover else (91,81,73),r,2,border_radius=4)
+ color=PAPEL if activo else TENUE
+ t=pygame.font.SysFont('timesnewroman',26 if sub else 24,bold=True).render(titulo,True,color)
  if sub:
-  s.blit(t,(r.x+26,r.y+12));label(s,sub,r.x+26,r.bottom-36,19,(203,178,140))
- else:s.blit(t,t.get_rect(center=r.center))
+  s.blit(t,(r.x+34,r.y+13));label(s,sub,r.x+34,r.bottom-35,18,APAGADO if activo else TENUE)
+ elif titulo:s.blit(t,t.get_rect(center=r.center))
+ if etiqueta:
+  e=pygame.font.SysFont('timesnewroman',30,bold=True).render(etiqueta,True,AMBAR if hover else OXIDO)
+  s.blit(e,e.get_rect(midright=(r.right-34,r.centery)))
 def lista_sala(s,red,y):
  """Jugadores conectados a la sala, con el anfitrión marcado."""
  jugadores=red.jugadores if red is not None else []
- label(s,f'JUGADORES EN LA SALA ({len(jugadores)})',150,y,19,(203,158,110),bold=True)
- for k,j in enumerate(jugadores[:10]):
-  col,fila=divmod(k,5)
-  nombre=j.get('nombre','?')+('  (anfitrión)' if j.get('anfitrion') else '')
-  label(s,'•  '+nombre,160+col*300,y+30+fila*25,20)
+ rotulo(s,f'Jugadores en la sala · {len(jugadores)}',150,y,OXIDO,13)
+ for k,j in enumerate(jugadores[:8]):
+  col,fila=divmod(k,4)
+  fila_r=pygame.Rect(150+col*300,y+26+fila*31,285,27)
+  pygame.draw.rect(s,(31,29,29),fila_r)
+  pygame.draw.rect(s,VIVO if j.get('anfitrion') else OXIDO,(fila_r.x,fila_r.y,4,fila_r.h))
+  label(s,j.get('nombre','?'),fila_r.x+14,fila_r.y+3,19,PAPEL)
+  if j.get('anfitrion'):
+   tag=pygame.font.SysFont('timesnewroman',12,bold=True).render('ANFITRIÓN',True,PAPEL)
+   caja=tag.get_rect(midright=(fila_r.right-8,fila_r.centery)).inflate(10,4)
+   pygame.draw.rect(s,VIVO,caja);s.blit(tag,tag.get_rect(center=caja.center))
 
 def main():
  pygame.init();display=Accesibilidad.window(title='The Leader')
@@ -181,49 +225,59 @@ def main():
    m=a_canvas(display,pygame.mouse.get_pos())
    if page=='CREAR':
     modal(canvas,'CREAR PARTIDA')
-    boton(canvas,SOLO,'UN JUGADOR','Tú solo. Los demás personajes los maneja el juego.',SOLO.collidepoint(m))
-    boton(canvas,LOCAL,'MULTIJUGADOR LOCAL','Varios en este mismo PC, cada uno con sus teclas.',LOCAL.collidepoint(m))
-    boton(canvas,RED,'MULTIJUGADOR EN RED','Cada uno en su PC. Tus compañeros se unen a ti.',RED.collidepoint(m))
-    if aviso:label(canvas,aviso,160,462,19,(226,120,95))
+    boton(canvas,SOLO,'UN JUGADOR','Tú solo. Los demás personajes los maneja el juego.',SOLO.collidepoint(m),'I')
+    boton(canvas,LOCAL,'MULTIJUGADOR LOCAL','Varios en este mismo PC, cada uno con sus teclas.',LOCAL.collidepoint(m),'II')
+    boton(canvas,RED,'MULTIJUGADOR EN RED','Cada uno en su PC. Tus compañeros se unen a ti.',RED.collidepoint(m),'III')
+    if aviso:label(canvas,aviso,160,462,19,VIVO)
    elif page=='LOCAL':
     modal(canvas,'MULTIJUGADOR LOCAL')
-    label(canvas,'¿Cuántos van a jugar en este PC?',150,182,23)
+    label(canvas,'¿Cuántos van a jugar en este PC?',150,180,23,PAPEL)
     for n,r in CANTIDADES.items():
-     boton(canvas,r,'',hover=r.collidepoint(m))
-     t=pygame.font.SysFont('timesnewroman',64,bold=True).render(str(n),True,(238,222,197))
-     canvas.blit(t,t.get_rect(center=(r.centerx,r.centery-8)))
-     t=pygame.font.SysFont('timesnewroman',17).render('jugadores',True,(203,178,140))
-     canvas.blit(t,t.get_rect(center=(r.centerx,r.bottom-18)))
-    label(canvas,'Jugador 1: W A S D   ·   Jugador 2: flechas',150,365,20)
-    label(canvas,'Jugador 3: I J K L   ·   Con 4: por parejas y por turnos',150,393,20)
-    label(canvas,'Con 2 o 3 el campo minado es a la vez; en lo demás se pasan el control.',150,431,18,(170,160,145),italic=True)
+     sobre=r.collidepoint(m)
+     boton(canvas,r,'',hover=sobre)
+     t=pygame.font.SysFont('timesnewroman',64,bold=True).render(str(n),True,AMBAR if sobre else PAPEL)
+     canvas.blit(t,t.get_rect(center=(r.centerx,r.centery-10)))
+     t=pygame.font.SysFont('timesnewroman',13,bold=True).render('J U G A D O R E S',True,OXIDO)
+     canvas.blit(t,t.get_rect(center=(r.centerx,r.bottom-20)))
+    rotulo(canvas,'Controles',150,360,OXIDO,13)
+    label(canvas,'Jugador 1: W A S D   ·   Jugador 2: flechas   ·   Jugador 3: I J K L',150,382,19,PAPEL)
+    label(canvas,'Con 4 juegan por parejas y por turnos, como en el modo clásico.',150,408,19,PAPEL)
+    label(canvas,'En el campo minado juegan a la vez; en lo demás se pasan el control.',150,440,17,APAGADO,italic=True)
    elif page=='SALA_HOST':
     modal(canvas,'SALA DE ESPERA')
-    label(canvas,'Tus compañeros deben pulsar UNIRSE A PARTIDA y escribir:',150,178,21)
-    t=pygame.font.SysFont('timesnewroman',46,bold=True).render(ip_host,True,(226,178,104))
-    canvas.blit(t,t.get_rect(midleft=(150,234)))
-    label(canvas,'(en este mismo PC: 127.0.0.1)',W//2+70,222,18,(170,160,145),italic=True)
+    rotulo(canvas,'Dirección de la partida',150,172,OXIDO,13)
+    caja=pygame.Rect(150,192,332,58)
+    pygame.draw.rect(canvas,(13,12,13),caja);pygame.draw.rect(canvas,OXIDO,caja,1);pygame.draw.rect(canvas,VIVO,(caja.x,caja.y,4,caja.h))
+    t=pygame.font.SysFont('timesnewroman',40,bold=True).render(ip_host,True,AMBAR)
+    canvas.blit(t,t.get_rect(midleft=(caja.x+18,caja.centery)))
+    label(canvas,'Tus compañeros pulsan',500,194,16,APAGADO)
+    label(canvas,'UNIRSE A PARTIDA y la escriben.',500,213,16,APAGADO)
+    label(canvas,'En este mismo PC: 127.0.0.1',500,233,15,TENUE,italic=True)
     lista_sala(canvas,sala,272)
     puede=sala is not None and sala.es_anfitrion()
-    boton(canvas,INICIAR,'INICIAR PARTIDA',hover=puede and INICIAR.collidepoint(m))
-    label(canvas,'Solo tú, como anfitrión, puedes iniciar.' if puede else 'Ya hay otra partida creada en este PC.',
-          430,502,17,(170,160,145),italic=True)
+    boton(canvas,INICIAR,'INICIAR PARTIDA',hover=INICIAR.collidepoint(m),activo=puede)
+    label(canvas,'Solo el anfitrión puede iniciar.' if puede else 'Ya hay otra partida creada en este PC.',
+          470,503,15,APAGADO,italic=True)
    elif page=='SALA':
     modal(canvas,'SALA DE ESPERA')
-    label(canvas,f'Conectado a {ip_host}.',150,180,21,(170,160,145))
+    rotulo(canvas,f'Conectado a {ip_host}',150,172,OXIDO,13)
     puntos='.'*(1+int(pygame.time.get_ticks()/400)%3)
-    label(canvas,'Esperando a que el anfitrión inicie la partida'+puntos,150,212,25,(226,178,104),bold=True)
+    label(canvas,'Esperando a que el anfitrión',150,196,27,AMBAR,bold=True)
+    label(canvas,'inicie la partida'+puntos,150,228,27,AMBAR,bold=True)
+    pulso=int(pygame.time.get_ticks()/500)%2
+    pygame.draw.circle(canvas,VIVO if pulso else (110,48,44),(752,214),6)
     lista_sala(canvas,sala,272)
    elif page=='UNIRSE':
     modal(canvas,'UNIRSE A PARTIDA')
-    label(canvas,'Escribe la dirección que le aparece al anfitrión:',150,195,23)
-    pygame.draw.rect(canvas,(14,13,15),CAMPO_IP,border_radius=4)
-    pygame.draw.rect(canvas,(195,142,93),CAMPO_IP,2,border_radius=4)
+    label(canvas,'Escribe la dirección que le aparece al anfitrión:',150,190,22,PAPEL)
+    rotulo(canvas,'Dirección (IP)',160,230,OXIDO,13)
+    pygame.draw.rect(canvas,(13,12,13),CAMPO_IP)
+    pygame.draw.rect(canvas,AMBAR,CAMPO_IP,1);pygame.draw.rect(canvas,VIVO,(CAMPO_IP.x,CAMPO_IP.y,4,CAMPO_IP.h))
     cursor='|' if int(pygame.time.get_ticks()/500)%2 else ''
-    if ip:label(canvas,ip+cursor,CAMPO_IP.x+18,CAMPO_IP.y+12,30)
-    else:label(canvas,'127.0.0.1'+cursor,CAMPO_IP.x+18,CAMPO_IP.y+12,30,(110,104,98))
-    if aviso:label(canvas,aviso,160,335,19,(226,120,95))
-    else:label(canvas,'Enter o ENTRAR para unirte.',160,335,19,(170,160,145),italic=True)
+    if ip:label(canvas,ip+cursor,CAMPO_IP.x+20,CAMPO_IP.y+11,30,PAPEL)
+    else:label(canvas,'127.0.0.1'+cursor,CAMPO_IP.x+20,CAMPO_IP.y+11,30,TENUE)
+    if aviso:label(canvas,aviso,160,330,19,VIVO)
+    else:label(canvas,'Pulsa Enter o ENTRAR para unirte.',160,330,18,APAGADO,italic=True)
     boton(canvas,ENTRAR,'ENTRAR',hover=ENTRAR.collidepoint(m))
    else:modal(canvas,page)
   # PANTALLA COMPLETA: el video llena toda la ventana y el menú va centrado encima

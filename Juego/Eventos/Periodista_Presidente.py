@@ -1488,15 +1488,15 @@ def Entrevista(rol=None):
                 fase = "verificacion"
 
         elif fase == "verificacion":
-            rol = ROLES_VERIFICACION[indice_verificacion]
-            nombre_rol = ROLES[rol][0]
+            rol_verif = ROLES_VERIFICACION[indice_verificacion]
+            nombre_rol = ROLES[rol_verif][0]
             datos = INTERVENCIONES_CIVINET[preguntas_hechas]
             y = bloque_cita(Y_CONTENIDO, "Publicación de CIVINET", datos["publicacion"], COL_MALO,
                             "civinet") + u(8)
             y = medidores(y)
-            opciones_accion = ACCIONES_VERIFICACION[rol]
+            opciones_accion = ACCIONES_VERIFICACION[rol_verif]
             i = lista_opciones(y, [opcion[0] for opcion in opciones_accion],
-                               ROLES[rol][1], mouse_pos, click, tecla)
+                               ROLES[rol_verif][1], mouse_pos, click, tecla)
             i = turno("verificacion", i, len(opciones_accion))
             if i is not None:
                 _, delta_confianza, delta_falso, delta_espectadores, delta_influencer, delta_ciudadano = opciones_accion[i]
