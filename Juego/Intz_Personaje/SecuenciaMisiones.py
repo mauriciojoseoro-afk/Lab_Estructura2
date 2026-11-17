@@ -37,6 +37,8 @@ def cinematica_minas():
                         raise SystemExit
                     if e.type == pygame.KEYDOWN and e.key in (pygame.K_ESCAPE, pygame.K_RETURN):
                         return
+                    if Metodos.doble_espacio(e):
+                        return
                     if e.type == pygame.VIDEORESIZE:
                         pantalla = pygame.display.set_mode((max(320,e.w),max(240,e.h)),pygame.RESIZABLE)
                 ok, frame = cap.read()
@@ -74,6 +76,16 @@ def jugar_secuencia(rol):
             cliente.reportar("Terminó el Evento 1", resultado_evento1["indicadores"], resultado_evento1["resultado"])
             display,canvas=Metodos.crear_ventana(900,675,'The Leader')
             Mapa.mostrar_mapa(display,mapa,terminar=True)
+        elif rol in ("PERIODISTA", "INFLUENCER"):
+            # Su Evento 1 es un video: primero se ve dónde está en el mapa, luego el video y luego la X
+            if rol == "PERIODISTA":
+                from Eventos.Evento1_Periodista import Evento1Periodista
+                Evento1Periodista()
+            else:
+                Metodos.ReproducirVideo('Video_Influencer_F.mp4')
+            cliente.reportar("Terminó el Evento 1")
+            display,canvas=Metodos.crear_ventana(900,675,'The Leader')
+            Mapa.mostrar_mapa(display,mapa,terminar=True)
         cinematica_minas()
         resultado_minas = Evento_2.Evento_2(rol)
         cliente.reportar("Cruzó el campo minado")
@@ -96,6 +108,8 @@ def jugar_secuencia(rol):
         if resultado_evento1 is not None:       # este personaje sí jugó su Evento 1
             indicadores = resultado_evento1["indicadores"]
             decision = resultado_evento1["resultado"]
+        # LO QUE HIZO EN LAS MINAS Y EN LA ENTREVISTA TAMBIÉN CUENTA
+        Evento1_Pozo.sumar_eventos(indicadores, resultado_minas, Periodista_Presidente.ULTIMO_RESULTADO)
         resultado_oficina = Evento3_Oficina.jugar(display,canvas,indicadores,
                                                   decision,oficina_rol)
         cliente.reportar("Terminó la partida", indicadores)

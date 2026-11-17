@@ -82,18 +82,29 @@ def dibujar_aviso(canvas, mensaje, fuente):
     canvas.blit(texto, texto.get_rect(center=fondo.center))
 
 
+# QUITAR LAS FRANJAS NEGRAS QUE TRAEN LAS IMÁGENES (arriba y abajo) PARA QUE LLENEN LA PANTALLA
+def sin_barras(imagen):
+    import numpy as np
+    filas = pygame.surfarray.array3d(imagen).mean(axis=(0, 2))
+    claras = np.nonzero(filas > 20)[0]
+    if len(claras):
+        y0, y1 = int(claras[0]), int(claras[-1]) + 1
+        if 0 < y0 <= 40 and 0 < imagen.get_height() - y1 <= 40:
+            imagen = imagen.subsurface((0, y0, imagen.get_width(), y1 - y0)).copy()
+    if imagen.get_size() != (ANCHO, ALTO):
+        imagen = pygame.transform.smoothscale(imagen, (ANCHO, ALTO))
+    return imagen
+
+
 def abrir_rol(nombre):
     if nombre == 'PRESIDENTE':
         return Intz_Presidente.Presidente()
     if nombre == 'CIUDADANO':
         return Intz_Ciudadano.Ciudadano()
     if nombre == 'PERIODISTA':
-
-        return Evento1Periodista()
-    # Mantener la cinemática original de la influencer y su género.
-    Metodos.ReproducirVideo('Video_Influencer_F.mp4')
-    Intz_Influencer.Influencer('Femenino')
-    return SeleccionarPJ()
+        return Intz_Periodista.Periodista()     # su video del Evento 1 se ve dentro de la secuencia, después del mapa
+    # La cinemática de la influencer también se ve dentro de la secuencia, después del mapa.
+    return Intz_Influencer.Influencer('Femenino')
 
 
 def SeleccionarPJ():
@@ -105,9 +116,7 @@ def SeleccionarPJ():
         ruta = IMAGENES / nombre
         if not ruta.is_file():
             raise FileNotFoundError(f'Falta la imagen de selección: {ruta}')
-        imagenes[nombre] = pygame.image.load(str(ruta)).convert()
-        if imagenes[nombre].get_size() != (ANCHO, ALTO):
-            imagenes[nombre] = pygame.transform.smoothscale(imagenes[nombre], (ANCHO, ALTO))
+        imagenes[nombre] = sin_barras(pygame.image.load(str(ruta)).convert())
 
     # ---- MULTIJUGADOR: conexión con el servidor (None = modo un jugador) ----
     red = cliente.conectar()
@@ -131,9 +140,7 @@ def SeleccionarPJ():
         carpeta = IMAGENES / 'Animaciones' / ROLES[indice][0]
         cuadros = []
         for ruta in sorted(carpeta.glob('frame_*.jpg')):
-            imagen = pygame.image.load(str(ruta)).convert()
-            if imagen.get_size() != (ANCHO, ALTO):
-                imagen = pygame.transform.smoothscale(imagen, (ANCHO, ALTO))
+            imagen = sin_barras(pygame.image.load(str(ruta)).convert())
             cuadros.append(imagen)
         return cuadros
 

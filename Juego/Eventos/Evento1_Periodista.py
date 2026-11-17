@@ -9,6 +9,7 @@ from pathlib import Path
 import sys
 import cv2
 import pygame
+import Metodos
 
 # Momentos donde todas las opciones ya están escritas en el video.
 # Se usan fotogramas del propio archivo, no un reloj que siga corriendo en pausa.
@@ -120,6 +121,16 @@ def Evento1Periodista():
                     pantalla = pygame.display.set_mode((max(320, evento.w), max(240, evento.h)), pygame.RESIZABLE)
                     rect = rect_video(pantalla, vw, vh)
                     tam_escalado = None
+                if Metodos.doble_espacio(evento) and not pausado:     # doble espacio: ir a la siguiente pregunta
+                    if indice_pregunta < len(frames_pausa):
+                        numero_frame = frames_pausa[indice_pregunta] - 1
+                        cap.set(cv2.CAP_PROP_POS_FRAMES, numero_frame)
+                        if reproduciendo_audio:
+                            pygame.mixer.music.play(start=numero_frame / fps)
+                        acumulado = 1.0
+                    else:
+                        activo = False
+                        break
                 if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1 and pausado:
                     opcion = opcion_en_posicion(evento.pos, rect, indice_pregunta)
                     print('[Periodista] Clic:', evento.pos, 'respuesta:', opcion)

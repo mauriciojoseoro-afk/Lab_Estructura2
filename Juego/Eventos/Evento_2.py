@@ -1105,45 +1105,16 @@ def mostrar_tutorial(display, canvas, fondo, reloj):
     paginas = [
         {
             "titulo": "El último suministro",
-            "texto": "El agua se está acabando. Al otro lado de estas ruinas todavía queda un depósito, "
-                     "pero el camino está plagado de explosivos. Hay ciudadanos esperando ese suministro... "
-                     "y alguien debe llegar hasta él.",
+            "texto": "El agua se acaba y el último depósito está al otro lado de este campo minado. "
+                     f"Llega hasta él. Tienes {VIDAS} vidas (las gotas de agua): cada mina que pises te quita una.",
             "demo": demo_intro,
         },
         {
-            "titulo": "Cuida tus vidas",
-            "texto": f"Cada explorador comienza con {VIDAS} vidas, una por cada gota de agua que lleva. "
-                     "Si pisas una mina, pierdes una. Si te quedas sin gotas, quedas fuera del recorrido. "
-                     "Avanza con cuidado.",
-            "demo": demo_vidas,
-        },
-        {
-            "titulo": "Escanea el terreno",
-            "texto": f"Tu dispositivo puede revelar temporalmente las minas ocultas. Pulsa B para activarlo. "
-                     f"El escaneo dura {int(DURACION_PODER)} segundos y luego necesita {int(ESPERA_PODER)} "
-                     "segundos para recargarse después de apagarse.",
+            "titulo": "Cómo cruzar",
+            "texto": f"Pulsa B para ver las minas durante {int(DURACION_PODER)} segundos "
+                     f"(luego se recarga en {int(ESPERA_PODER)}). Si aparece MINA CERCA, alguien está junto a una: "
+                     "muévanse con cuidado. La barra de la derecha muestra cuánto falta. " + TEXTO_CONTROLES,
             "demo": demo_poder,
-        },
-        {
-            "titulo": "Sensor de proximidad compartido",
-            "texto": "El equipo tiene UN solo sensor para los dos exploradores. Cuando cualquiera se acerca "
-                     "mucho a una mina, el dispositivo avisa con una señal roja y el texto MINA CERCA. "
-                     "No indica cuál de los dos está en peligro ni dónde está la mina: deben observar "
-                     "el terreno, comunicarse y decidir quién debe moverse. El aviso funciona sin pulsar B.",
-            "demo": demo_poder,
-        },
-        {
-            "titulo": "Observa tu progreso",
-            "texto": "La línea de la derecha muestra cuánto ha avanzado cada integrante de la pareja. "
-                     "Arriba está el depósito: se va llenando de agua a medida que alguien se acerca, "
-                     "y debajo te dice cuántos metros faltan.",
-            "demo": demo_progreso,
-        },
-        {
-            "titulo": "Lleva el agua a Nova",
-            "texto": "Cruza el campo minado y alcanza el otro extremo. Tu objetivo es llegar al depósito "
-                     "para recuperar el agua que necesitan los ciudadanos. " + TEXTO_CONTROLES,
-            "demo": demo_objetivo,
         },
     ]
 

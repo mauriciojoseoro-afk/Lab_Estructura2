@@ -82,6 +82,14 @@ def mostrar_canvas(display, canvas):
     canvas_escalado = pygame.transform.smoothscale(Accesibilidad.filter_surface(canvas), (nuevo_ancho, nuevo_alto))
 
     display.fill((0, 0, 0))
+    if offset_x > 2 or offset_y > 2:
+        # RELLENO DE LOS BORDES: la misma imagen, borrosa y oscura, en vez de franjas negras
+        cubre = max(ancho_ventana / ancho_canvas, alto_ventana / alto_canvas)
+        fw, fh = int(ancho_canvas * cubre) + 2, int(alto_canvas * cubre) + 2
+        fondo = pygame.transform.smoothscale(canvas_escalado, (max(1, nuevo_ancho // 16), max(1, nuevo_alto // 16)))
+        fondo = pygame.transform.smoothscale(fondo, (fw, fh))
+        fondo.fill((70, 70, 70), special_flags=pygame.BLEND_MULT)
+        display.blit(fondo, ((ancho_ventana - fw) // 2, (alto_ventana - fh) // 2))
     display.blit(canvas_escalado, (offset_x, offset_y))
 
     return escala, offset_x, offset_y
@@ -178,6 +186,20 @@ def ElegirGenero(rol):
             Intz_Influencer.Influencer(genero)
 
 
+# DOBLE ESPACIO PARA SALTAR VIDEOS
+_ultimo_espacio = [-1000]
+
+
+def doble_espacio(evento):
+    """True si este evento es el segundo espacio seguido (en menos de 0.4 s)."""
+    if evento.type != pygame.KEYDOWN or evento.key != pygame.K_SPACE:
+        return False
+    ahora = pygame.time.get_ticks()
+    doble = ahora - _ultimo_espacio[0] < 400
+    _ultimo_espacio[0] = -1000 if doble else ahora
+    return doble
+
+
 def ReproducirVideo(nombre_archivo):
     ruta_video = Path(__file__).parent / "Assets" / "Interfaz" / nombre_archivo
     video = cv2.VideoCapture(str(ruta_video))
@@ -205,8 +227,10 @@ def ReproducirVideo(nombre_archivo):
                 sys.exit()
             if event.type == pygame.VIDEORESIZE:
                 display = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
+            if doble_espacio(event):
+                running = False
 
-        ret, frame = video.read()
+        ret, frame = video.read() if running else (False, None)
 
         if not ret or frame is None:
             break
@@ -249,7 +273,7 @@ def reproducir_video(display, canvas, ruta):
                 sys.exit()
             if event.type == pygame.VIDEORESIZE:
                 display = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
-            if event.type == pygame.KEYDOWN and event.key in (pygame.K_SPACE, pygame.K_ESCAPE):
+            if doble_espacio(event) or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 video.release()
                 pygame.mixer.music.stop()
                 return

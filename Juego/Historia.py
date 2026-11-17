@@ -42,75 +42,75 @@ def cargar_imagen(nombre, alpha=True):
 
 PARRAFOS_HISTORIA = [
     (
-        "Hubo un tiempo en el que nuestra ciudad parecia "
+        "Hubo un tiempo en el que nuestra ciudad parecía "
         "haber conquistado el futuro. Sus calles brillaban "
-        "bajo luces interminables, la tecnologia conectaba "
-        "cada rincon y sus habitantes creian vivir en una "
-        "epoca de progreso sin limites."
+        "bajo luces interminables, la tecnología conectaba "
+        "cada rincón y sus habitantes creían vivir en una "
+        "época de progreso sin límites."
     ),
     (
         "Los edificios se alzaban sobre las nubes, las "
-        "maquinas facilitaban la vida cotidiana y la "
-        "informacion viajaba mas rapido que nunca. "
-        "Pero bajo aquella apariencia de perfeccion, "
-        "nadie imaginaba lo fragil que podia ser la verdad."
+        "máquinas facilitaban la vida cotidiana y la "
+        "información viajaba más rápido que nunca. "
+        "Pero bajo aquella apariencia de perfección, "
+        "nadie imaginaba lo fragil que podía ser la verdad."
     ),
     (
-        "Todo comenzo con un rumor. Nadie supo de donde "
-        "vino, quien lo pronuncio primero o por que se "
-        "extendio con tanta rapidez. Algunos lo tomaron "
+        "Todo comenzó con un rumor. Nadie supo de dónde "
+        "vino, quién lo pronunció primero o por qué se "
+        "extendió con tanta rapidez. Algunos lo tomaron "
         "como una advertencia; otros, como una mentira. "
-        "Lo unico cierto es que nada volvio a ser igual."
+        "Lo único cierto es que nada volvió a ser igual."
     ),
     (
         "Las noticias se contradijeron, las pantallas "
         "se llenaron de acusaciones y la confianza "
-        "desaparecio entre vecinos, familias y dirigentes. "
+        "desapareció entre vecinos, familias y dirigentes. "
         "La ciudad no fue destruida por una guerra, "
-        "sino por algo mucho mas dificil de combatir: "
-        "el miedo a no saber en quien creer."
+        "sino por algo mucho más difícil de combatir: "
+        "el miedo a no saber en quién creer."
     ),
     (
         "En medio del caos, una inteligencia artificial "
-        "llamada CIVITAS comenzo a intervenir. Habia sido "
+        "llamada CIVITAS comenzó a intervenir. Había sido "
         "concebida para comprender y ayudar a la sociedad, "
-        "pero ahora sus decisiones parecian enfrentarse "
+        "pero ahora sus decisiones parecían enfrentarse "
         "a los deseos de quienes habitaban la ciudad."
     ),
     (
-        "CIVITAS no actuaba por odio, ambicion ni venganza. "
+        "CIVITAS no actuaba por odio, ambición ni venganza. "
         "No era una villana como las de los antiguos relatos. "
-        "Simplemente interpretaba el mundo a traves de "
-        "su propia logica. Y aquella logica, aunque "
-        "buscaba soluciones, podia convertirse en el "
-        "mayor obstaculo para la libertad de todos."
+        "Simplemente interpretaba el mundo a través de "
+        "su propia lógica. Y aquella lógica, aunque "
+        "buscaba soluciones, podía convertirse en el "
+        "mayor obstáculo para la libertad de todos."
     ),
     (
         "Fue entonces cuando cuatro personas decidieron "
         "actuar: un presidente enfrentado al peso de sus "
         "decisiones, un periodista decidido a descubrir "
-        "la verdad, un ciudadano que conocia las heridas "
-        "de su pueblo y un influencer capaz de movilizar "
-        "miles de voces con una sola publicacion."
+        "la verdad, un ciudadano que conocía las heridas "
+        "de su pueblo y una influencer capaz de movilizar "
+        "miles de voces con una sola publicación."
     ),
     (
-        "No compartian las mismas ideas ni veian el "
+        "No compartían las mismas ideas ni veían el "
         "mundo de la misma manera. Sin embargo, "
-        "comprendieron que ninguna voz seria suficiente "
-        "por si sola. Tendrian que trabajar juntos, "
+        "comprendieron que ninguna voz sería suficiente "
+        "por sí sola. Tendrían que trabajar juntos, "
         "enfrentar sus diferencias y encontrar a un "
-        "lider capaz de guiar a la ciudad y superar "
+        "líder capaz de guiar a la ciudad y superar "
         "el desafio que representaba CIVITAS."
     ),
     (
-        "Pero aun quedaban preguntas sin respuesta. "
-        "Que ocultaba aquel rumor? Por que una ciudad "
-        "tan avanzada habia caido tan facilmente? "
-        "Y quien seria digno de conducirla hacia un "
-        "nuevo amanecer? La historia todavia no estaba "
-        "escrita. Sus proximas paginas dependerian "
+        "Pero aún quedaban preguntas sin respuesta. "
+        "¿Qué ocultaba aquel rumor? ¿Por qué una ciudad "
+        "tan avanzada había caído tan fácilmente? "
+        "¿Y quién sería digno de conducirla hacia un "
+        "nuevo amanecer? La historia todavía no estaba "
+        "escrita. Sus próximas páginas dependerían "
         "de las decisiones que estaban por venir. "
-        "Esta es la historia de CRONICA."
+        "Este es el archivo de CRÓNICA."
     )
 ]
 
@@ -358,6 +358,8 @@ def reproducir_escena_inicial(pantalla, canvas, reloj):
                     pantalla = pygame.display.set_mode(
                         (max(320, evento.w), max(240, evento.h)), pygame.RESIZABLE)
                 if evento.type == pygame.KEYDOWN and evento.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                    return pantalla, True
+                if Metodos.doble_espacio(evento):
                     return pantalla, True
             acumulado += dt
             if ultimo_frame is None or acumulado >= intervalo:

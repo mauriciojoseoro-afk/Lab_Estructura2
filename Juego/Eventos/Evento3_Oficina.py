@@ -367,9 +367,9 @@ CONFRONTACION = {
     "video": "evento3_confrontacion.mp4",
     "subtitulos": [
         (0.3, 1.6, 3.4, "Se escuchan pasos. El grupo entra y ve la pantalla."),
-        (6.1, 6.6, 7.4, 'ROSA: "¿Tú eras parte de Civitas?"'),
-        (8.0, 8.4, 9.5, 'SAMUEL: "¡Nos mentiste!"'),
-        (9.6, 10.1, 11.7, 'MARIE: "¿Cómo pudiste no decirnos?"'),
+        (6.1, 6.6, 7.4, 'UNA MUJER: "¿Tú eras parte de Civitas?"'),
+        (8.0, 8.4, 9.5, 'UN HOMBRE: "¡Nos mentiste!"'),
+        (9.6, 10.1, 11.7, 'UNA ANCIANA: "¿Cómo pudiste no decirnos?"'),
     ],
 }
 
@@ -420,8 +420,8 @@ FINALES = {
     "desconfianza": {
         "video": "evento3_final_desconfianza.mp4",
         "subtitulos": [
-            (0.3, 1.8, 2.8, 'FABIO: "Puedes quedarte..."'),
-            (2.9, 5.7, 7.9, 'FABIO: "...pero vas a tener que recuperar nuestra confianza."'),        ],
+            (0.3, 1.8, 2.8, 'UN HOMBRE: "Puedes quedarte..."'),
+            (2.9, 5.7, 7.9, 'UN HOMBRE: "...pero vas a tener que recuperar nuestra confianza."'),        ],
         "titulo": "QUÉDATE Y GÁNATELOS DE NUEVO",
         "color": AMBAR,
         "cierre": "Mañana les contarás todo sobre Civitas. Ahora tienes que lograr que te crean.",
@@ -429,8 +429,8 @@ FINALES = {
     "confian": {
         "video": "evento3_final_confian.mp4",
         "subtitulos": [
-            (1.3, 2.8, 3.6, 'ROSA: "Lo que hiciste antes no te define..."'),
-            (3.8, 5.3, 7.9, 'ROSA: "...lo que hiciste aquí, lo que hiciste por nosotros, sí."'),
+            (1.3, 2.8, 3.6, 'UNA MUJER: "Lo que hiciste antes no te define..."'),
+            (3.8, 5.3, 7.9, 'UNA MUJER: "...lo que hiciste aquí, lo que hiciste por nosotros, sí."'),
         ],
         "titulo": "EL GRUPO CONFÍA EN TI",
         "color": AZUL,
@@ -560,12 +560,13 @@ class Oficina:
     # OBJETIVO ACTUAL (orienta al jugador)
     def objetivo(self):
         if len(self.pistas) < TOTAL_PISTAS:
-            return "Busca en la oficina los 4 números de la clave del computador."
+            return ("Busca los 4 números de la clave del computador. "
+                    "Pasa el mouse por la oficina: los objetos que se iluminan esconden pistas.")
         if not self.orden_resuelto:
-            return "Ve al tablero y ordena las 4 pistas para armar la clave."
+            return "Ya tienes las 4 pistas. Haz clic en el tablero y ordénalas para armar la clave."
         if not self.computador_abierto:
-            return f"La clave es {self.caso['clave']}. Escríbela en el computador."
-        return "Revisa los archivos del computador."
+            return f"La clave es {self.caso['clave']}. Haz clic en el computador y escríbela."
+        return "Revisa los archivos del computador hasta encontrar tu expediente."
 
     # DIBUJO DE LA SALA
     def objeto_bajo(self, mouse):

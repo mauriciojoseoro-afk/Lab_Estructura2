@@ -31,6 +31,16 @@ ENTRAR=pygame.Rect(300,420,300,54)
 def a_canvas(display,pos):
  ww,hh=display.get_size();scale=min(ww/W,hh/H)
  return ((pos[0]-(ww-W*scale)/2)/scale,(pos[1]-(hh-H*scale)/2)/scale)
+# MOUSE SOBRE EL VIDEO A PANTALLA COMPLETA -> coordenadas viejas del canvas 900x600
+VIDEO_INFO={'w':1662,'h':1246,'barra':96}
+CREDITOS_PANTALLA=pygame.Rect(0,0,0,0)   # se ubica al dibujar, abajo al centro
+def a_video(display,pos,last):
+ if last is None:return a_canvas(display,pos)
+ dw,dh=display.get_size();esc=max(dw/last.get_width(),dh/last.get_height())
+ ox=(dw-last.get_width()*esc)/2;oy=(dh-last.get_height()*esc)/2
+ k=(VIDEO_INFO['h']-2*VIDEO_INFO['barra'])/last.get_height()
+ fx=(pos[0]-ox)/esc*k;fy=(pos[1]-oy)/esc*k+VIDEO_INFO['barra']
+ return (fx*W/VIDEO_INFO['w'],fy*H/VIDEO_INFO['h'])
 def jugar():
  Historia.Historia()
  if not pygame.get_init():pygame.init()
@@ -39,7 +49,6 @@ def label(s,msg,x,y,size=22,color=(238,222,197),bold=False,italic=False):
  f=pygame.font.SysFont('timesnewroman',size,bold=bold,italic=italic)
  s.blit(f.render(msg,True,color),(x,y))
 def modal(s,page):
- cover=pygame.Surface((W,H),pygame.SRCALPHA);cover.fill((5,7,10,208));s.blit(cover,(0,0))
  r=pygame.Rect(105,65,690,475)
  pygame.draw.rect(s,(23,22,25),r,border_radius=6)
  pygame.draw.rect(s,(175,130,91),r,3,border_radius=6)
@@ -63,7 +72,7 @@ def modal(s,page):
   label(s,'El filtro se aplica a las escenas compatibles.',143,454,18)
  elif page=='CRÉDITOS':
   for i,line in enumerate(('THE LEADER','Videojuego narrativo sobre liderazgo y confianza',
-      'EDITAR: nombres de los integrantes del equipo')):
+      'Isaac Gonzalez · Laura Lanchero','Mauricio Orozco · Karla Paredes')):
    label(s,line,147,200+i*62,25)
  label(s,'ESC — VOLVER',142,501,20,(203,158,110),italic=True)
 def boton(s,r,titulo,sub=None,hover=False):
@@ -84,7 +93,7 @@ def lista_sala(s,red,y):
 
 def main():
  pygame.init();display=Accesibilidad.window(title='The Leader')
- canvas=pygame.Surface((W,H));clock=pygame.time.Clock()
+ canvas=pygame.Surface((W,H),pygame.SRCALPHA);clock=pygame.time.Clock()
  video=cv2.VideoCapture(str(VIDEO))
  if not video.isOpened():raise FileNotFoundError('No se pudo abrir '+str(VIDEO))
  fps=video.get(cv2.CAP_PROP_FPS) or 30
@@ -131,8 +140,10 @@ def main():
     elif page=='UNIRSE':
      if ENTRAR.collidepoint(pt):unirse=True
     elif not page:
+     pt_video=a_video(display,e.pos,last)
+     if CREDITOS_PANTALLA.collidepoint(e.pos):page='CRÉDITOS'
      for name,rect in BUTTONS.items():
-      if rect.collidepoint(pt):
+      if rect.collidepoint(pt_video):
        if name=='SALIR':running=False
        elif name=='JUGAR':page='CREAR';aviso=''   # el botón dice CREAR PARTIDA
        elif name=='UNIRSE':page='UNIRSE';aviso=''
@@ -159,13 +170,13 @@ def main():
    if not ok:
     video.set(cv2.CAP_PROP_POS_FRAMES,0);ok,frame=video.read()
    if ok:
-    # INTER_AREA al reducir, INTER_CUBIC al ampliar; conserva detalles originales.
-    interpolation=cv2.INTER_AREA if frame.shape[1]>W else cv2.INTER_CUBIC
-    frame=cv2.resize(frame,(W,H),interpolation=interpolation)
+    # QUITAR LAS BARRAS NEGRAS QUE TRAE EL VIDEO (arriba y abajo)
+    VIDEO_INFO.update(w=frame.shape[1],h=frame.shape[0],barra=round(frame.shape[0]*96/1246))
+    barra=VIDEO_INFO['barra'];frame=frame[barra:frame.shape[0]-barra]
+    fh,fw=frame.shape[:2];frame=cv2.resize(frame,(round(fw*720/fh),720),interpolation=cv2.INTER_AREA)
     frame=cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
-    last=pygame.image.frombuffer(frame.tobytes(),(W,H),'RGB').convert()
-  if last:canvas.blit(last,(0,0))
-  else:canvas.fill((27,25,25))
+    last=pygame.image.frombuffer(frame.tobytes(),(frame.shape[1],frame.shape[0]),'RGB').convert()
+  canvas.fill((0,0,0,0))
   if page:
    m=a_canvas(display,pygame.mouse.get_pos())
    if page=='CREAR':
@@ -215,11 +226,25 @@ def main():
     else:label(canvas,'Enter o ENTRAR para unirte.',160,335,19,(170,160,145),italic=True)
     boton(canvas,ENTRAR,'ENTRAR',hover=ENTRAR.collidepoint(m))
    else:modal(canvas,page)
-  view=Accesibilidad.filter_surface(canvas)
+  # PANTALLA COMPLETA: el video llena toda la ventana y el menú va centrado encima
   dw,dh=display.get_size();scale=min(dw/W,dh/H)
   nw,nh=max(1,round(W*scale)),max(1,round(H*scale))
-  display.fill((0,0,0))
-  display.blit(pygame.transform.smoothscale(view,(nw,nh)),((dw-nw)//2,(dh-nh)//2))
+  vista=pygame.Surface((dw,dh))
+  if last:
+   esc=max(dw/last.get_width(),dh/last.get_height())
+   fw,fh=round(last.get_width()*esc),round(last.get_height()*esc)
+   vista.blit(pygame.transform.smoothscale(last,(fw,fh)),((dw-fw)//2,(dh-fh)//2))
+  else:vista.fill((27,25,25))
+  if page:
+   oscuro=pygame.Surface((dw,dh),pygame.SRCALPHA);oscuro.fill((5,7,10,208));vista.blit(oscuro,(0,0))
+  vista.blit(pygame.transform.smoothscale(canvas,(nw,nh)),((dw-nw)//2,(dh-nh)//2))
+  if not page:   # "Créditos" venía en la barra negra del video: ahora se dibuja aquí
+   fc=pygame.font.SysFont('timesnewroman',max(16,round(20*scale)));fc.set_underline(True)
+   tc=fc.render('Créditos',True,(238,222,197) if CREDITOS_PANTALLA.collidepoint(pygame.mouse.get_pos()) else (205,195,180))
+   CREDITOS_PANTALLA.update(tc.get_rect(midbottom=(dw//2,dh-12)).inflate(16,8))
+   sombra=pygame.Surface(CREDITOS_PANTALLA.size,pygame.SRCALPHA);sombra.fill((0,0,0,120))
+   vista.blit(sombra,CREDITOS_PANTALLA);vista.blit(tc,tc.get_rect(center=CREDITOS_PANTALLA.center))
+  display.blit(Accesibilidad.filter_surface(vista),(0,0))
   pygame.display.flip()
  video.release();pygame.quit()
 if __name__=='__main__':main()

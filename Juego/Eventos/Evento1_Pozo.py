@@ -486,6 +486,23 @@ class Indicadores:
         return dict(self.valores)
 
 
+# SUMAR LO QUE PASÓ EN LAS MINAS Y EN LA ENTREVISTA
+def sumar_eventos(indicadores, resultado_minas=None, resultado_entrevista=None):
+    """Ajusta Confianza/Caos/Cohesión con los eventos 2 y entrevista. No toca lo del Evento 1:
+    solo suma encima. resultado_minas: {nombre: {"llego", "vidas"}}; resultado_entrevista:
+    {"confianza": 0-100, "alcance": n}. Si falta alguno, no hace nada con él."""
+    efectos = {"Confianza": 0, "Caos": 0, "Cohesión": 0}
+    if resultado_minas:
+        for j in resultado_minas.values():
+            efectos["Cohesión"] += 6 if j.get("llego") else -4
+            efectos["Caos"] += 3 * max(0, 2 - j.get("vidas", 2))
+    if resultado_entrevista:
+        efectos["Confianza"] += max(-15, min(15, (resultado_entrevista["confianza"] - 50) // 2))
+        efectos["Caos"] += max(-10, min(10, resultado_entrevista["alcance"] - 10))
+    indicadores.aplicar(efectos)
+    return indicadores
+
+
 def dibujar_indicadores(canvas, valores, cambios=None, alfa_cambios=255):
     """Panel pequeño arriba a la izquierda con una barra por indicador.
     valores: lo que se dibuja ahora (puede ir cambiando durante la animación).

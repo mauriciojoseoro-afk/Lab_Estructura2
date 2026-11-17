@@ -92,22 +92,22 @@ def _casi_siempre(correcta, n, probabilidad):
 # CIVINET interviene después de las preguntas 3, 6 y 9. La entrevista original
 # permanece intacta: la manipulación aparece como una publicación paralela.
 INTERVENCIONES_CIVINET = {
-    3: {
+    2: {
         "tipo": "Descontextualización",
-        "publicacion": "¿El presidente está ocultando información sobre el cierre de los parques? Su respuesta deja más dudas que certezas. ¡Comparte antes de que borren la publicación!",
+        "publicacion": "El presidente acaba de admitir en vivo que \"no hay agua para todos\". ¿Va a decidir él quién bebe y quién no? ¡Comparte antes de que borren el video!",
     },
-    6: {
+    3: {
         "tipo": "Titular sensacionalista",
-        "publicacion": "¡ALERTA EN CIUDAD NOVA! El presidente quiere que los ciudadanos dejen de cuestionar lo que publica su campaña. ¿Qué intenta ocultar?",
+        "publicacion": "¡ALERTA EN CIUDAD NOVA! El agua del depósito estaría contaminada y el presidente lo sabe. ¿Por qué no lo dice en la entrevista?",
     },
-    9: {
+    4: {
         "tipo": "Popularidad falsa",
-        "publicacion": "ÚLTIMA HORA: 9 de cada 10 jóvenes ya apoyan al presidente. Miles de usuarios están compartiendo su propuesta. ¡Únete a la mayoría!",
+        "publicacion": "ÚLTIMA HORA: 9 de cada 10 sobrevivientes ya no confían en el presidente. Miles están compartiendo esto. ¡No te quedes atrás!",
     },
 }
 
 # Quién "publica" cada rumor en la red (cuenta falsa)
-CUENTAS_CIVINET = {3: "@verdad_sin_filtro", 6: "@NovaAlerta24", 9: "@tendencia_nova"}
+CUENTAS_CIVINET = {2: "@verdad_sin_filtro", 3: "@NovaAlerta24", 4: "@tendencia_nova"}
 
 # Cada opción contiene: texto, cambio de confianza, cambio de alcance falso,
 # cambio de espectadores, puntos para influencer y puntos para ciudadano.
@@ -135,7 +135,7 @@ ACCIONES_VERIFICACION = {
 }
 
 # ====== VOZ DE CIVITAS: la IA que decide qué ve la ciudad ======
-TITULOS_CIVITAS = {3: "CONTEXTO ELIMINADO", 6: "DUDA ACTIVADA", 9: "ALCANCE MASIVO"}
+TITULOS_CIVITAS = {2: "CONTEXTO ELIMINADO", 3: "DUDA ACTIVADA", 4: "ALCANCE MASIVO"}
 
 # Susurros que aparecen justo después de cada decisión de verificación
 REACCIONES_CIVITAS = {
@@ -366,6 +366,28 @@ class FondoVideo:
         self.cap.release()
 
 
+ULTIMO_RESULTADO = None
+
+# LAS 4 PREGUNTAS QUE SE HACEN (de las 10 del árbol): agua, rumor de contaminación,
+# información ocultada y el mensaje final
+PREGUNTAS_PRINCIPALES = [1, 3, 6, 10]
+
+# GUÍA DE QUÉ SIGUE (se muestra arriba durante la entrevista)
+GUIA_FASES = {
+    "intro": "Civitas abre la transmisión. Haz clic o pulsa Enter para empezar.",
+    "pregunta": "El Periodista elige la pregunta: clic o teclas 1, 2, 3.",
+    "civinet": "Apareció un rumor en CIVINET. Léelo con atención.",
+    "respuesta": "Turno del Presidente: elige su respuesta.",
+    "ciudadano": "Turno del Ciudadano: ¿le cree o no le cree?",
+    "audiencia": "Así reacciona la audiencia a la respuesta.",
+    "opinion": "Turno del Influencer: decide qué publicar.",
+    "verificacion": "Rumor activo: cada rol decide si verifica, comparte o corrige.",
+    "siguiente": "Preparando la siguiente pregunta...",
+    "civitas": "Civitas cierra la transmisión.",
+    "final": "Resultado de la entrevista. Haz clic para continuar.",
+}
+
+
 def Entrevista(rol=None):
     pygame.init()
 
@@ -491,7 +513,8 @@ def Entrevista(rol=None):
     for id in respuestas.keys():
         arbol_respuestas.set(id)
 
-    ids_disponibles = list(preguntas.keys())
+    # ENTREVISTA MÁS CORTA: solo las 4 preguntas principales (Civitas interviene después de la 2, la 3 y la 4)
+    ids_disponibles = [id_p for id_p in PREGUNTAS_PRINCIPALES if id_p in preguntas]
 
     fase = "intro"
     id_pregunta_actual = None
@@ -501,7 +524,7 @@ def Entrevista(rol=None):
     puntos_influencer = 0
     puntos_ciudadano = 0
     preguntas_hechas = 0
-    total_preguntas = len(preguntas)
+    total_preguntas = len(ids_disponibles)
 
     confianza_civinet = 50
     alcance_falso = 0
@@ -527,7 +550,7 @@ def Entrevista(rol=None):
 
     def lineas_de_civitas(n):
         """Lo que dice CIVITAS cambia según cómo vayas jugando."""
-        if n == 3:
+        if n == 2:
             if confianza_civinet >= 55:
                 extra = "Veo que la ciudad te escucha entera... por ahora. Qué ingenuo es confiar en el contexto."
             else:
@@ -537,7 +560,7 @@ def Entrevista(rol=None):
                 ("CIVITAS", "Una frase sin su contexto es un arma. Y yo tengo muy buena puntería."),
                 ("CIVITAS", extra),
             ]
-        if n == 6:
+        if n == 3:
             if alcance_falso <= 2:
                 extra = "Verificaste a tiempo. Qué detalle adorable. Subiré el volumen."
             else:
@@ -550,9 +573,9 @@ def Entrevista(rol=None):
         if confianza_civinet >= 65 and alcance_falso <= 5:
             extra = "Vaya... esta vez la ciudad aún te sigue. Disfrútalo: mañana hay otra transmisión."
         else:
-            extra = "Fue un placer, presidente. Ahora, si me disculpa, tengo una elección que escribir."
+            extra = "Fue un placer, presidente. Ahora, si me disculpa, tengo una ciudad que reescribir."
         return [
-            ("CIVITAS", "Nueve de cada diez jóvenes. ¿Sabes de dónde salió esa cifra? De ninguna parte... y ya la repite media ciudad."),
+            ("CIVITAS", "Nueve de cada diez sobrevivientes. ¿Sabes de dónde salió esa cifra? De ninguna parte... y ya la repite media ciudad."),
             ("CIVITAS", "No necesito una mayoría, presidente. Solo necesito que parezca que existe."),
             ("CIVITAS", extra),
         ]
@@ -1637,6 +1660,17 @@ def Entrevista(rol=None):
             for k, t in enumerate(textos):
                 canvas.blit(fuente_ajuste.render(t, True, COL_AMBAR if k == 0 else COL_PAPEL), (10, ALTO - 56 + k * 18))
 
+        # GUÍA: una línea arriba que dice qué sigue en cada momento
+        guia = GUIA_FASES.get(fase)
+        if guia:
+            fte_guia = tipo(u(15))
+            txt_guia = fte_guia.render(guia, True, COL_PAPEL)
+            caja_guia = txt_guia.get_rect(midtop=(ANCHO // 2, u(6))).inflate(u(24), u(10))
+            sombra_guia = pygame.Surface(caja_guia.size, pygame.SRCALPHA)
+            sombra_guia.fill((0, 0, 0, 170))
+            canvas.blit(sombra_guia, caja_guia)
+            canvas.blit(txt_guia, txt_guia.get_rect(center=caja_guia.center))
+
         # Escala independiente: la ventana puede estirarse libremente sin bandas negras.
         lienzo_escalado = pygame.transform.smoothscale(canvas, display.get_size())
         display.blit(lienzo_escalado, (0, 0))
@@ -1644,4 +1678,7 @@ def Entrevista(rol=None):
 
     for f in fondos.values():
         f.cerrar()
-    return puntos_influencer, puntos_ciudadano
+    # RESULTADO PARA LOS INDICADORES DEL JUGADOR (lo lee SecuenciaMisiones / Intz_Presidente)
+    global ULTIMO_RESULTADO
+    ULTIMO_RESULTADO = {"confianza": confianza_civinet, "alcance": alcance_falso}
+    return puntos_influencer, puntos_ciudadano
