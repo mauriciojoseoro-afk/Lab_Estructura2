@@ -68,6 +68,8 @@ def a_video(display,pos,last):
  fx=(pos[0]-ox)/esc*k;fy=(pos[1]-oy)/esc*k+VIDEO_INFO['barra']
  return (fx*W/VIDEO_INFO['w'],fy*H/VIDEO_INFO['h'])
 def jugar():
+ import Metodos  # VIDEO DE INTRO AL EMPEZAR LA PARTIDA
+ Metodos.reproducir_video(pygame.display.get_surface(),pygame.Surface((1280,720)),BASE/'Assets'/'Videos'/'Video_Intro.mp4')
  Historia.Historia()
  if not pygame.get_init():pygame.init()
  return Accesibilidad.window(title='The Leader')
@@ -136,8 +138,6 @@ def lista_sala(s,red,y):
 
 def main():
  pygame.init();display=Accesibilidad.window(title='The Leader')
- import Metodos  # VIDEO DE INTRO ANTES DE TODO
- Metodos.reproducir_video(display,pygame.Surface((1280,720)),BASE/'Assets'/'Videos'/'Video_Intro.mp4')
  canvas=pygame.Surface((W,H),pygame.SRCALPHA);clock=pygame.time.Clock()
  video=cv2.VideoCapture(str(VIDEO))
  if not video.isOpened():raise FileNotFoundError('No se pudo abrir '+str(VIDEO))
