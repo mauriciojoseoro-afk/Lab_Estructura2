@@ -11,10 +11,10 @@ ROJO = (200, 30, 25)
 TINTA = (48, 30, 18)
 
 
-# GRAFO DE LA CIUDAD
+# grafo de la ciudad
 class Grafo:
     def __init__(self):
-        self.adyacencia = {}          # cada lugar guarda sus vecinos: {lugar: {vecino: peso}}
+        self.adyacencia = {}          # cada lugar guarda sus vecinos, {lugar, {vecino, peso}}
 
     def agregar_nodo(self, nodo):
         if nodo not in self.adyacencia:
@@ -51,7 +51,7 @@ class Grafo:
         for a in self.adyacencia:
             for b in self.adyacencia[a]:
                 peso = self.adyacencia[a][b]
-                if (b, a, peso) not in lista:      # cada camino está guardado dos veces: se cuenta una
+                if (b, a, peso) not in lista:      # cada camino está guardado dos veces, se cuenta una
                     lista.append((a, b, peso))
         return lista
 
@@ -65,7 +65,7 @@ LUGARES = {
     "El Almacén del Este":   {"punto": (0.798, 0.244), "zona": (0.800, 0.310, 0.185, 0.215)},
     "Central de Datos":      {"punto": (0.780, 0.646), "zona": (0.780, 0.700, 0.150, 0.200)},    }
 
-# Camino de cada personaje: lugar del Evento 1, Evento 2, Evento 3...
+# camino de cada personaje, lugar del evento 1, evento 2, evento 3...
 RUTAS = {
         "LÍDER":         ["El Cruce del Pozo", "El Campo Sembrado", "El Almacén del Este", "Central de Datos"],
     "SOBREVIVIENTE": ["Barrio Las Acacias", "El Campo Sembrado", "El Almacén del Este", "Central de Datos"],
@@ -76,10 +76,10 @@ RUTAS = {
 
 PESOS = {("El Campo Sembrado", "El Almacén del Este"): 6, ("El Almacén del Este", "Central de Datos"): 4}
 
-# NIEBLA (nubes que se mueven)
+# niebla (nubes que se mueven)
 import numpy as np
 
-REDUCCION = 4          # la niebla se calcula 4 veces más pequeña y se agranda: más rápida y más suave
+REDUCCION = 4          # la niebla se calcula 4 veces más pequeña y se agranda, más rápida y más suave
 
 
 def ruido_nubes(alto, ancho, detalle, semilla):
@@ -134,21 +134,21 @@ class Niebla:
         c3 = desplazar(self.capa3, t * 0.3, -t * 1.1)
         densidad = 0.50 * c1 + 0.35 * c2 + 0.15 * c3
 
-        # 2. casi opaca: no se ve lo que sigue
+        # 2. casi opaca, no se ve lo que sigue
         contraste = np.clip((densidad - 0.30) / 0.45, 0, 1)
         contraste = contraste * contraste * (3 - 2 * contraste)
         alfa = np.clip(0.97 + contraste * 0.03, 0, 1)
 
         # 3. la niebla se deshace en jirones desde el centro de cada zona hacia afuera
         quitar = np.ones_like(alfa)
-        jirones = (0.6 * self.borde + 0.4 * c3) - 0.5          # ruido que se mueve: bordes vivos
+        jirones = (0.6 * self.borde + 0.4 * c3) - 0.5          # ruido que se mueve, bordes vivos
         for (cx, cy, rx, ry), p in zonas:
             if p <= 0:
                 continue
             d = np.sqrt(((self.xx - cx / REDUCCION) / (rx / REDUCCION)) ** 2 +
                         ((self.yy - cy / REDUCCION) / (ry / REDUCCION)) ** 2)
             puntaje = (1 - d) + jirones * 0.7                   # alto en el centro, irregular en el borde
-            limite = 1.45 - suavizar(p) * 1.45                  # baja con el tiempo: se va abriendo
+            limite = 1.45 - suavizar(p) * 1.45                  # baja con el tiempo, se va abriendo
             quitar *= np.clip((limite - puntaje) / 0.22, 0, 1)
         # el camino también se despeja, avanzando de un lugar al otro, con bordes de niebla irregulares
         for (a, b), p in caminos:
@@ -164,9 +164,9 @@ class Niebla:
             frente = np.clip((p * 1.08 - u + jirones * 0.06) / 0.08, 0, 1)      # avanza con el progreso
             quitar *= 1 - dentro * frente
         alfa = alfa * quitar * self.papel
-        orilla = np.clip((1 - quitar) * quitar * 4, 0, 1)      # borde de la nube: más espeso y gris
+        orilla = np.clip((1 - quitar) * quitar * 4, 0, 1)      # borde de la nube, más espeso y gris
 
-        # 4. color: blanco cálido con sombras suaves
+        # 4. color, blanco cálido con sombras suaves
         sombra = np.roll(contraste, (3, 3), axis=(0, 1))
         luz = 205 + contraste * 50 - np.clip(sombra - contraste, 0, 1) * 25 - orilla * 40
         luz = luz[..., None]
@@ -176,7 +176,7 @@ class Niebla:
         return pygame.transform.smoothscale(sup, self.tam_mapa)
 
 
-# SONIDOS (se generan con código, no necesitan archivos)
+# sonidos (se generan con código, no necesitan archivos)
 def crear_sonido(duracion, tipo):
     try:
         if not pygame.mixer.get_init():
@@ -185,7 +185,7 @@ def crear_sonido(duracion, tipo):
         n = int(frec * duracion)
         t = np.linspace(0, 1, n, dtype=np.float32)
         ruido = np.random.default_rng(5 if tipo == "whoosh" else 9).standard_normal(n).astype(np.float32)
-        if tipo == "whoosh":                                  # trazo rápido: sube y cae
+        if tipo == "whoosh":                                  # trazo rápido, sube y cae
             envolvente = np.clip(np.sin(np.pi * t ** 0.6), 0, 1) ** 2
             corte = 0.04 + 0.30 * np.sin(np.pi * t)           # el "filtro" se abre en el medio
             volumen = 0.28
@@ -213,7 +213,7 @@ def sonar(sonido):
         sonido.play()
 
 
-# MAPA
+# mapa
 class Mapa:
     def __init__(self, personaje):
         img = pygame.image.load(str(CARPETA / "mapa.png")).convert_alpha()
@@ -233,15 +233,15 @@ class Mapa:
         self.personaje = personaje
         self.ruta = RUTAS[personaje]
         self.grafo = Grafo()
-        self.grafo.agregar_nodo(self.ruta[0])        # solo se ve el lugar del Evento 1
+        self.grafo.agregar_nodo(self.ruta[0])        # solo se ve el lugar del evento 1
         self.paso = 0                                  # en qué evento va
         self.visitados = set()
         self.revelado = {self.ruta[0]: 1.0}            # cuánto se quitó la niebla (0 a 1)
-        self.x_progreso = {}                           # cuánto se dibujó cada X (0 a 1)
+        self.x_progreso = {}                           # cuánto se dibujó cada x (0 a 1)
         self.camino_progreso = {}                      # cuánto se dibujó cada camino (0 a 1)
         self.animacion = []                            # cola de animaciones pendientes
-        self.trazos_x = {}                             # forma de cada X (hecha a mano)
-        self.x_listas = {}                             # X ya terminadas (se guardan dibujadas)
+        self.trazos_x = {}                             # forma de cada x (hecha a mano)
+        self.x_listas = {}                             # x ya terminadas (se guardan dibujadas)
         self.tiempo_paso = 0.0
         self.avance_niebla = 0.0
 
@@ -254,18 +254,18 @@ class Mapa:
         w, h = self.img.get_size()
         return cx * w, cy * h, rx * w, ry * h
 
-    # ---------- Al terminar un evento ----------
+    # al terminar un evento
     def terminar_evento(self):
         if self.paso >= len(self.ruta) - 1 or self.animacion:
             return
         actual, siguiente = self.ruta[self.paso], self.ruta[self.paso + 1]
         self.visitados.add(actual)
-        self.grafo.agregar_nodo(siguiente)                                  # AGREGAR NODO
+        self.grafo.agregar_nodo(siguiente)                                  # agregar nodo
         peso = PESOS.get((actual, siguiente), 8)
-        self.grafo.agregar_arista(actual, siguiente, peso)                  # AGREGAR ARISTA
+        self.grafo.agregar_arista(actual, siguiente, peso)                  # agregar arista
         self.paso += 1
         self.x_listas.pop(actual, None)
-        # orden de la animación: pausa -> X roja -> pausa -> se abre la niebla (y aparece el camino)
+        # orden de la animación, pausa -> x roja -> pausa -> se abre la niebla (y aparece el camino)
         self.trazos_x[actual] = crear_trazos_x(self.xy(actual), int(self.radio * 0.48), semilla=len(self.trazos_x) + 3)
         self.animacion = [("pausa", 0.35), ("x", actual), ("pausa", 0.4), ("niebla", (actual, siguiente))]
         self.tiempo_paso = 0.0
@@ -303,9 +303,9 @@ class Mapa:
             if ahora >= 1.0:
                 self.avance_niebla = 0.0
                 self.animacion.pop(0)
-                self.grafo.eliminar_nodo(actual)                            # ELIMINAR NODO (ya no se vuelve ahí)
+                self.grafo.eliminar_nodo(actual)                            # eliminar nodo (ya no se vuelve ahí)
 
-    # ---------- Dibujar ----------
+    # dibujar
     def dibujar(self, pantalla):
         pantalla.fill((17, 20, 24))
         lienzo = self.img.copy()
@@ -320,11 +320,11 @@ class Mapa:
         caminos = [((self.xy(a), self.xy(b)), p) for (a, b), p in self.camino_progreso.items()]
         lienzo.blit(self.niebla.dibujar(zonas, caminos, self.img.get_width() * 0.035), (0, 0))
 
-        # X roja hecha a mano en los lugares ya visitados
+        # x roja hecha a mano en los lugares ya visitados
         for lugar, p in self.x_progreso.items():
             dibujar_x(lienzo, self.trazos_x[lugar], p, self.x_listas, lugar)
 
-        # lugar actual: círculo de tinta que late
+        # lugar actual, círculo de tinta que late
         if not self.animacion:
             x, y = self.xy(self.ruta[self.paso])
             pulso = 4 * math.sin(pygame.time.get_ticks() / 250)
@@ -374,7 +374,7 @@ def crear_trazos_x(centro, tam, semilla):
         for i in range(n):
             t = i / (n - 1)
             centro_t = (1 - t) ** 2 * a + 2 * (1 - t) * t * control + t ** 2 * b
-            # forma del brochazo: mancha gruesa al inicio, cuerpo y punta afilada al final
+            # forma del brochazo, mancha gruesa al inicio, cuerpo y punta afilada al final
             perfil = 1.15 if t < 0.05 else (1.0 if t < 0.7 else max(0.12, 1 - (t - 0.7) / 0.3))
             perfil *= 1 + 0.12 * np.sin(t * 23 + semilla)                   # pequeñas ondulaciones
             puntos.append((centro_t, perfil))
@@ -402,7 +402,7 @@ def pintar_x(tam_superficie, trazos, progreso):
             w = ancho * perfil
             # cuerpo sólido del brochazo
             pygame.draw.circle(capa, ROJO_PINTURA, (int(c[0]), int(c[1])), max(2, int(w * 0.42)))
-            # cerdas: dan el borde rasgado y las vetas secas
+            # cerdas, dan el borde rasgado y las vetas secas
             for o, fin, huecos, g in tr["cerdas"]:
                 if t > fin or any(h0 <= t <= h1 for h0, h1 in huecos):
                     continue
@@ -425,7 +425,7 @@ def dibujar_x(superficie, trazos, progreso, cache, clave):
     superficie.blit(capa, (0, 0))
 
 
-# ICONO DEL MAPA (arriba a la derecha)
+# icono del mapa (arriba a la derecha)
 def dibujar_icono(pantalla, rect, encima):
     color = (235, 215, 175) if encima else (210, 190, 150)
     pygame.draw.rect(pantalla, (17, 20, 24), rect.inflate(10, 10), border_radius=10)
@@ -439,7 +439,7 @@ def dibujar_icono(pantalla, rect, encima):
     pygame.draw.line(pantalla, ROJO, (x + 18, y + 14), (x + 8, y + 24), 3)
 
 
-# PARA USAR DENTRO DEL JUEGO
+# para usar dentro del juego
 def animacion_terminada(mapa):
     return not mapa.animacion
 
@@ -474,7 +474,7 @@ def mostrar_mapa(display, mapa, terminar=True):
 
         mapa.actualizar(dt)
         mapa.dibujar(canvas)
-        try:                                      # MULTIJUGADOR: panel del grupo (solo si hay servidor)
+        try:                                      # multijugador, panel del grupo (solo si hay servidor)
             from Red import cliente, panel
             panel.dibujar_panel_grupo(canvas, cliente.actual())
         except ImportError:
@@ -497,7 +497,7 @@ def mostrar_mapa(display, mapa, terminar=True):
         pygame.display.update()
 
 
-# PRUEBA (solo si corres este archivo directamente)
+# prueba (solo si corres este archivo directamente)
 def main():
     pygame.mixer.pre_init(44100, -16, 2, 512)
     pygame.init()

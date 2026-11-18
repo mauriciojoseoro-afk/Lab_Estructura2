@@ -1,11 +1,11 @@
-# -*- coding: utf-8 -*-
+# coding, utf-8
 """Secuencia de misiones común a los cuatro protagonistas."""
 from pathlib import Path
 import pygame
 import Metodos
 from Eventos import Mapa, Evento_2, Periodista_Presidente, Evento3_Oficina, Evento1_Pozo
 from Eventos.Evento1_Pozo import Indicadores
-from Red import cliente      # multijugador: avisa al grupo al terminar cada evento
+from Red import cliente      # multijugador, avisa al grupo al terminar cada evento
 
 BASE = Path(__file__).resolve().parent.parent
 INTRO_MINAS = BASE / "Assets" / "Videos" / "minas_intro.mp4"
@@ -17,8 +17,8 @@ PERSONAJES = {
 }
 
 def cinematica_minas():
-    # No sustituir por escena1_llegada.mp4: ese video es del POZO.
-    # Si existe la cinemática específica, reproducirla una vez.
+    # no sustituir por escena1_llegada.mp4, ese video es del pozo.
+    # si existe la cinemática específica, reproducirla una vez.
     if INTRO_MINAS.is_file():
         import cv2
         cap = cv2.VideoCapture(str(INTRO_MINAS))
@@ -65,10 +65,10 @@ def jugar_secuencia(rol):
     mapa = Mapa.Mapa(mapa_rol)
     Metodos.MAPA = mapa
     try:
-        # 1: primer lugar visible, sin marcar misión terminada.
+        # 1, primer lugar visible, sin marcar misión terminada.
         cliente.reportar("Empezando", Indicadores())
         Mapa.mostrar_mapa(display,mapa,terminar=False)
-        # 1b: si el personaje tiene escena propia en el Evento 1 (hoy: SOBREVIVIENTE = el mercado),
+        # 1b, si el personaje tiene escena propia en el evento 1 (hoy, sobreviviente = el mercado)
         # se juega aquí y sus indicadores/decisión pasan a la oficina.
         resultado_evento1 = None
         if mapa_rol in Evento1_Pozo.GUIONES and mapa_rol != "LÍDER":
@@ -77,7 +77,7 @@ def jugar_secuencia(rol):
             display,canvas=Metodos.crear_ventana(900,675,'The Leader')
             Mapa.mostrar_mapa(display,mapa,terminar=True)
         elif rol in ("PERIODISTA", "INFLUENCER"):
-            # Su Evento 1 es un video: primero se ve dónde está en el mapa, luego el video y luego la X
+            # su evento 1 es un video, primero se ve dónde está en el mapa, luego el video y luego la x
             if rol == "PERIODISTA":
                 from Eventos.Evento1_Periodista import Evento1Periodista
                 Evento1Periodista()
@@ -89,26 +89,26 @@ def jugar_secuencia(rol):
         cinematica_minas()
         resultado_minas = Evento_2.Evento_2(rol)
         cliente.reportar("Cruzó el campo minado")
-        # Evento_2 modifica el display, por eso recreamos la ventana.
+        # evento_2 modifica el display, por eso recreamos la ventana.
         display,canvas=Metodos.crear_ventana(900,675,'The Leader')
         Mapa.mostrar_mapa(display,mapa,terminar=True)
-        # 2: entrevista. El retorno son dos puntuaciones, no indicadores del pozo.
-        # Misma escena de apertura que ve el Presidente, para que todos la vean antes de la entrevista.
+        # 2, entrevista. el retorno son dos puntuaciones, no indicadores del pozo.
+        # misma escena de apertura que ve el presidente, para que todos la vean antes de la entrevista.
         Evento3_Oficina.reproducir_escena(Evento3_Oficina.ESCENA_ENTREVISTA)
         resultado_entrevista = Periodista_Presidente.Entrevista(rol)
         cliente.reportar("Terminó la entrevista")
         display,canvas=Metodos.crear_ventana(900,675,'The Leader')
         Mapa.mostrar_mapa(display,mapa,terminar=True)
-        # 3: oficina. El evento 1 del pozo ya no se juega, por tanto
-        # no inventamos una decisión anterior: usamos indicadores neutros.
-        # 'VERIFICAR_FALSO' es el valor predeterminado que requiere la oficina;
+        # 3, oficina. el evento 1 del pozo ya no se juega, por tanto
+        # no inventamos una decisión anterior, usamos indicadores neutros.
+        # 'verificar_falso' es el valor predeterminado que requiere la oficina
         # su dependencia narrativa del pozo sigue pendiente de rediseño.
         indicadores = Indicadores()
         decision = 'VERIFICAR_FALSO'
-        if resultado_evento1 is not None:       # este personaje sí jugó su Evento 1
+        if resultado_evento1 is not None:       # este personaje sí jugó su evento 1
             indicadores = resultado_evento1["indicadores"]
             decision = resultado_evento1["resultado"]
-        # LO QUE HIZO EN LAS MINAS Y EN LA ENTREVISTA TAMBIÉN CUENTA
+        # lo que hizo en las minas y en la entrevista también cuenta
         Evento1_Pozo.sumar_eventos(indicadores, resultado_minas, Periodista_Presidente.ULTIMO_RESULTADO)
         resultado_oficina = Evento3_Oficina.jugar(display,canvas,indicadores,
                                                   decision,oficina_rol)

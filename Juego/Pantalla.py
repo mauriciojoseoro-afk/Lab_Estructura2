@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 import cv2
 import pygame
-import AyudaEventos
+import AyudaEventos_Times_Ambar as AyudaEventos
 AyudaEventos.instalar()
 import Historia
 import Accesibilidad
@@ -12,7 +12,7 @@ from Red import servidor as red_servidor
 BASE=Path(__file__).resolve().parent
 VIDEO=BASE/'Assets'/'Interfaz'/'Juego.mp4'
 W,H=900,600
-# Regiones de los textos ya dibujados en el vídeo (coords del canvas 900x600).
+# regiones de los textos ya dibujados en el vídeo (coords del canvas 900x600).
 BUTTONS={
  'JUGAR':pygame.Rect(91,275,300,50),
  'UNIRSE':pygame.Rect(65,327,325,47),
@@ -21,7 +21,7 @@ BUTTONS={
  'SALIR':pygame.Rect(140,457,175,39),
  'CRÉDITOS':pygame.Rect(400,552,110,35),
 }
-# Ventanas de CREAR PARTIDA / UNIRSE A PARTIDA (coords del canvas 900x600).
+# ventanas de crear partida / unirse a partida (coords del canvas 900x600).
 SOLO=pygame.Rect(160,176,580,86)
 LOCAL=pygame.Rect(160,272,580,86)
 RED=pygame.Rect(160,368,580,86)
@@ -29,7 +29,7 @@ CANTIDADES={n:pygame.Rect(190+(n-2)*185,232,150,110) for n in (2,3,4)}
 INICIAR=pygame.Rect(300,412,300,62)
 CAMPO_IP=pygame.Rect(160,252,580,58)
 ENTRAR=pygame.Rect(300,412,300,62)
-# ESTÉTICA DEL PROYECTO: marcos industriales de las escenas (HistoriaIndustrial / CronicaUI)
+# estética del proyecto, marcos industriales de las escenas (historiaindustrial / cronicaui)
 INTERFAZ=BASE/'Assets'/'Interfaz'
 PAPEL=(236,229,211);AMBAR=(214,180,112);OXIDO=(166,133,86);VIVO=(184,73,66)
 AGUA=(169,188,171);APAGADO=(182,175,160);TENUE=(120,114,104)
@@ -59,7 +59,7 @@ def rotulo(s,msg,x,y,color=OXIDO,size=14):
 def a_canvas(display,pos):
  ww,hh=display.get_size();scale=min(ww/W,hh/H)
  return ((pos[0]-(ww-W*scale)/2)/scale,(pos[1]-(hh-H*scale)/2)/scale)
-# MOUSE SOBRE EL VIDEO A PANTALLA COMPLETA -> coordenadas viejas del canvas 900x600
+# mouse sobre el video a pantalla completa -> coordenadas viejas del canvas 900x600
 VIDEO_INFO={'w':1662,'h':1246,'barra':96}
 CREDITOS_PANTALLA=pygame.Rect(0,0,0,0)   # se ubica al dibujar, abajo al centro
 def a_video(display,pos,last):
@@ -70,7 +70,7 @@ def a_video(display,pos,last):
  fx=(pos[0]-ox)/esc*k;fy=(pos[1]-oy)/esc*k+VIDEO_INFO['barra']
  return (fx*W/VIDEO_INFO['w'],fy*H/VIDEO_INFO['h'])
 def jugar():
- import Metodos  # VIDEO DE INTRO AL EMPEZAR LA PARTIDA
+ import Metodos  # video de intro al empezar la partida
  Metodos.reproducir_video(pygame.display.get_surface(),pygame.Surface((1280,720)),BASE/'Assets'/'Videos'/'Video_Intro.mp4')
  Historia.Historia()
  if not pygame.get_init():pygame.init()
@@ -192,7 +192,7 @@ def main():
      for name,rect in BUTTONS.items():
       if rect.collidepoint(pt_video):
        if name=='SALIR':running=False
-       elif name=='JUGAR':page='CREAR';aviso=''   # el botón dice CREAR PARTIDA
+       elif name=='JUGAR':page='CREAR';aviso=''   # el botón dice crear partida
        elif name=='UNIRSE':page='UNIRSE';aviso=''
        else:page=name
        break
@@ -203,7 +203,7 @@ def main():
    sala=cliente.conectar(espera=2.0)
    if sala is not None:page='SALA';ip_host=destino
    else:aviso=f'No se encontró ninguna partida en {destino}.'
-  # SALA DE ESPERA: los que se unen empiezan cuando el anfitrión pulsa INICIAR.
+  # sala de espera, los que se unen empiezan cuando el anfitrión pulsa iniciar.
   if page in ('SALA','SALA_HOST') and sala is not None:
    if sala.rechazo:
     aviso=sala.rechazo+'.';cliente.salir();sala=None;page='UNIRSE'
@@ -217,7 +217,7 @@ def main():
    if not ok:
     video.set(cv2.CAP_PROP_POS_FRAMES,0);ok,frame=video.read()
    if ok:
-    # QUITAR LAS BARRAS NEGRAS QUE TRAE EL VIDEO (arriba y abajo)
+    # quitar las barras negras que trae el video (arriba y abajo)
     VIDEO_INFO.update(w=frame.shape[1],h=frame.shape[0],barra=round(frame.shape[0]*96/1246))
     barra=VIDEO_INFO['barra'];frame=frame[barra:frame.shape[0]-barra]
     fh,fw=frame.shape[:2];frame=cv2.resize(frame,(round(fw*720/fh),720),interpolation=cv2.INTER_AREA)
@@ -283,7 +283,7 @@ def main():
     else:label(canvas,'Pulsa Enter o ENTRAR para unirte.',160,330,18,APAGADO,italic=True)
     boton(canvas,ENTRAR,'ENTRAR',hover=ENTRAR.collidepoint(m))
    else:modal(canvas,page)
-  # PANTALLA COMPLETA: el video llena toda la ventana y el menú va centrado encima
+  # pantalla completa, el video llena toda la ventana y el menú va centrado encima
   dw,dh=display.get_size();scale=min(dw/W,dh/H)
   nw,nh=max(1,round(W*scale)),max(1,round(H*scale))
   vista=pygame.Surface((dw,dh))
@@ -295,7 +295,7 @@ def main():
   if page:
    oscuro=pygame.Surface((dw,dh),pygame.SRCALPHA);oscuro.fill((5,7,10,208));vista.blit(oscuro,(0,0))
   vista.blit(pygame.transform.smoothscale(canvas,(nw,nh)),((dw-nw)//2,(dh-nh)//2))
-  if not page:   # "Créditos" venía en la barra negra del video: ahora se dibuja aquí
+  if not page:   # "créditos" venía en la barra negra del video, ahora se dibuja aquí
    fc=pygame.font.SysFont('timesnewroman',max(16,round(20*scale)));fc.set_underline(True)
    tc=fc.render('Créditos',True,(238,222,197) if CREDITOS_PANTALLA.collidepoint(pygame.mouse.get_pos()) else (205,195,180))
    CREDITOS_PANTALLA.update(tc.get_rect(midbottom=(dw//2,dh-12)).inflate(16,8))

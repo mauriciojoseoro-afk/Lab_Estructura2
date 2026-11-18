@@ -7,7 +7,7 @@ from Eventos import Evento_2
 from Eventos import Evento3_Oficina
 from Eventos import Mapa
 import Metodos
-from Red import cliente      # multijugador: avisa al grupo al terminar cada evento
+from Red import cliente      # multijugador, avisa al grupo al terminar cada evento
 
 
 def Presidente():
@@ -20,39 +20,39 @@ def Presidente():
 
     display, canvas = Metodos.crear_ventana(ANCHO, ALTO, "The Leader")
 
-    # ---------- MAPA: se crea una sola vez, aquí vive el grafo de la ciudad ----------
+    # mapa, se crea una sola vez, aquí vive el grafo de la ciudad
     mapa = Mapa.Mapa("LÍDER")
     Metodos.MAPA = mapa                         # desde ahora el icono del mapa sale arriba a la derecha
-    Mapa.mostrar_mapa(display, mapa, terminar=False)   # "Estás aquí: El Cruce del Pozo"
+    Mapa.mostrar_mapa(display, mapa, terminar=False)   # "estás aquí, el cruce del pozo"
 
-    # ---------- EVENTO 1: el pozo ----------
+    # evento 1, el pozo
     cliente.reportar("Empezando", Evento1_Pozo.Indicadores())
     resultado_evento1 = Evento1_Pozo.jugar(display, canvas)
     cliente.reportar("Terminó el Evento 1", resultado_evento1["indicadores"], resultado_evento1["resultado"])
 
-    # ---------- MAPA: X en el Cruce del Pozo y se abre el camino al Campo Sembrado ----------
+    # mapa, x en el cruce del pozo y se abre el camino al campo sembrado
     Mapa.mostrar_mapa(display, mapa)
 
-    # ---------- EVENTO 2: campo minado ----------
+    # evento 2, campo minado
     resultado_evento2 = Evento_2.Evento_2("PRESIDENTE")
     cliente.reportar("Cruzó el campo minado")
 
-    # Evento 2 pone pantalla completa: volvemos a la ventana normal
+    # evento 2 pone pantalla completa, volvemos a la ventana normal
     display, canvas = Metodos.crear_ventana(ANCHO, ALTO, "The Leader")
-    # MAPA: X en el Campo Sembrado, siguiente destino el Almacén del Este (igual que los demás)
+    # mapa, x en el campo sembrado, siguiente destino el almacén del este (igual que los demás)
     Mapa.mostrar_mapa(display, mapa)
-        # ESCENA DEL PERIODISTA Y ENTREVISTA
+        # escena del periodista y entrevista
     Evento3_Oficina.reproducir_escena(Evento3_Oficina.ESCENA_ENTREVISTA)
     Periodista_Presidente.Entrevista("PRESIDENTE")
     cliente.reportar("Terminó la entrevista")
     display, canvas = Metodos.crear_ventana(ANCHO, ALTO, "The Leader")
 
     
-    # ---------- MAPA: X en el Almacén del Este y se abre el camino a la Central de Datos ----------
+    # mapa, x en el almacén del este y se abre el camino a la central de datos
     Mapa.mostrar_mapa(display, mapa)
 
-    # EVENTO 3: la oficina (pistas, grafo social y el final) 
-    # LO QUE HIZO EN LAS MINAS Y EN LA ENTREVISTA TAMBIÉN CUENTA
+    # evento 3, la oficina (pistas, grafo social y el final)
+    # lo que hizo en las minas y en la entrevista también cuenta
     Evento1_Pozo.sumar_eventos(resultado_evento1["indicadores"], resultado_evento2,
                                Periodista_Presidente.ULTIMO_RESULTADO)
     resultado_evento3 = Evento3_Oficina.jugar(display, canvas,
@@ -61,7 +61,7 @@ def Presidente():
                                               "LÍDER")
     cliente.reportar("Terminó la partida", resultado_evento1["indicadores"])
 
-    # FIN: igual que los demás personajes, se vuelve al menú (antes quedaba en una pantalla de prueba
+    # fin, igual que los demás personajes, se vuelve al menú (antes quedaba en una pantalla de prueba
     # con un botón que repetía la entrevista)
     Metodos.MAPA = None
     return {'evento1': resultado_evento1, 'minas': resultado_evento2,

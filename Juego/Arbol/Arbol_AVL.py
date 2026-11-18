@@ -114,19 +114,19 @@ class ArbolAVL:
         if nodo is None:
             return nodo
 
-        # Busqueda 
+        # busqueda
         if id < nodo.id:
             nodo.izquierda = self._eliminar(nodo.izquierda, id)
         elif id > nodo.id:
             nodo.derecha = self._eliminar(nodo.derecha, id)
         else:
-            # Nodo con un solo hijo o sin hijos
+            # nodo con un solo hijo o sin hijos
             if nodo.izquierda is None:
                 return nodo.derecha
             elif nodo.derecha is None:
                 return nodo.izquierda
 
-            # Nodo con dos hijos, obtener el sucesor inorder
+            # nodo con dos hijos, obtener el sucesor inorder
             temp = self._obtener_minimo(nodo.derecha)
             nodo.id = temp.id
             nodo.derecha = self._eliminar(nodo.derecha, temp.id)
@@ -134,13 +134,13 @@ class ArbolAVL:
         if nodo is None:
             return nodo
 
-        # Actualizar altura
+        # actualizar altura
         self._actualizar_altura(nodo)
 
-        # Obtener factor de balance
+        # obtener factor de balance
         balance = self._balance(nodo)
 
-        # Aplicar rotaciones )
+        # aplicar rotaciones )
 
         # balance < -1
         if balance < -1:

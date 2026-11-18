@@ -15,10 +15,10 @@ import threading
 from Red.protocolo import enviar, lineas, leer_config
 
 _conexion = None            # una sola conexion para todo el juego
-_solo = False               # True = el jugador eligio JUGAR SOLO en el menu: nunca se conecta
-_destino = None             # (ip, puerto) elegido en el menu; None = usar Red/config.json
-_modo = None                # modo elegido en el menu: "solo", "local", "red" (None = sin menu, como antes)
-_locales = 1                # jugadores en el mismo PC (modo "local")
+_solo = False               # true = el jugador eligio jugar solo en el menu, nunca se conecta
+_destino = None             # (ip, puerto) elegido en el menu, none = usar red/config.json
+_modo = None                # modo elegido en el menu, "solo", "local", "red" (none = sin menu, como antes)
+_locales = 1                # jugadores en el mismo pc (modo "local")
 
 
 class Conexion:
@@ -26,24 +26,24 @@ class Conexion:
         self.sock = sock
         self.nombre = nombre
         self.id = None
-        self.anfitrion_id = None             # id de quien creo la partida (None = servidor por comando)
-        self.iniciada = False                # True cuando el anfitrion pulsa INICIAR
+        self.anfitrion_id = None             # id de quien creo la partida (none = servidor por comando)
+        self.iniciada = False                # true cuando el anfitrion pulsa iniciar
         self.bienvenido = False
         self.rechazo = None                  # motivo si el servidor no nos dejo entrar
         self.rol = None                      # rol que el servidor nos confirmo
-        self.ocupados = {}                   # {rol: nombre} (lo actualiza el hilo)
+        self.ocupados = {}                   # {rol, nombre} (lo actualiza el hilo)
         self.jugadores = []                  # [{nombre, rol, progreso, indicadores, decision}]
-        self.minas_pisadas = {}              # {indice de mina: nombre} del campo compartido
+        self.minas_pisadas = {}              # {indice de mina, nombre} del campo compartido
         self._campo = queue.Queue()
-        self.espera = None                   # {"listos": [...], "faltan": [...]} mientras se espera al grupo
+        self.espera = None                   # {"listos", [...], "faltan", [...]} mientras se espera al grupo
         self.final = None                    # {"promedio", "puntaje", "tabla"} cuando todos terminaron
         # entrevista por turnos
-        self.entrevista_espera = None        # {"listos": [...], "faltan": [...]}
+        self.entrevista_espera = None        # {"listos", [...], "faltan", [...]}
         self.entrevista_inicio = False
         self.decisiones = {}                 # numero de decision -> opcion
         self.votos = {}                      # numero -> (votaron, total)
         self.conectado = True
-        self._respuestas = queue.Queue()     # respuestas a ELEGIR
+        self._respuestas = queue.Queue()     # respuestas a elegir
         self._candado = threading.Lock()
         threading.Thread(target=self._escuchar, daemon=True).start()
         self._enviar({"tipo": "HOLA", "nombre": nombre, "anfitrion": anfitrion})
@@ -96,7 +96,7 @@ class Conexion:
         self.conectado = False
         self._respuestas.put({"tipo": "OCUPADO", "por": "se perdio la conexion"})
 
-    # ---------- lo que usa el juego ----------
+    # lo que usa el juego
     def ocupado_por_otro(self, rol):
         """Nombre de quien usa el rol, o None si esta libre o es nuestro."""
         if rol == self.rol:

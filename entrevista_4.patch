@@ -1,0 +1,66 @@
+diff --git a/Juego/Eventos/Periodista_Presidente.py b/Juego/Eventos/Periodista_Presidente.py
+index 39bf17e..dc23d6e 100644
+--- a/Juego/Eventos/Periodista_Presidente.py
++++ b/Juego/Eventos/Periodista_Presidente.py
+@@ -96,18 +96,18 @@ INTERVENCIONES_CIVINET = {
+         "tipo": "Descontextualización",
+         "publicacion": "El presidente acaba de admitir en vivo que \"no hay agua para todos\". ¿Va a decidir él quién bebe y quién no? ¡Comparte antes de que borren el video!",
+     },
+-    4: {
++    3: {
+         "tipo": "Titular sensacionalista",
+         "publicacion": "¡ALERTA EN CIUDAD NOVA! El agua del depósito estaría contaminada y el presidente lo sabe. ¿Por qué no lo dice en la entrevista?",
+     },
+-    5: {
++    4: {
+         "tipo": "Popularidad falsa",
+         "publicacion": "ÚLTIMA HORA: 9 de cada 10 sobrevivientes ya no confían en el presidente. Miles están compartiendo esto. ¡No te quedes atrás!",
+     },
+ }
+ 
+ # Quién "publica" cada rumor en la red (cuenta falsa)
+-CUENTAS_CIVINET = {2: "@verdad_sin_filtro", 4: "@NovaAlerta24", 5: "@tendencia_nova"}
++CUENTAS_CIVINET = {2: "@verdad_sin_filtro", 3: "@NovaAlerta24", 4: "@tendencia_nova"}
+ 
+ # Cada opción contiene: texto, cambio de confianza, cambio de alcance falso,
+ # cambio de espectadores, puntos para influencer y puntos para ciudadano.
+@@ -135,7 +135,7 @@ ACCIONES_VERIFICACION = {
+ }
+ 
+ # ====== VOZ DE CIVITAS: la IA que decide qué ve la ciudad ======
+-TITULOS_CIVITAS = {2: "CONTEXTO ELIMINADO", 4: "DUDA ACTIVADA", 5: "ALCANCE MASIVO"}
++TITULOS_CIVITAS = {2: "CONTEXTO ELIMINADO", 3: "DUDA ACTIVADA", 4: "ALCANCE MASIVO"}
+ 
+ # Susurros que aparecen justo después de cada decisión de verificación
+ REACCIONES_CIVITAS = {
+@@ -368,9 +368,9 @@ class FondoVideo:
+ 
+ ULTIMO_RESULTADO = None
+ 
+-# LAS 5 PREGUNTAS QUE SE HACEN (de las 10 del árbol): agua, rumor de contaminación,
+-# información ocultada, cómo combatir rumores y el mensaje final
+-PREGUNTAS_PRINCIPALES = [1, 3, 6, 8, 10]
++# LAS 4 PREGUNTAS QUE SE HACEN (de las 10 del árbol): agua, rumor de contaminación,
++# información ocultada y el mensaje final
++PREGUNTAS_PRINCIPALES = [1, 3, 6, 10]
+ 
+ # GUÍA DE QUÉ SIGUE (se muestra arriba durante la entrevista)
+ GUIA_FASES = {
+@@ -513,7 +513,7 @@ def Entrevista(rol=None):
+     for id in respuestas.keys():
+         arbol_respuestas.set(id)
+ 
+-    # ENTREVISTA MÁS CORTA: solo las 5 preguntas principales (Civitas interviene después de la 2, la 4 y la 5)
++    # ENTREVISTA MÁS CORTA: solo las 4 preguntas principales (Civitas interviene después de la 2, la 3 y la 4)
+     ids_disponibles = [id_p for id_p in PREGUNTAS_PRINCIPALES if id_p in preguntas]
+ 
+     fase = "intro"
+@@ -560,7 +560,7 @@ def Entrevista(rol=None):
+                 ("CIVITAS", "Una frase sin su contexto es un arma. Y yo tengo muy buena puntería."),
+                 ("CIVITAS", extra),
+             ]
+-        if n == 4:
++        if n == 3:
+             if alcance_falso <= 2:
+                 extra = "Verificaste a tiempo. Qué detalle adorable. Subiré el volumen."
+             else:

@@ -8,11 +8,11 @@ import pygame
 
 import Metodos
 
-# RUTAS
+# rutas
 RUTA_VIDEOS = Path(__file__).parent.parent / "Assets" / "Videos"
 RUTA_FUENTES = Path(__file__).parent.parent / "Assets" / "Fuentes"
 
-# COLORES (sacados de los videos originales)
+# colores (sacados de los videos originales)
 ROJO = (234, 50, 43)
 BLANCO = (252, 252, 252)
 GRIS = (170, 170, 170)
@@ -20,27 +20,27 @@ VERDE = (76, 175, 80)
 NEGRO_ALERTA = (17, 9, 9)
 TINTA_ALERTA = (28, 12, 12)
 
-# Todo lo que se dibuja encima del video se mide sobre un video de 1920 x 1080.
-# El código lo agranda o lo achica según el tamaño de la ventana.
+# todo lo que se dibuja encima del video se mide sobre un video de 1920 x 1080.
+# el código lo agranda o lo achica según el tamaño de la ventana.
 REF_ANCHO, REF_ALTO = 1920, 1080
 
-# Oscuridad del filtro de la pregunta y de la consecuencia (0 = nada, 255 = negro)
+# oscuridad del filtro de la pregunta y de la consecuencia (0 = nada, 255 = negro)
 OSCURIDAD = 125
 
 PROBABILIDAD_FALSO = 0.7
 
-# TIEMPO PARA DECIDIR
-# La barra roja debajo de la pregunta se encoge hasta desaparecer.
-# El conteo empieza cuando la pregunta termina de escribirse.
+# tiempo para decidir
+# la barra roja debajo de la pregunta se encoge hasta desaparecer.
+# el conteo empieza cuando la pregunta termina de escribirse.
 TIEMPO_DECISION = 10          # segundos
 EMPIEZA_CONTEO = 2.5          # la pregunta tarda 2.5 s en escribirse
-SI_SE_ACABA = "IGNORAR"       # no decidir también es decidir: cuenta como ignorar
+SI_SE_ACABA = "IGNORAR"       # no decidir también es decidir, cuenta como ignorar
 
 
-# GUION DE CADA VIDEO
-# subtitulos: (empieza, termina de escribirse, desaparece, texto)   en segundos del video
-# alerta:     (aparece, desaparece)  la notificación de Civitas
-# pantalla:   segundo en que se oscurece el video y sale la pregunta o la consecuencia
+# guion de cada video
+# subtitulos, (empieza, termina de escribirse, desaparece, texto) en segundos del video
+# alerta, (aparece, desaparece) la notificación de civitas
+# pantalla, segundo en que se oscurece el video y sale la pregunta o la consecuencia
 INTRO = {
     "video": "escena1_llegada.mp4",
     "subtitulos": [
@@ -99,7 +99,7 @@ CONSECUENCIAS = {
     },
 }
 
-# Botones de la pregunta, en el video de 1920 x 1080: (x, y, ancho, alto)
+# botones de la pregunta, en el video de 1920 x 1080, (x, y, ancho, alto)
 BOTONES = {
     "COMPARTIR": (257, 568, 570, 132),
     "IGNORAR":   (1053, 568, 570, 132),
@@ -107,7 +107,7 @@ BOTONES = {
     "REPORTAR":  (1053, 806, 570, 131),
 }
 
-# Texto de la notificación de Civitas (cada línea como sale en el video)
+# texto de la notificación de civitas (cada línea como sale en el video)
 ALERTA_TITULO = "MENSAJE VIRAL"
 ALERTA_LINEAS = [
     "EL AGUA DEL POZO DE LA PLAZA ESTÁ",
@@ -116,13 +116,11 @@ ALERTA_LINEAS = [
 ]
 
 
-# ---------------------------------------------------------------------------
-# GUION DEL SOBREVIVIENTE (personaje CIUDADANO = Estella): el mercado de Barrio Las Acacias.
-# Estella vive sola en una cueva y casi nunca baja; antes del colapso compartió sin verificar.
-# Mismo sistema que el del Líder; cambian los videos, los textos y la alerta.
-# VERIFICAR no tiene final falso/verdadero: ella se va con el hombre hacia el
-# campo minado (Evento 2), así que el resultado se guarda como "VERIFICAR".
-# ---------------------------------------------------------------------------
+# guion del sobreviviente (personaje ciudadano = estella), el mercado de barrio las acacias.
+# estella vive sola en una cueva y casi nunca baja, antes del colapso compartió sin verificar.
+# mismo sistema que el del líder, cambian los videos, los textos y la alerta.
+# verificar no tiene final falso/verdadero, ella se va con el hombre hacia el
+# campo minado (evento 2), así que el resultado se guarda como "verificar".
 INTRO_SOBREVIVIENTE = {
     "video": "ciudadano_llegada.mp4",
     "subtitulos": [
@@ -174,14 +172,14 @@ CONSECUENCIAS_SOBREVIVIENTE = {
     },
 }
 
-# Qué guion usa cada personaje del mapa (los demás usan el del Líder)
+# qué guion usa cada personaje del mapa (los demás usan el del líder)
 GUIONES = {
     "LÍDER": (INTRO, CONSECUENCIAS),
     "SOBREVIVIENTE": (INTRO_SOBREVIVIENTE, CONSECUENCIAS_SOBREVIVIENTE),
 }
 
 
-# FUENTES
+# fuentes
 _fuentes = {}
 
 
@@ -209,7 +207,7 @@ def cargar_fuente(tamano, negrita=False):
     return fuente("mono_negrita" if negrita else "mono", tamano)
 
 
-# AYUDAS PARA DIBUJAR
+# ayudas para dibujar
 def letras_visibles(texto, t, empieza, termina):
     """Efecto máquina de escribir: cuántas letras se ven en el segundo t."""
     if t < empieza:
@@ -273,7 +271,7 @@ def triangulo_pixelado(tam_celda):
     return sup
 
 
-# SUBTÍTULOS
+# subtítulos
 def dibujar_subtitulos(pantalla, rect, s, t, subtitulos):
     f = fuente("subtitulo", 56 * s)
     for empieza, termina, desaparece, texto in subtitulos:
@@ -283,7 +281,7 @@ def dibujar_subtitulos(pantalla, rect, s, t, subtitulos):
                      (rect.x + rect.w // 2, rect.y + int(0.91 * rect.h)), sombra=True)
 
 
-# NOTIFICACIÓN DE CIVITAS
+# notificación de civitas
 def caja_alerta(s, tl, dur, lineas=None):
     """Dibuja la ventana de alerta completa (sin efectos) en su tamaño final."""
     ancho, alto = int(1360 * s), int(551 * s)
@@ -387,7 +385,7 @@ def dibujar_alerta(pantalla, rect, s, t, inicio, fin, lineas=None):
         pantalla.blit(banda, (destino.x, destino.y + y))
 
 
-# BARRA DE TIEMPO
+# barra de tiempo
 def tiempo_restante(tl):
     """Segundos que le quedan al jugador (de TIEMPO_DECISION a 0)."""
     pasado = max(0, tl - EMPIEZA_CONTEO)
@@ -407,7 +405,7 @@ def barra_tiempo(pantalla, s, punto, tl, x1, x2, y):
     pygame.draw.line(pantalla, ROJO, punto(centro - mitad, y), punto(centro + mitad, y), max(2, int(4 * s)))
 
 
-# PANTALLA DE LA PREGUNTA
+# pantalla de la pregunta
 def dibujar_decision(pantalla, rect, s, tl, mouse):
     """tl: segundos desde que salió la pregunta. Devuelve los botones en coordenadas de pantalla."""
     oscurecer(pantalla, rect, OSCURIDAD)
@@ -440,7 +438,7 @@ def dibujar_decision(pantalla, rect, s, tl, mouse):
     return zonas
 
 
-# PANTALLA DE LA CONSECUENCIA
+# pantalla de la consecuencia
 def tiempo_consecuencia(datos):
     """Cuánto tarda en escribirse todo el texto de la consecuencia."""
     return max(1.25, len(datos["texto"]) / 48 + 0.1)
@@ -468,11 +466,11 @@ def dibujar_consecuencia(pantalla, rect, s, tl, datos):
         quedan -= len(linea)
 
 
-# INDICADORES
+# indicadores
 class Indicadores:
     """Confianza, Caos y Cohesión del grupo, de 0 a 100."""
 
-    # True = subir es bueno (verde); False = subir es malo (rojo)
+    # true = subir es bueno (verde), false = subir es malo (rojo)
     SUBIR_ES_BUENO = {"Confianza": True, "Caos": False, "Cohesión": True}
 
     def __init__(self, confianza=50, caos=50, cohesion=50):
@@ -486,7 +484,7 @@ class Indicadores:
         return dict(self.valores)
 
 
-# SUMAR LO QUE PASÓ EN LAS MINAS Y EN LA ENTREVISTA
+# sumar lo que pasó en las minas y en la entrevista
 def sumar_eventos(indicadores, resultado_minas=None, resultado_entrevista=None):
     """Ajusta Confianza/Caos/Cohesión con los eventos 2 y entrevista. No toca lo del Evento 1:
     solo suma encima. resultado_minas: {nombre: {"llego", "vidas"}}; resultado_entrevista:
@@ -556,7 +554,7 @@ def valores_animados(antes, despues, inicio, espera=400, duracion=900):
     return {k: antes[k] + (despues[k] - antes[k]) * t for k in antes}
 
 
-# REPRODUCIR UNA ESCENA (video + todo lo que va encima)
+# reproducir una escena (video + todo lo que va encima)
 def rect_video(pantalla):
     """El video lo más grande posible dentro de la ventana, sin deformarlo (16:9)."""
     ancho, alto = pantalla.get_size()
@@ -589,7 +587,7 @@ def escena(guion, modo, valores=None, antes=None, despues=None):
     inicio = pygame.time.get_ticks()
     adelanto = 0.0                 # segundos que se saltaron
     leidos = 0                     # cuadros leídos del video
-    cuadro = None                  # último cuadro (imagen de OpenCV)
+    cuadro = None                  # último cuadro (imagen de opencv)
     imagen = None                  # ese cuadro ya escalado para la ventana
     tam_imagen = None
     video_terminado = False
@@ -607,7 +605,7 @@ def escena(guion, modo, valores=None, antes=None, despues=None):
         t = (pygame.time.get_ticks() - inicio) / 1000 + adelanto
         tl = t - guion["pantalla"]                 # tiempo desde que sale la pantalla final
 
-        # 1. EVENTOS
+        # 1. eventos
         clic = False
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
@@ -621,7 +619,7 @@ def escena(guion, modo, valores=None, antes=None, despues=None):
             if evento.type == pygame.KEYDOWN and evento.key == pygame.K_SPACE:
                 clic = True
                 ahora = pygame.time.get_ticks()
-                if tl < 0 and ahora - ultimo_espacio < 400:    # doble espacio: saltar
+                if tl < 0 and ahora - ultimo_espacio < 400:    # doble espacio, saltar
                     adelanto += guion["pantalla"] - t
                     video.set(cv2.CAP_PROP_POS_FRAMES, int(guion["pantalla"] * fps))
                     leidos = int(guion["pantalla"] * fps)
@@ -635,7 +633,7 @@ def escena(guion, modo, valores=None, antes=None, despues=None):
                                           int(pantalla.get_width() * 0.20), int(pantalla.get_height() * 0.20))
                 ahora = pygame.time.get_ticks()
                 if tl < 0 and zona_saltar.collidepoint(evento.pos):
-                    if ahora - ultimo_clic < 400:          # doble clic: saltar
+                    if ahora - ultimo_clic < 400:          # doble clic, saltar
                         adelanto += guion["pantalla"] - t
                         video.set(cv2.CAP_PROP_POS_FRAMES, int(guion["pantalla"] * fps))
                         leidos = int(guion["pantalla"] * fps)
@@ -644,7 +642,7 @@ def escena(guion, modo, valores=None, antes=None, despues=None):
                         clic = False
                     ultimo_clic = ahora
 
-        # 2. EL CUADRO DEL VIDEO QUE TOCA EN ESTE SEGUNDO
+        # 2. el cuadro del video que toca en este segundo
         objetivo = int(t * fps)
         nuevo = False
         while not video_terminado and leidos <= objetivo:
@@ -659,7 +657,7 @@ def escena(guion, modo, valores=None, antes=None, despues=None):
             imagen = pygame.image.frombuffer(pequeño.tobytes(), rect.size, "RGB")
             tam_imagen = rect.size
 
-        # 3. DIBUJAR
+        # 3. dibujar
         pantalla.fill((0, 0, 0))
         if imagen is not None:
             pantalla.blit(imagen, rect)
@@ -711,7 +709,7 @@ def escena(guion, modo, valores=None, antes=None, despues=None):
         reloj.tick(60)
 
 
-# EVENTO COMPLETO
+# evento completo
 def jugar(display, canvas, indicadores=None, personaje="LÍDER"):
     """indicadores: los que vienen del evento anterior. Si no hay, empiezan en 50.
     personaje: la ruta del mapa ("LÍDER", "SOBREVIVIENTE"...). Elige el guion de la escena."""
@@ -719,10 +717,10 @@ def jugar(display, canvas, indicadores=None, personaje="LÍDER"):
         indicadores = Indicadores()
     intro, consecuencias = GUIONES.get(personaje, GUIONES["LÍDER"])
 
-    # 1. Intro: llegada, alerta de Civitas y la pregunta
+    # 1. intro, llegada, alerta de civitas y la pregunta
     eleccion = escena(intro, "decision", valores=indicadores.copia())
 
-    # 2. Qué pasó (si verifica y el guion tiene dos finales, el juego decide al azar si el rumor era falso)
+    # 2. qué pasó (si verifica y el guion tiene dos finales, el juego decide al azar si el rumor era falso)
     if eleccion == "VERIFICAR" and "VERIFICAR" not in consecuencias:
         clave = "VERIFICAR_FALSO" if random.random() < PROBABILIDAD_FALSO else "VERIFICAR_VERDADERO"
     else:
@@ -733,7 +731,7 @@ def jugar(display, canvas, indicadores=None, personaje="LÍDER"):
     indicadores.aplicar(datos["efectos"])
     despues = indicadores.copia()
 
-    # 3. Video de la consecuencia con su texto y los indicadores
+    # 3. video de la consecuencia con su texto y los indicadores
     escena(datos, "consecuencia", antes=antes, despues=despues)
 
     return {

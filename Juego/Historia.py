@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding, utf-8
 """CRÓNICA | Prólogo industrial. Mantiene video opcional, Enter y SeleccionarPJ."""
 import pygame
 import cv2
@@ -30,7 +30,7 @@ def cargar_fuente(tamano, negrita=True):
                 f.set_bold(negrita)
                 return f
             except (OSError, pygame.error): pass
-    # Times New Roman en negrita, tal como en la entrevista.
+    # times new roman en negrita, tal como en la entrevista.
     return pygame.font.SysFont("timesnewroman", tamano, bold=negrita)
 
 def cargar_imagen(nombre, alpha=True):
@@ -236,7 +236,7 @@ def dibujar_arte(destino, img, rect):
 
 def preparar_paginas(fuente):
     paginas = []
-    # La caja tiene 775 px útiles y hasta 5 líneas, con espacio para el indicador.
+    # la caja tiene 775 px útiles y hasta 5 líneas, con espacio para el indicador.
     for idx, parrafo in enumerate(PARRAFOS_HISTORIA):
         for pagina in dividir_en_paginas(parrafo, fuente, 768, 5):
             paginas.append((idx, pagina))
@@ -250,7 +250,7 @@ def oscurecer_fondo(canvas):
 def interfaz(canvas, recursos, fuente, fuente_peq, fuente_titulo,
              indice, pagina, total, texto, terminado, tiempo, entrada):
     num, titulo, subtitulo = CAPITULOS[indice]
-    # Franja superior independiente del fondo cinematográfico.
+    # franja superior independiente del fondo cinematográfico.
     banda = pygame.Surface((ANCHO, 91), pygame.SRCALPHA)
     banda.fill((15, 13, 13, 230))
     canvas.blit(banda, (0, 0))
@@ -262,7 +262,7 @@ def interfaz(canvas, recursos, fuente, fuente_peq, fuente_titulo,
     dibujar_texto(canvas, fuente_peq, subtitulo, (211, 191, 166), (570, 24))
     dibujar_texto(canvas, fuente_peq, f"DOCUMENTO  {num} / 09", (213, 168, 102), (690, 55))
 
-    # Marco del capítulo: título a la izquierda, progreso a la derecha.
+    # marco del capítulo, título a la izquierda, progreso a la derecha.
     dibujar_arte(canvas, recursos["archivo"], pygame.Rect(23, 103, 415, 65))
     dibujar_texto(canvas, fuente_titulo, titulo, (244, 214, 161), (47, 118))
     pygame.draw.rect(canvas, (32, 28, 27), (618, 132, 254, 10))
@@ -270,7 +270,7 @@ def interfaz(canvas, recursos, fuente, fuente_peq, fuente_titulo,
     pygame.draw.rect(canvas, (180, 111, 65), (618, 132, int(254 * progreso), 10))
     dibujar_texto(canvas, fuente_peq, "REGISTRO EN REPRODUCCIÓN", (218, 196, 167), (618, 109))
 
-    # Entrada discreta de cuatro protagonistas en la sección narrativa pertinente.
+    # entrada discreta de cuatro protagonistas en la sección narrativa pertinente.
     if indice in (6, 7, 8):
         roles = ["respuesta", "ciudadano", "pregunta", "opinion"]
         nombres = ["PRESIDENTE", "CIUDADANA", "PERIODISTA", "INFLUENCER"]
@@ -287,7 +287,7 @@ def interfaz(canvas, recursos, fuente, fuente_peq, fuente_titulo,
             lab = fuente_peq.render(nombre, True, (241, 205, 149))
             canvas.blit(lab, (x + 92 - lab.get_width() // 2, 289))
     elif indice in (4, 5):
-        # CIVITAS no se presenta como villano: es una marca de expediente.
+        # civitas no se presenta como villano, es una marca de expediente.
         dibujar_arte(canvas, recursos["civitas"], pygame.Rect(230, 218, 440, 66))
         f = cargar_fuente(29)
         dibujar_texto(canvas, f, "C I V I T A S", (255, 246, 228), (338, 230))
@@ -296,7 +296,7 @@ def interfaz(canvas, recursos, fuente, fuente_peq, fuente_titulo,
                       (209, 180, 142), (33, 260))
         pygame.draw.line(canvas, (141, 92, 63), (33, 286), (866, 286), 1)
 
-    # Narrador: texto siempre en marfil sobre carbón (sin papel claro).
+    # narrador, texto siempre en marfil sobre carbón (sin papel claro).
     rect = pygame.Rect(25, 321, 850, 267)
     dibujar_arte(canvas, recursos["narracion"], rect)
     pygame.draw.rect(canvas, (129, 46, 40), (49, 356, 5, 159))
@@ -306,10 +306,10 @@ def interfaz(canvas, recursos, fuente, fuente_peq, fuente_titulo,
     for i, linea in enumerate(lineas):
         dibujar_texto(canvas, fuente, linea, COLOR_TEXTO, (71, 379 + i * 28))
     if terminado:
-        # Unica instrucción de interacción visible, como en Historia.py original.
+        # unica instrucción de interacción visible, como en historia.py original.
         indic = fuente_peq.render("Enter para continuar", True, (250, 204, 139))
         canvas.blit(indic, (rect.right - indic.get_width() - 40, 547))
-        # Flecha animada sutil, sin mostrar otros controles.
+        # flecha animada sutil, sin mostrar otros controles.
         avance = int(3 * (1 + __import__("math").sin(tiempo * 4)))
         pygame.draw.polygon(canvas, (239, 174, 98),
                             [(rect.right - 24 + avance, 555),
@@ -346,7 +346,7 @@ def reproducir_escena_inicial(pantalla, canvas, reloj):
     acumulado = 0.0
     ultimo_frame = None
     continuar = True
-    # Se lee el primer frame de inmediato; el resto respeta los FPS del archivo.
+    # se lee el primer frame de inmediato, el resto respeta los fps del archivo.
     try:
         while True:
             dt = min(reloj.tick(FPS) / 1000.0, 0.1)

@@ -1,0 +1,88 @@
+diff --git a/Juego/Eventos/Periodista_Presidente.py b/Juego/Eventos/Periodista_Presidente.py
+index 0a9e4e5..39bf17e 100644
+--- a/Juego/Eventos/Periodista_Presidente.py
++++ b/Juego/Eventos/Periodista_Presidente.py
+@@ -92,22 +92,22 @@ def _casi_siempre(correcta, n, probabilidad):
+ # CIVINET interviene después de las preguntas 3, 6 y 9. La entrevista original
+ # permanece intacta: la manipulación aparece como una publicación paralela.
+ INTERVENCIONES_CIVINET = {
+-    3: {
++    2: {
+         "tipo": "Descontextualización",
+         "publicacion": "El presidente acaba de admitir en vivo que \"no hay agua para todos\". ¿Va a decidir él quién bebe y quién no? ¡Comparte antes de que borren el video!",
+     },
+-    6: {
++    4: {
+         "tipo": "Titular sensacionalista",
+         "publicacion": "¡ALERTA EN CIUDAD NOVA! El agua del depósito estaría contaminada y el presidente lo sabe. ¿Por qué no lo dice en la entrevista?",
+     },
+-    9: {
++    5: {
+         "tipo": "Popularidad falsa",
+         "publicacion": "ÚLTIMA HORA: 9 de cada 10 sobrevivientes ya no confían en el presidente. Miles están compartiendo esto. ¡No te quedes atrás!",
+     },
+ }
+ 
+ # Quién "publica" cada rumor en la red (cuenta falsa)
+-CUENTAS_CIVINET = {3: "@verdad_sin_filtro", 6: "@NovaAlerta24", 9: "@tendencia_nova"}
++CUENTAS_CIVINET = {2: "@verdad_sin_filtro", 4: "@NovaAlerta24", 5: "@tendencia_nova"}
+ 
+ # Cada opción contiene: texto, cambio de confianza, cambio de alcance falso,
+ # cambio de espectadores, puntos para influencer y puntos para ciudadano.
+@@ -135,7 +135,7 @@ ACCIONES_VERIFICACION = {
+ }
+ 
+ # ====== VOZ DE CIVITAS: la IA que decide qué ve la ciudad ======
+-TITULOS_CIVITAS = {3: "CONTEXTO ELIMINADO", 6: "DUDA ACTIVADA", 9: "ALCANCE MASIVO"}
++TITULOS_CIVITAS = {2: "CONTEXTO ELIMINADO", 4: "DUDA ACTIVADA", 5: "ALCANCE MASIVO"}
+ 
+ # Susurros que aparecen justo después de cada decisión de verificación
+ REACCIONES_CIVITAS = {
+@@ -368,6 +368,10 @@ class FondoVideo:
+ 
+ ULTIMO_RESULTADO = None
+ 
++# LAS 5 PREGUNTAS QUE SE HACEN (de las 10 del árbol): agua, rumor de contaminación,
++# información ocultada, cómo combatir rumores y el mensaje final
++PREGUNTAS_PRINCIPALES = [1, 3, 6, 8, 10]
++
+ # GUÍA DE QUÉ SIGUE (se muestra arriba durante la entrevista)
+ GUIA_FASES = {
+     "intro": "Civitas abre la transmisión. Haz clic o pulsa Enter para empezar.",
+@@ -509,7 +513,8 @@ def Entrevista(rol=None):
+     for id in respuestas.keys():
+         arbol_respuestas.set(id)
+ 
+-    ids_disponibles = list(preguntas.keys())
++    # ENTREVISTA MÁS CORTA: solo las 5 preguntas principales (Civitas interviene después de la 2, la 4 y la 5)
++    ids_disponibles = [id_p for id_p in PREGUNTAS_PRINCIPALES if id_p in preguntas]
+ 
+     fase = "intro"
+     id_pregunta_actual = None
+@@ -519,7 +524,7 @@ def Entrevista(rol=None):
+     puntos_influencer = 0
+     puntos_ciudadano = 0
+     preguntas_hechas = 0
+-    total_preguntas = len(preguntas)
++    total_preguntas = len(ids_disponibles)
+ 
+     confianza_civinet = 50
+     alcance_falso = 0
+@@ -545,7 +550,7 @@ def Entrevista(rol=None):
+ 
+     def lineas_de_civitas(n):
+         """Lo que dice CIVITAS cambia según cómo vayas jugando."""
+-        if n == 3:
++        if n == 2:
+             if confianza_civinet >= 55:
+                 extra = "Veo que la ciudad te escucha entera... por ahora. Qué ingenuo es confiar en el contexto."
+             else:
+@@ -555,7 +560,7 @@ def Entrevista(rol=None):
+                 ("CIVITAS", "Una frase sin su contexto es un arma. Y yo tengo muy buena puntería."),
+                 ("CIVITAS", extra),
+             ]
+-        if n == 6:
++        if n == 4:
+             if alcance_falso <= 2:
+                 extra = "Verificaste a tiempo. Qué detalle adorable. Subiré el volumen."
+             else:

@@ -9,7 +9,7 @@ import pygame
 import Metodos
 from Eventos.Mapa import Grafo
 
-# RUTAS Y TAMAÑO
+# rutas y tamaño
 ANCHO, ALTO = 1600, 900
 RUTA_INTERFAZ = Path(__file__).resolve().parent.parent / "Assets" / "Interfaz"
 RUTA_FUENTES = Path(__file__).resolve().parent.parent / "Assets" / "Fuentes"
@@ -18,7 +18,7 @@ FONDO_OFICINA = "Oficina.jpg"
 IMAGEN_RADIO = "radio.png"
 FONDO_ALMACEN = "Central_Llegada.png"    
 
-# COLORES (los mismos tonos del Evento 2: papel, tinta, óxido y ámbar)
+# colores (los mismos tonos del evento 2, papel, tinta, óxido y ámbar)
 PAPEL = (214, 199, 166)
 PAPEL_CLARO = (232, 222, 196)
 TINTA = (44, 34, 24)
@@ -32,7 +32,7 @@ NEGRO = (10, 9, 8)
 CRT = (255, 182, 72)          # letras del computador viejo
 CRT_OSCURO = (120, 70, 20)
 
-# OBJETOS DE LA OFICINA (fracción de la imagen: x1, y1, x2, y2)
+# objetos de la oficina (fracción de la imagen, x1, y1, x2, y2)
 OBJETOS = {
     "calendario": {"zona": (0.023, 0.211, 0.098, 0.591), "nombre": "Calendario"},
     "titular1":   {"zona": (0.284, 0.179, 0.389, 0.403), "nombre": "Recorte de periódico"},
@@ -46,7 +46,7 @@ OBJETOS = {
     "dibujo":     {"zona": (0.150, 0.752, 0.300, 0.835), "nombre": "Papeles"},
 }
 
-# GRAFO SOCIAL: el grupo del pozo (posición dentro de la pantalla del computador, de 0 a 1)
+# grafo social, el grupo del pozo (posición dentro de la pantalla del computador, de 0 a 1)
 PERSONAS = {
     "LÍDER":     (0.50, 0.52),
     "ROSA":      (0.30, 0.34),
@@ -74,7 +74,7 @@ ORIGEN_CIVITAS = "CIVITAS"
 TOTAL_PISTAS = 4          # calendario, foto, dibujo y radio
 
 
-# FUENTES
+# fuentes
 _fuentes = {}
 
 
@@ -93,7 +93,7 @@ def fuente(nombre, tamano):
     return _fuentes[clave]
 
 
-# SONIDOS (hechos con código)
+# sonidos (hechos con código)
 def crear_sonidos():
     sonidos = {}
     try:
@@ -129,16 +129,16 @@ def sonar(sonidos, nombre):
         sonidos[nombre].play()
 
 
-# CASO DE ESTA PARTIDA (cambia cada vez: componente aleatorio)
+# caso de esta partida (cambia cada vez, componente aleatorio)
 def crear_caso():
     """La clave del computador sale de 4 lugares: calendario (I), foto (II), dibujo (III) y radio (IV).
     En cada pista hay UN número marcado en rojo."""
-    dia = random.randint(1, 9)                         # I: el día marcado en el calendario
-    anio = random.randint(2031, 2039)                  # II: un número subrayado del año de la foto
+    dia = random.randint(1, 9)                         # i, el día marcado en el calendario
+    anio = random.randint(2031, 2039)                  # ii, un número subrayado del año de la foto
     pos_anio = random.choice([2, 3])
-    edad = random.randint(31, 58)                      # III: un número subrayado en el dibujo del cumpleaños
+    edad = random.randint(31, 58)                      # iii, un número subrayado en el dibujo del cumpleaños
     pos_edad = random.randint(0, 1)
-    refugio = random.randint(1, 9)                     # IV: el refugio que nombran en la radio
+    refugio = random.randint(1, 9)                     # iv, el refugio que nombran en la radio
     frecuencia = round(random.randint(95, 106) + random.randint(1, 9) / 10, 1)
     digitos = [dia, int(str(anio)[pos_anio]), int(str(edad)[pos_edad]), refugio]
     return {
@@ -149,7 +149,7 @@ def crear_caso():
     }
 
 
-# GRAFO SOCIAL Y PROPAGACIÓN (BFS)
+# grafo social y propagación (bfs)
 def crear_grafo_social():
     grafo = Grafo()
     for persona in PERSONAS:
@@ -184,7 +184,7 @@ def propagar_segun_decision(resultado_evento1):
     grafo = crear_grafo_social()
     cortadas = []
     if resultado_evento1 == "COMPARTIR":
-        origen, bloqueados, rondas = "LÍDER", set(), 10          # tú lo gritaste: le llegó a todos
+        origen, bloqueados, rondas = "LÍDER", set(), 10          # tú lo gritaste, le llegó a todos
         texto = "Tú compartiste el mensaje. El rumor salió de ti hacia todos los que confían en ti."
     elif resultado_evento1 == "IGNORAR":
         origen, bloqueados, rondas = "ROSA", {"LÍDER"}, 10       # tú callaste, el rumor siguió por otros
@@ -193,14 +193,14 @@ def propagar_segun_decision(resultado_evento1):
         origen, bloqueados, rondas = "ROSA", set(), 1            # se frenó después de la primera ronda
         texto = "Tú reportaste el mensaje. Después de la primera ronda, los caminos del rumor se cortaron."
     else:
-        # VERIFICAR: quienes confían en ti escucharon tu verificación y no lo creyeron
+        # verificar, quienes confían en ti escucharon tu verificación y no lo creyeron
         origen = "ROSA"
         bloqueados = {"LÍDER"} | (set(grafo.vecinos("LÍDER")) - {origen})
         rondas = 10
         texto = "Tú verificaste antes de hablar. Quienes confían en ti no le creyeron al rumor."
     nivel, padre = bfs_propagacion(grafo, origen, bloqueados, rondas)
     if resultado_evento1 == "REPORTAR":
-        # ELIMINAR ARISTAS: se cortan los caminos que salían de quienes ya lo habían recibido
+        # eliminar aristas, se cortan los caminos que salían de quienes ya lo habían recibido
         for persona in list(nivel):
             for vecino in grafo.vecinos(persona):
                 if vecino not in nivel:
@@ -242,7 +242,7 @@ def camino_bfs(grafo, inicio, fin):
     return None
 
 
-# AYUDAS DE DIBUJO
+# ayudas de dibujo
 def partir(texto, f, ancho):
     lineas = []
     for parrafo in texto.split("\n"):
@@ -324,7 +324,7 @@ def boton(superficie, rect, texto, mouse, activo=True):
     return encima
 
 
-# VENTANA
+# ventana
 class Ventana:
     """Guarda el canvas y la escala para saber dónde está el mouse dentro del canvas."""
 
@@ -361,8 +361,8 @@ def tecla(eventos, *teclas):
     return any(e.type == pygame.KEYDOWN and e.key in teclas for e in eventos)
 
 
-# VIDEOS DEL FINAL (cámbialos por los tuyos con el mismo nombre en Assets/Videos)
-# subtitulos: (empieza, termina de escribirse, desaparece, texto) en segundos del video
+# videos del final (cámbialos por los tuyos con el mismo nombre en assets/videos)
+# subtitulos, (empieza, termina de escribirse, desaparece, texto) en segundos del video
 CONFRONTACION = {
     "video": "evento3_confrontacion.mp4",
     "subtitulos": [
@@ -374,8 +374,8 @@ CONFRONTACION = {
 }
 
 
-# ESCENA ANTES DE LA ENTREVISTA
-# subtitulos: (empieza, termina de escribirse, desaparece, texto) en segundos del video
+# escena antes de la entrevista
+# subtitulos, (empieza, termina de escribirse, desaparece, texto) en segundos del video
 ESCENA_ENTREVISTA = {
     "video": "escena_entrevista.mp4",
     "subtitulos": [
@@ -394,7 +394,7 @@ ESCENA_ENTREVISTA = {
 
 
 
-# LA PÁGINA QUE EXPLICA LO QUE PASÓ
+# la página que explica lo que pasó
 VERDAD = ("Llegar a este lugar fue una trampa. Civitas te dejó encontrar esta oficina para que el grupo "
           "supiera quién eres... y se separara.")
 VERDAD_TORRE = "Pero ahora sabes algo que Civitas no quería que supieras: cómo detenerla."
@@ -404,7 +404,7 @@ NOTA_TORRE = ("No guardé esto en el computador: ella lo lee todo.\n\n"
               "Todo lo que Civitas dice sale de un solo servidor, en la Torre Civitas. No tiene copia. "
               "Si se desconecta, Civitas se queda muda: no más alertas, no más rumores.\n\n"
               "Ella lo sabe. Por eso nunca lo dice.\n\n— E. Varela")
-BONO_TORRE = 15           # puntos extra para el final si encontraste la nota de la Torre
+BONO_TORRE = 15           # puntos extra para el final si encontraste la nota de la torre
 
 FINALES = {
     "disuelto": {
@@ -438,7 +438,7 @@ FINALES = {
     },
 }
 
-# LLEGADA: EL FALSO PEDIDO DE AYUDA Y LA BÚSQUEDA PISO POR PISO
+# llegada, el falso pedido de ayuda y la búsqueda piso por piso
 LLEGADA = [
     ("texto", ["Llegaron al Almacén del Este. Había agua... pero no para todos.",
                "Esa noche, todos los dispositivos sonaron a la vez."]),
@@ -454,7 +454,7 @@ MENSAJE_FALSO = ("por favor alguien que lea esto. soy Lucas, estoy con mi herman
                  "al lado del almacén. no tenemos agua desde ayer. "
                  "POR FAVOR VENGAN RÁPIDO")
 
-# TUTORIAL (nota con instrucciones, como en el Evento 2)
+# tutorial (nota con instrucciones, como en el evento 2)
 TUTORIAL = [
     ("No hay nadie", "La oficina está vacía. Nadie pidió ayuda desde aquí... pero hay un computador que todavía funciona."),
     ("Está bloqueado", "El computador pide una clave de 4 números. Quien trabajaba aquí la dejó escondida en este mismo cuarto."),
@@ -465,7 +465,7 @@ TUTORIAL = [
                           "y descubre quién los trajo aquí."),
 ]
 
-# FICHAS DEL PERSONAL DE CIVITAS (el giro: los 4 personajes estuvieron metidos)
+# fichas del personal de civitas (el giro, los 4 personajes estuvieron metidos)
 FICHAS = [
     ("LÍDER", "Analista de moderación · Nivel 3",
      "Revisaba los mensajes que los usuarios reportaban. Marcó el primer rumor como FALSO 47 minutos "
@@ -483,7 +483,7 @@ FICHAS = [
 ]
 
 
-# DATOS EXTRA DE CADA EXPEDIENTE: nombre, código, edad, área, estado
+# datos extra de cada expediente, nombre, código, edad, área, estado
 DATOS_FICHA = {
     "LÍDER": ("HÉCTOR", "CVT-0317", "32", "Moderación de reportes", "Baja voluntaria · Nombre borrado"),
     "PERIODISTA": ("OSAMU KUGA", "EXT-1142", "27", "Prensa acreditada", "Acceso revocado"),
@@ -491,7 +491,7 @@ DATOS_FICHA = {
     "CIUDADANO": ("ESTELLA", "TST-0001", "28", "Pruebas de propagación", "Desaparecida"),
 }
 
-# EL EVENTO
+# el evento
 class Oficina:
     def __init__(self, indicadores, resultado_evento1, personaje="LÍDER"):
         self.v = Ventana()
@@ -507,21 +507,21 @@ class Oficina:
         self.oscuro.fill((0, 0, 0, 170))
 
         self.vistos = set()                 # objetos ya revisados
-        self.pistas = {}                    # pistas encontradas: clave -> texto
+        self.pistas = {}                    # pistas encontradas, clave -> texto
         self.sabe_frecuencia = False        # leyó la nota del recorte
         self.orden_resuelto = False         # ordenó los números en el tablero
         self.computador_abierto = False
         self.archivos_vistos = set()
-        self.dato_torre = False             # encontró la nota de la Torre (opcional, suma en el final)
-        self.descubierto = False            # abrió su propia ficha: llega el grupo
+        self.dato_torre = False             # encontró la nota de la torre (opcional, suma en el final)
+        self.descubierto = False            # abrió su propia ficha, llega el grupo
         self.consecuencia_red = None
 
-        # TABLERO DE PISTAS (otro grafo): cada pista es un nodo; los hilos en orden son las aristas
+        # tablero de pistas (otro grafo), cada pista es un nodo, los hilos en orden son las aristas
         self.tablero = Grafo()
         self.mensaje = ""
         self.mensaje_t = 0
 
-    # CARGA
+    # carga
     def cargar_fondo(self):
         try:
             img = pygame.image.load(str(RUTA_INTERFAZ / FONDO_OFICINA)).convert()
@@ -550,14 +550,14 @@ class Oficina:
     def ganar_pista(self, clave, texto):
         if clave not in self.pistas:
             self.pistas[clave] = texto
-            self.tablero.agregar_nodo(clave)          # AGREGAR NODO al tablero
+            self.tablero.agregar_nodo(clave)          # agregar nodo al tablero
             sonar(self.sonidos, "pista")
             if len(self.pistas) == TOTAL_PISTAS:
                 self.avisar("¡Tienes todas las pistas! Ve al tablero y ordénalas.")
             else:
                 self.avisar(f"Nueva pista ({len(self.pistas)}/{TOTAL_PISTAS})")
 
-    # OBJETIVO ACTUAL (orienta al jugador)
+    # objetivo actual (orienta al jugador)
     def objetivo(self):
         if len(self.pistas) < TOTAL_PISTAS:
             return ("Busca los 4 números de la clave del computador. "
@@ -568,7 +568,7 @@ class Oficina:
             return f"La clave es {self.caso['clave']}. Haz clic en el computador y escríbela."
         return "Revisa los archivos del computador hasta encontrar tu expediente."
 
-    # DIBUJO DE LA SALA
+    # dibujo de la sala
     def objeto_bajo(self, mouse):
         """Si hay varios objetos debajo del mouse (por ejemplo un recorte dentro del tablero), gana el más pequeño."""
         opciones = [c for c in OBJETOS if self.zona(c).collidepoint(mouse)]
@@ -639,7 +639,7 @@ class Oficina:
         else:
             escribir(c, self.mensaje, f, AMBAR, r.topleft, sombra=False)
 
-    # BUCLE PRINCIPAL
+    # bucle principal
     def jugar(self):
         Metodos.MAPA_BLOQUEADO = True
         self.llegada()
@@ -691,7 +691,7 @@ class Oficina:
             return self.descubierto
         return False
 
-    # LLEGADA: CIVITAS LOS LLEVA A LA OFICINA
+    # llegada, civitas los lleva a la oficina
     def esperar_pantalla(self, dibujar, duracion):
         """Dibuja una pantalla hasta que pase 'duracion' y el jugador haga clic (un clic antes la completa)."""
         inicio = pygame.time.get_ticks()
@@ -748,7 +748,7 @@ class Oficina:
                     c.blit(oscuro, (0, 0))
                     self.dibujar_notificacion(c, seg)
                 self.esperar_pantalla(dibujar, 0.6 + len(MENSAJE_FALSO) / 45)
-                # MAPA: del Almacén del Este a la Central de Datos
+                # mapa, del almacén del este a la central de datos
                 if Metodos.MAPA is not None:
                     from Eventos import Mapa
                     Mapa.mostrar_mapa(pygame.display.get_surface(), Metodos.MAPA)
@@ -821,7 +821,7 @@ class Oficina:
                     inicio -= 100000
             self.v.mostrar()
 
-    # VISTA DE CERCA GENÉRICA
+    # vista de cerca genérica
     def vista(self, dibujar, texto_boton="Volver"):
         """Oscurece la sala y llama a dibujar(c, mouse, t, eventos) hasta que el jugador cierre.
         Si dibujar devuelve algo distinto de None, la vista se cierra y devuelve ese valor."""
@@ -851,7 +851,7 @@ class Oficina:
         """El número romano escrito a mano que dice el orden de la pista."""
         escribir(c, numero, fuente("narracion", 54), color, pos, "center", sombra=False)
 
-    # I. CALENDARIO
+    # i. calendario
     def ver_calendario(self):
         dia = self.caso["dia"]
 
@@ -877,7 +877,7 @@ class Oficina:
         self.vista(dibujar)
         self.ganar_pista("calendario", f"Calendario: el día {dia} marcado")
 
-    # II. FOTO (un número del año está subrayado)
+    # ii. foto (un número del año está subrayado)
     def ver_foto(self):
         estado = {"volteada": False}
         x1, y1, x2, y2 = OBJETOS["foto"]["zona"]
@@ -926,7 +926,7 @@ class Oficina:
 
         self.vista(dibujar)
 
-    # III. DIBUJO DE LA HIJA (un número subrayado)
+    # iii. dibujo de la hija (un número subrayado)
     def ver_dibujo(self):
         edad = str(self.caso["edad"])
         pos = self.caso["pos_edad"]
@@ -979,7 +979,7 @@ class Oficina:
         self.vista(dibujar)
         self.ganar_pista("dibujo", "Dibujo")
 
-    # EL ARCHIVADOR: LA NOTA DE LA TORRE (opcional, Civitas no la puede leer)
+    # el archivador, la nota de la torre (opcional, civitas no la puede leer)
     def ver_nota_torre(self):
         def dibujar(c, mouse, t, eventos):
             carpeta = pygame.Rect(0, 0, 900, 640)
@@ -998,7 +998,7 @@ class Oficina:
             sonar(self.sonidos, "pista")
             self.avisar("★ Esto puede servirte. Recuérdalo para decírselo al grupo.")
 
-    # RECORTES (uno trae la nota con la emisora)
+    # recortes (uno trae la nota con la emisora)
     def ver_titular(self, clave):
         if clave == "titular1":
             titulo = "CIVITAS: LA NUEVA IA DEL FUTURO"
@@ -1032,7 +1032,7 @@ class Oficina:
             self.sabe_frecuencia = True
             self.avisar(f"Anotaste una emisora: {self.caso['frecuencia']:.1f} FM")
 
-    # TELÉFONO (ambientación)
+    # teléfono (ambientación)
     def ver_telefono(self):
         texto = ("1 mensaje sin escuchar.\n\n"
                  "\"Papá, ¿por qué no contestas? En la escuela todos dicen que mañana cierran la ciudad. "
@@ -1049,7 +1049,7 @@ class Oficina:
 
         self.vista(dibujar)
 
-    # IV. RADIO (girar el dial hasta la emisora de la nota)
+    # iv. radio (girar el dial hasta la emisora de la nota)
     def pantalla_radio(self):
         ESC = ANCHO / 1280
         centro = (int(960 * ESC), int(469 * ESC))
@@ -1137,7 +1137,7 @@ class Oficina:
         if canal:
             canal.stop()
 
-    # TABLERO: ordenar las 4 pistas con hilo (camino en un grafo)
+    # tablero, ordenar las 4 pistas con hilo (camino en un grafo)
     def pantalla_tablero(self):
         orden = ["calendario", "foto", "dibujo", "radio"]
         romanos = {"calendario": "I", "foto": "II", "dibujo": "III", "radio": "IV"}
@@ -1198,9 +1198,9 @@ class Oficina:
                             i = siguiente_libre()
                             correcto = i is not None and {desde, clave} == {orden[i], orden[i + 1]}
                             if correcto:
-                                self.tablero.agregar_arista(orden[i], orden[i + 1])     # AGREGAR ARISTA (hilo)
+                                self.tablero.agregar_arista(orden[i], orden[i + 1])     # agregar arista (hilo)
                                 sonar(self.sonidos, "tecla")
-                                if camino_bfs(self.tablero, orden[0], orden[-1]):        # BFS: ¿ya hay camino de I a IV?
+                                if camino_bfs(self.tablero, orden[0], orden[-1]):        # bfs, ¿ya hay camino de i a iv?
                                     self.orden_resuelto = True
                                     sonar(self.sonidos, "pista")
                             else:
@@ -1218,7 +1218,7 @@ class Oficina:
 
         self.vista(dibujar)
 
-    # COMPUTADOR: CLAVE Y ARCHIVOS SECRETOS
+    # computador, clave y archivos secretos
     def pantalla_computador(self):
         estado = {"clave": "", "error": 0.0, "fallos": 0, "abierto": None, "inicio_archivo": 0.0}
         archivos = [
@@ -1244,7 +1244,7 @@ class Oficina:
             f = fuente("mono", 24)
             fg = fuente("mono_negrita", 30)
 
-            # 1. CLAVE
+            # 1. clave
             if not self.computador_abierto:
                 escribir(c, "CIVITAS · TERMINAL DE INGENIERÍA", fg, CRT, (marco.x + 60, marco.y + 50), sombra=False)
                 escribir(c, "Ingrese la clave de acceso (4 dígitos):", f, CRT, (marco.x + 60, marco.y + 140), sombra=False)
@@ -1277,7 +1277,7 @@ class Oficina:
                 lineas_crt(c, marco, t)
                 return None
 
-            # 2. ESCRITORIO CON ARCHIVOS
+            # 2. escritorio con archivos
             if estado["abierto"] is None:
                 escribir(c, "CIVITAS · ARCHIVOS CLASIFICADOS", fg, CRT, (marco.x + 60, marco.y + 40), sombra=False)
                 for i, (clave, nombre, desc) in enumerate(archivos):
@@ -1304,7 +1304,7 @@ class Oficina:
                 lineas_crt(c, marco, t)
                 return None
 
-            # 3. UN ARCHIVO ABIERTO
+            # 3. un archivo abierto
             ta = t - estado["inicio_archivo"]
             if estado["abierto"] == "registro":
                 self.dibujar_registro(c, marco, ta)
@@ -1477,7 +1477,7 @@ class Oficina:
         seg = (pygame.time.get_ticks() - self.inicio_ficha) / 1000
         escribir(c, "EXPEDIENTE " + codigo + " · CONFIDENCIAL", fuente("mono_negrita", 28), CRT,
                  (marco.x + 40, marco.y + 24), sombra=False)
-        # FOTO GRANDE
+        # foto grande
         foto = pygame.Rect(marco.x + 40, marco.y + 90, int(marco.w * 0.32), int(marco.h * 0.62))
         if not hasattr(self, "_fotos_grandes"):
             self._fotos_grandes = {}
@@ -1496,12 +1496,12 @@ class Oficina:
         if img is not None:
             c.blit(img, img.get_rect(center=foto.center))
         pygame.draw.rect(c, CRT_OSCURO, foto, 2)
-        # SELLO
+        # sello
         if seg > 0.4:
             sello = fuente("mono_negrita", 26).render("CONFIDENCIAL", True, ROJO)
             sello = pygame.transform.rotate(sello, 14)
             c.blit(sello, sello.get_rect(center=(foto.centerx, foto.bottom - 50)))
-        # DATOS
+        # datos
         x = foto.right + 40
         y = marco.y + 90
         filas = [("NOMBRE", nombre), ("EDAD", edad + " años"), ("CARGO", puesto),
@@ -1521,7 +1521,7 @@ class Oficina:
             if rol == self.personaje and seg > 1.9 + len(desc) / 70 + 0.5:
                 escribir(c, "Este expediente es el tuyo.", fuente("mono_negrita", 20), ROJO,
                          (x, fin + 20), sombra=False)
-        # BOTÓN
+        # botón
         propio = rol == self.personaje
         b = pygame.Rect(marco.right - 260, marco.bottom - 76, 220, 50)
         if boton(c, b, "Continuar" if propio else "< Fichas", mouse) and clic(eventos):
@@ -1545,7 +1545,7 @@ class Oficina:
         if self.indicadores is not None:
             self.indicadores.aplicar(efectos)
 
-    # VIDEO CON SUBTÍTULOS EN CÓDIGO (igual que en el Evento 1)
+    # video con subtítulos en código (igual que en el evento 1)
     def video(self, guion, al_final=None):
         """Reproduce el video del guion con sus subtítulos. Al terminar deja quieto el último cuadro y,
         si se da al_final(pantalla, rect, s, seg), lo dibuja encima hasta que el jugador haga clic."""
@@ -1607,7 +1607,7 @@ class Oficina:
                 ultimo_espacio = ahora
             if listo and (clic(eventos) or espacio or tecla(eventos, pygame.K_RETURN)):
                 break
-            if doble and not termino:                 # doble espacio: saltar el video
+            if doble and not termino:                 # doble espacio, saltar el video
                     termino, fin_video = True, t
                     video.set(cv2.CAP_PROP_POS_FRAMES, max(0, int(video.get(cv2.CAP_PROP_FRAME_COUNT)) - 2))
                     ok, sig = video.read()
@@ -1616,8 +1616,8 @@ class Oficina:
         video.release()
         pygame.mixer.music.stop()
 
-    # FINAL: CONFRONTACIÓN, REACCIÓN DEL GRUPO Y CLIFFHANGER
-    # MULTIJUGADOR: el final depende del PROMEDIO del grupo
+    # final, confrontación, reacción del grupo y cliffhanger
+    # multijugador, el final depende del promedio del grupo
     def final_del_grupo(self, valores, puntaje):
         """Si hay 2 o más jugadores en red: envía mis resultados, espera a que todos terminen
         y muestra la tabla. Devuelve el FINAL del servidor, o None para jugar el final individual."""
@@ -1634,7 +1634,7 @@ class Oficina:
         inicio = pygame.time.get_ticks()
         while red.final is None:
             if not red.conectado:
-                return None                          # se cayó el servidor: final individual
+                return None                          # se cayó el servidor, final individual
             self.v.eventos()
             seg = (pygame.time.get_ticks() - inicio) / 1000
             c = self.v.canvas
@@ -1692,9 +1692,9 @@ class Oficina:
         valores = self.indicadores.copia() if self.indicadores is not None else {"Confianza": 50, "Caos": 50, "Cohesión": 50}
         puntaje = valores["Confianza"] + valores["Cohesión"] - valores["Caos"]
         if self.dato_torre:
-            puntaje += BONO_TORRE                    # les contaste cómo detener a Civitas
+            puntaje += BONO_TORRE                    # les contaste cómo detener a civitas
 
-        # MULTIJUGADOR: si se juega en grupo, manda el promedio de todos (sin servidor: igual que antes)
+        # multijugador, si se juega en grupo, manda el promedio de todos (sin servidor, igual que antes)
         grupo = self.final_del_grupo(valores, puntaje)
         if grupo is not None:
             valores = dict(grupo["promedio"])
@@ -1813,7 +1813,7 @@ def linea_cortada(superficie, a, b, color):
                          (a[0] + (b[0] - a[0]) * t2, a[1] + (b[1] - a[1]) * t2), 2)
 
 
-# PARA USAR DESDE EL JUEGO
+# para usar desde el juego
 def jugar(display, canvas, indicadores=None, resultado_evento1="VERIFICAR_FALSO", personaje="LÍDER"):
     """indicadores: los del Evento 1. resultado_evento1: la hoja del árbol que eligió el jugador.
     personaje: LÍDER, PERIODISTA, INFLUENCER o CIUDADANO (decide cuál ficha es la suya)."""
@@ -1822,9 +1822,9 @@ def jugar(display, canvas, indicadores=None, resultado_evento1="VERIFICAR_FALSO"
 
 
 if __name__ == "__main__":
-    # PRUEBA RÁPIDA DEL FINAL
+    # prueba rápida del final
     # 1 = el grupo se disuelve, 2 = te dejan pero desconfían, 3 = confían en ti
-    # Enter sin número = jugar el Evento 3 completo
+    # enter sin número = jugar el evento 3 completo
     opcion = input("Final (1, 2, 3) o Enter para jugar todo: ").strip()
 
     pygame.init()
@@ -1846,7 +1846,7 @@ if __name__ == "__main__":
 
 
 
-# ESCENA ANTES DE LA ENTREVISTA
+# escena antes de la entrevista
 def reproducir_escena(guion):
     o = Oficina.__new__(Oficina)
     o.v = Ventana()

@@ -6,27 +6,26 @@ from Arbol.Arbol_AVL import ArbolAVL
 from Arbol import Preguntas
 import Metodos
 try:
-    from Red import cliente as red_cliente     # multijugador: entrevista por turnos
+    from Red import cliente as red_cliente     # multijugador, entrevista por turnos
 except ImportError:
     red_cliente = None
 
 try:
-    import cv2          # pip install opencv-python   (solo hace falta si vas a usar videos)
+    import cv2          # pip install opencv-python (solo hace falta si vas a usar videos)
 except ImportError:
     cv2 = None
 
-# ====== POSICIÓN Y TAMAÑO DE LA INTERFAZ ======
-# Puedes cambiarlos aquí, o dentro del juego con el MODO AJUSTE (tecla F2):
-#   flechas = mover (Shift = más rápido) | - / + = tamaño | Enter = imprime los valores en la consola
+# posición y tamaño de la interfaz
+# puedes cambiarlos aquí, o dentro del juego con el modo ajuste (tecla f2)
+# flechas = mover (shift = más rápido) | - / + = tamaño | enter = imprime los valores en la consola
 UI_ESCALA = 1.0          # tamaño de toda la interfaz (1.0 = como era antes)
-UI_CENTRO_X = 389           # X del centro de la interfaz (el canvas mide 900 de ancho)
-UI_Y = 112                  # Y donde empieza la interfaz (más chico = más arriba)
+UI_CENTRO_X = 389           # x del centro de la interfaz (el canvas mide 900 de ancho)
+UI_Y = 112                  # y donde empieza la interfaz (más chico = más arriba)
 PANEL_CABECERA_ALFA = 150   # oscurece detrás del encabezado para que se lea sobre el video (0 = sin panel)
-# ==============================================
 
-# ====== FONDOS: un video (o una imagen) por personaje ======
-# Pon los archivos en Assets/<CARPETA_FONDOS>. Acepta .mp4 .avi .mov .mkv .webm (video) o .png .jpg (imagen).
-# Si falta alguno, usa FONDO_RESPALDO.
+# fondos, un video (o una imagen) por personaje
+# pon los archivos en assets/<carpeta_fondos>. acepta .mp4 .avi .mov .mkv .webm (video) o .png .jpg (imagen).
+# si falta alguno, usa fondo_respaldo.
 CARPETA_FONDOS = "Interfaz"
 FONDOS = {
     "periodista": "Fondo_i.mp4",
@@ -36,13 +35,12 @@ FONDOS = {
 }
 FONDO_RESPALDO = "Fondo_i.png"
 REINICIAR_VIDEO_AL_CAMBIAR = True   # cada vez que cambia el turno, el video del personaje empieza desde el principio
-# ============================================================
 
 EXT_VIDEO = (".mp4", ".avi", ".mov", ".mkv", ".webm", ".m4v")
 
-# CRÓNICA: identidad de transmisión gris, tinta y pantalla analógica.
-# CRÓNICA / ARCHIVO DE TRANSMISIÓN — estética de dossier oscuro.
-# Inspiración de composición dramática y contrastes, sin reutilizar arte de otros juegos.
+# crónica, identidad de transmisión gris, tinta y pantalla analógica.
+# crónica / archivo de transmisión — estética de dossier oscuro.
+# inspiración de composición dramática y contrastes, sin reutilizar arte de otros juegos.
 COL_POLVO = (20, 21, 22)
 COL_PAPEL = (236, 229, 211)
 COL_TINTA = (34, 32, 30)
@@ -55,7 +53,7 @@ COL_VIVO = (184, 73, 66)
 COL_MALO = (195, 94, 79)
 COL_CIVITAS = (195, 76, 67)
 
-# Quién juega en cada fase: nombre, color (el mismo de Evento_2) e instrucción
+# quién juega en cada fase, nombre, color (el mismo de evento_2) e instrucción
 ROLES = {
     "pregunta": ("Periodista", (193, 200, 211), "elige una pregunta"),
     "respuesta": ("Presidente", (157, 183, 195), "elige una respuesta"),
@@ -69,15 +67,15 @@ ROLES = {
 }
 ORDEN_FASES = ["pregunta", "respuesta", "ciudadano", "audiencia", "opinion"]
 
-# MULTIJUGADOR: de quién es cada decisión. None = la decide el grupo votando.
-# Si nadie eligió ese personaje, esa fase también se vota.
+# multijugador, de quién es cada decisión. none = la decide el grupo votando.
+# si nadie eligió ese personaje, esa fase también se vota.
 DUENO_FASE = {"pregunta": "PERIODISTA", "respuesta": "PRESIDENTE", "ciudadano": "CIUDADANO",
               "audiencia": None, "opinion": "INFLUENCER", "verificacion": "CIUDADANO"}
 NOMBRE_ROL_RED = {"PERIODISTA": "Periodista", "PRESIDENTE": "Presidente",
                   "CIUDADANO": "Ciudadano", "INFLUENCER": "Influencer"}
 ROLES_VERIFICACION = ["ciudadano"]
-ESPERA_AUTO = 1.8   # UN JUGADOR: segundos que "piensa" el juego antes de elegir por otro personaje
-# UN JUGADOR: personalidad de los personajes que maneja el juego
+ESPERA_AUTO = 1.8   # un jugador, segundos que "piensa" el juego antes de elegir por otro personaje
+# un jugador, personalidad de los personajes que maneja el juego
 PESOS_PRESIDENTE = [30, 50, 20]   # % de veces que responde muy buena / regular / mala
 COHERENCIA_INFLUENCER = 0.75      # prob. de reaccionar según la calidad de la respuesta (respaldar/neutral/cuestionar)
 ACIERTO_CIUDADANO = 0.80          # prob. de juzgar bien la respuesta y de elegir la mejor verificación
@@ -89,8 +87,8 @@ def _casi_siempre(correcta, n, probabilidad):
         return correcta
     return random.choice([k for k in range(n) if k != correcta])
 
-# CIVINET interviene después de las preguntas 3, 6 y 9. La entrevista original
-# permanece intacta: la manipulación aparece como una publicación paralela.
+# civinet interviene después de las preguntas 3, 6 y 9. la entrevista original
+# permanece intacta, la manipulación aparece como una publicación paralela.
 INTERVENCIONES_CIVINET = {
     2: {
         "tipo": "Descontextualización",
@@ -106,10 +104,10 @@ INTERVENCIONES_CIVINET = {
     },
 }
 
-# Quién "publica" cada rumor en la red (cuenta falsa)
+# quién "publica" cada rumor en la red (cuenta falsa)
 CUENTAS_CIVINET = {2: "@verdad_sin_filtro", 3: "@NovaAlerta24", 4: "@tendencia_nova"}
 
-# Cada opción contiene: texto, cambio de confianza, cambio de alcance falso,
+# cada opción contiene, texto, cambio de confianza, cambio de alcance falso
 # cambio de espectadores, puntos para influencer y puntos para ciudadano.
 ACCIONES_VERIFICACION = {
     "pregunta": [
@@ -134,10 +132,10 @@ ACCIONES_VERIFICACION = {
     ],
 }
 
-# ====== VOZ DE CIVITAS: la IA que decide qué ve la ciudad ======
+# voz de civitas, la ia que decide qué ve la ciudad
 TITULOS_CIVITAS = {2: "CONTEXTO ELIMINADO", 3: "DUDA ACTIVADA", 4: "ALCANCE MASIVO"}
 
-# Susurros que aparecen justo después de cada decisión de verificación
+# susurros que aparecen justo después de cada decisión de verificación
 REACCIONES_CIVITAS = {
     "mal": [
         "Gracias por compartir. Lo demás lo hago yo.",
@@ -152,7 +150,6 @@ REACCIONES_CIVITAS = {
         "Cuidado. La verdad es contagiosa.",
     ],
 }
-# ================================================
 
 
 def mezclar(a, b, t):
@@ -287,7 +284,7 @@ def formato_k(n):
     return f"{n / 1000:.1f}K" if n >= 1000 else str(int(n))
 
 
-# ---------------------------------------------------------------- fondos
+# fondos
 
 class FondoImagen:
     def __init__(self, superficie):
@@ -324,7 +321,7 @@ class FondoVideo:
 
     def _leer(self):
         ok, bgr = self.cap.read()
-        if not ok:                                   # llegó al final: vuelve a empezar
+        if not ok:                                   # llegó al final, vuelve a empezar
             self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
             ok, bgr = self.cap.read()
             if not ok:
@@ -368,11 +365,11 @@ class FondoVideo:
 
 ULTIMO_RESULTADO = None
 
-# LAS 4 PREGUNTAS QUE SE HACEN (de las 10 del árbol): agua, rumor de contaminación,
+# las 4 preguntas que se hacen (de las 10 del árbol), agua, rumor de contaminación
 # información ocultada y el mensaje final
 PREGUNTAS_PRINCIPALES = [1, 3, 6, 10]
 
-# GUÍA DE QUÉ SIGUE (se muestra arriba durante la entrevista)
+# guía de qué sigue (se muestra arriba durante la entrevista)
 GUIA_FASES = {
     "intro": "Civitas abre la transmisión. Haz clic o pulsa Enter para empezar.",
     "pregunta": "El Periodista elige la pregunta: clic o teclas 1, 2, 3.",
@@ -394,7 +391,7 @@ def Entrevista(rol=None):
     ruta_assets = Path(__file__).parent.parent / "Assets" / "Interfaz"
     ruta_fondos = Path(__file__).parent.parent / "Assets" / CARPETA_FONDOS
 
-    # El tamaño de la ventana sale de la imagen de respaldo (igual que antes)
+    # el tamaño de la ventana sale de la imagen de respaldo (igual que antes)
     ANCHO = 900
     ALTO = 600
     imagen_respaldo = None
@@ -407,7 +404,7 @@ def Entrevista(rol=None):
     display = pygame.display.set_mode((ANCHO, ALTO), pygame.RESIZABLE)
     pygame.display.set_caption("CRÓNICA | La verdad está en juego")
     canvas = pygame.Surface((ANCHO, ALTO))
-    # Ilustraciones propias del evento. Si faltan, la interfaz sigue funcionando.
+    # ilustraciones propias del evento. si faltan, la interfaz sigue funcionando.
     ruta_industrial = Path(__file__).parent.parent / "Assets" / "Interfaz" / "CronicaIndustrial"
     def cargar_arte(nombre):
         try:
@@ -463,7 +460,7 @@ def Entrevista(rol=None):
     }
     fondos = {clave: cargar_fondo(clave) for clave in fondo_por_fase.values()}
 
-    # Times New Roman en negrita. Se reutilizan instancias para no crear fuentes por frame.
+    # times new roman en negrita. se reutilizan instancias para no crear fuentes por frame.
     _cache_tipografias = {}
     def tipo(tamano):
         tamano = max(9, int(tamano))
@@ -473,7 +470,7 @@ def Entrevista(rol=None):
                 tamano, bold=True)
         return _cache_tipografias[tamano]
 
-    # --- ajuste de la interfaz (posición y tamaño) ---
+    # ajuste de la interfaz (posición y tamaño)
     ajuste = {"x": UI_CENTRO_X, "y": UI_Y, "escala": UI_ESCALA}
     modo_ajuste = False
     fuente_ajuste = tipo(14)
@@ -482,8 +479,8 @@ def Entrevista(rol=None):
         """Convierte una medida del diseño original al tamaño actual de la interfaz."""
         return int(round(n * ajuste["escala"]))
 
-    # Tipografía editorial: serif para titulares y sans serif para lectura.
-    ruta_fuente = ruta_assets / "upheavtt.ttf"  # se conserva como recurso opcional; no se usa en pantalla
+    # tipografía editorial, serif para titulares y sans serif para lectura.
+    ruta_fuente = ruta_assets / "upheavtt.ttf"  # se conserva como recurso opcional, no se usa en pantalla
 
     def tam_fuentes():
         return max(9, round(16 * ajuste["escala"])), max(11, round(24 * ajuste["escala"]))
@@ -513,7 +510,7 @@ def Entrevista(rol=None):
     for id in respuestas.keys():
         arbol_respuestas.set(id)
 
-    # ENTREVISTA MÁS CORTA: solo las 4 preguntas principales (Civitas interviene después de la 2, la 3 y la 4)
+    # entrevista más corta, solo las 4 preguntas principales (civitas interviene después de la 2, la 3 y la 4)
     ids_disponibles = [id_p for id_p in PREGUNTAS_PRINCIPALES if id_p in preguntas]
 
     fase = "intro"
@@ -538,7 +535,7 @@ def Entrevista(rol=None):
     resultado_final = "medio"
     vis = {"conf": float(confianza_civinet), "falso": float(alcance_falso)}   # valores suavizados de los medidores
 
-    # Apertura: la transmisión parece normal... hasta que CIVITAS habla.
+    # apertura, la transmisión parece normal... hasta que civitas habla.
     intro_dialogos = [
         ("SISTEMA CIVINET", "Enlace establecido. Transmisión pública de Ciudad Nova en preparación."),
         ("SISTEMA CIVINET", "Periodista en cámara. Presidente en posición. Audiencia estimada: 2.483 conexiones."),
@@ -619,10 +616,10 @@ def Entrevista(rol=None):
         s.blit(tx, (u(58), (alto-tx.get_height())//2))
         canvas.blit(s,(x,y))
 
-    # Geometría de la interfaz: se recalcula en cada cuadro según el ajuste
+    # geometría de la interfaz, se recalcula en cada cuadro según el ajuste
     SCREEN_ANCHO = SCREEN_X = SCREEN_Y = Y_CONTENIDO = 0
 
-    # --- estado de la interfaz ---
+    # estado de la interfaz
     reloj = pygame.time.Clock()
     capa = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)   # contenido que aparece con un fundido suave
     ui = {"hover": False}
@@ -633,7 +630,7 @@ def Entrevista(rol=None):
     t_fase = 0.0
     reaccion = {"emoji": "", "texto": "", "color": COL_AGUA, "t": 0.0, "total": 1.0}
     particulas = []
-    # Chat ambiental: comentarios breves y aleatorios para dar vida a la transmisión.
+    # chat ambiental, comentarios breves y aleatorios para dar vida a la transmisión.
     chat_usuarios = ["@luna_nova", "@mateo_07", "@sofi_live", "@pixelgris",
                      "@dani.c", "@nova_fan", "@mar_azul", "@elobservador"]
     chat_mensajes = [
@@ -663,13 +660,13 @@ def Entrevista(rol=None):
     fase_prev = fase
     cursor_mano = False
 
-    # Capas precalculadas (se crean una sola vez para no gastar CPU en cada cuadro)
+    # capas precalculadas (se crean una sola vez para no gastar cpu en cada cuadro)
     velo_oscuro = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)
     velo_oscuro.fill((16, 15, 15, 185))
     velo_civitas = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)
     velo_civitas.fill((22, 17, 17, 218))
 
-    # Recursos ilustrados independientes de la lógica. Se cargan una sola vez.
+    # recursos ilustrados independientes de la lógica. se cargan una sola vez.
     ruta_ui = Path(__file__).resolve().parent.parent / "Assets" / "Interfaz" / "CronicaUI"
     laminas = {}
     for nombre_ui in ("decision", "decision_hover", "decision_selected", "dialogo", "dialogo_civitas", "votacion", "votacion_hover", "post", "chat", "marco_fase", "marco_fase_activa", "banner_transicion", "banner_civitas", "tendencia", "etiqueta_vivo", "barra_estado", "escena_debate", "civinet_tendencias", "retrato_pregunta", "retrato_respuesta", "retrato_ciudadano", "retrato_audiencia", "retrato_opinion"):
@@ -693,7 +690,7 @@ def Entrevista(rol=None):
     escenario_velo = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)
     escenario_velo.fill((8, 11, 15, 155))
 
-    # ------------------------------------------------------------ piezas de interfaz
+    # piezas de interfaz
 
     def anim(clave, objetivo):
         """Acerca suavemente un valor hacia 0 o 1 (para los efectos de hover)."""
@@ -745,14 +742,14 @@ def Entrevista(rol=None):
             canvas.blit(f_small.render(str(valor), True, tono), (112, yy))
             pygame.draw.rect(canvas, (60, 54, 50), (13, yy+24, 122, 8))
             pygame.draw.rect(canvas, tono, (13, yy+24, int(122*min(1, max(0, valor/maximo))), 8))
-        # Franja de emisión central; el chat vive en su propia columna derecha.
+        # franja de emisión central, el chat vive en su propia columna derecha.
         pygame.draw.rect(canvas, (24, 21, 20), (151, 57, 497, 42))
         pygame.draw.line(canvas, (123, 88, 57), (151, 98), (648, 98), 1)
         canvas.blit(f_small.render("CIUDAD NOVA   /   ENTREVISTA PÚBLICA",
                                    True, (218, 205, 178)), (164, 72))
         pygame.draw.circle(canvas, (197, 64, 56), (615, 79), 5)
         canvas.blit(f_small.render("LIVE", True, (231, 186, 156)), (624, 72))
-        # Ilustración integrada en la parte alta, atenuada para no competir con las opciones.
+        # ilustración integrada en la parte alta, atenuada para no competir con las opciones.
         if arte_estudio is not None and fase not in ("intro", "civitas"):
             imagen = laminas.get("escena_debate")
             if imagen is not None:
@@ -851,7 +848,7 @@ def Entrevista(rol=None):
         """'Lo que circula': una publicación falsa de la red, inestable y con reacciones que suben."""
         rect = rect.move(jitter, 0)
         lamina(capa, "post", rect)
-        # Sin esquinas de visor: tarjeta de publicación sobria.
+        # sin esquinas de visor, tarjeta de publicación sobria.
         cab = pygame.Rect(rect.x + 2, rect.y + 2, rect.width - 4, u(26))
         pygame.draw.rect(capa, (70, 42, 40), cab)
         pygame.draw.circle(capa, mezclar(COL_MALO, COL_POLVO, 0.55), (cab.x + u(16), cab.centery), u(9))
@@ -961,7 +958,7 @@ def Entrevista(rol=None):
         return elegido
 
 
-    # ---- efectos de transmisión y de CIVITAS (se dibujan directo sobre el canvas)
+    # efectos de transmisión y de civitas (se dibujan directo sobre el canvas)
 
     def timecode():
         s = int(tiempo)
@@ -1033,7 +1030,7 @@ def Entrevista(rol=None):
                               (196, 166, 133)), (12, 30))
         pygame.draw.line(panel, (132, 94, 61), (10, 51), (w-10, 51), 1)
         yy = 61
-        # Se muestran los mensajes más recientes con un máximo de dos líneas cada uno.
+        # se muestran los mensajes más recientes con un máximo de dos líneas cada uno.
         visibles = chat_feed[-6:]
         if not visibles:
             panel.blit(sub.render("Esperando comentarios...", True, (185, 175, 162)), (12, yy))
@@ -1051,32 +1048,32 @@ def Entrevista(rol=None):
                 yy += 16
             pygame.draw.line(panel, (68, 58, 50), (12, yy+6), (w-12, yy+6), 1)
             yy += 17
-        # Tendencia dinámica, sin ocultar el historial de comentarios.
+        # tendencia dinámica, sin ocultar el historial de comentarios.
         lamina(panel, "tendencia", pygame.Rect(9, h-59, w-18, 49))
         etiqueta = "#EntrevistaCRÓNICA" if fase not in ("civinet", "civitas") else "#CIVINET"
         panel.blit(tipo(14).render("EN TENDENCIA", True, (239, 174, 112)), (22, h-53))
         panel.blit(tipo(14).render(etiqueta, True, (246, 226, 194)), (22, h-32))
         canvas.blit(panel, (x, y))
 
-    # ------------------------------------------------------------ MULTIJUGADOR: turnos
-    # Con 2 o más jugadores en red, todos ven la misma entrevista: cada decisión la toma
+    # multijugador, turnos
+    # con 2 o más jugadores en red, todos ven la misma entrevista, cada decisión la toma
     # el dueño de la fase (o el grupo votando) y el servidor la reparte en orden.
     red = red_cliente.actual() if red_cliente is not None else None
     if red is not None and red.jugando() < 2:
         red = None
     turnos = {"numero": 0, "enviado": None, "aviso": "", "color": COL_AMBAR}
-    # UN JUGADOR (elegido en el menú): tú decides las fases de tu personaje y la audiencia;
+    # un jugador (elegido en el menú), tú decides las fases de tu personaje y la audiencia
     # las de los otros personajes las decide el juego.
     modo_menu = red_cliente.modo() if red_cliente is not None else None
-    # MULTIJUGADOR LOCAL: el jugador 1 lleva el personaje elegido y los demás, los siguientes
-    # (mismo orden que en el campo minado). Cada fase la decide el jugador de ese personaje;
+    # multijugador local, el jugador 1 lleva el personaje elegido y los demás, los siguientes
+    # (mismo orden que en el campo minado). cada fase la decide el jugador de ese personaje
     # las de personajes que nadie lleva, las decide el juego.
     locales_roles = []
     if red is None and modo_menu == "local" and rol in NOMBRE_ROL_RED:
         orden = [rol] + [r for r in ("PRESIDENTE", "CIUDADANO", "PERIODISTA", "INFLUENCER") if r != rol]
         locales_roles = orden[:red_cliente.jugadores_locales()]
     auto = red is None and rol in NOMBRE_ROL_RED and (modo_menu == "solo" or bool(locales_roles))
-    humanos = locales_roles or [rol]          # personajes que maneja una persona en este PC
+    humanos = locales_roles or [rol]          # personajes que maneja una persona en este pc
 
     def sala_de_espera():
         """Espera a que lleguen todos los que juegan. Devuelve False si cierran la ventana."""
@@ -1085,7 +1082,7 @@ def Entrevista(rol=None):
         t = 0.0
         while not red.entrevista_inicio:
             if not red.conectado:
-                return True                      # se cayó el servidor: se juega solo
+                return True                      # se cayó el servidor, se juega solo
             t += reloj.tick(60) / 1000
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -1116,17 +1113,17 @@ def Entrevista(rol=None):
         """UN JUGADOR: lo que elegiría cada personaje que maneja el juego."""
         calidad = ["muy_buena", "regular", "mala"].index(respuesta_elegida) \
             if respuesta_elegida in ("muy_buena", "regular", "mala") else 1
-        if clave == "respuesta":        # Presidente: casi siempre regular, a veces sincero o evasivo
+        if clave == "respuesta":        # presidente, casi siempre regular, a veces sincero o evasivo
             return random.choices(range(n), weights=PESOS_PRESIDENTE[:n])[0]
-        if clave == "opinion":          # Influencer: respalda lo bueno, cuestiona lo malo
+        if clave == "opinion":          # influencer, respalda lo bueno, cuestiona lo malo
             return _casi_siempre(min(calidad, n - 1), n, COHERENCIA_INFLUENCER)
-        if clave == "ciudadano":        # Ciudadano: juzga bien la respuesta casi siempre
+        if clave == "ciudadano":        # ciudadano, juzga bien la respuesta casi siempre
             return _casi_siempre(min(calidad, n - 1), n, ACIERTO_CIUDADANO)
-        if clave == "verificacion":     # Ciudadano: la acción que más sube la confianza
+        if clave == "verificacion":     # ciudadano, la acción que más sube la confianza
             acciones = ACCIONES_VERIFICACION[ROLES_VERIFICACION[indice_verificacion]][:n]
             mejor = max(range(len(acciones)), key=lambda k: acciones[k][1])
             return _casi_siempre(mejor, n, ACIERTO_CIUDADANO)
-        return random.randrange(n)      # Periodista: cualquiera de las preguntas disponibles
+        return random.randrange(n)      # periodista, cualquiera de las preguntas disponibles
 
     def turno(clave, i, n=3):
         """Recibe la opción que el jugador tocó en esta pantalla (o None) y devuelve
@@ -1150,9 +1147,9 @@ def Entrevista(rol=None):
             else:
                 turnos["aviso"] = "TU TURNO · elige una opción" if auto else ""
                 turnos["color"] = COL_AMBAR
-            return i                             # sin menú o multijugador local: igual que siempre
+            return i                             # sin menú o multijugador local, igual que siempre
         n = turnos["numero"]
-        if n in red.decisiones:                  # ya se decidió: todos aplican lo mismo
+        if n in red.decisiones:                  # ya se decidió, todos aplican lo mismo
             turnos["numero"] += 1
             turnos["aviso"] = ""
             return red.decisiones[n]
@@ -1180,7 +1177,7 @@ def Entrevista(rol=None):
             turnos["color"] = COL_APAGADO
         return None
 
-    # ------------------------------------------------------------ bucle principal
+    # bucle principal
 
     running = True
     if red is not None:
@@ -1221,7 +1218,7 @@ def Entrevista(rol=None):
                     tecla = {pygame.K_1: 1, pygame.K_2: 2, pygame.K_3: 3,
                              pygame.K_KP1: 1, pygame.K_KP2: 2, pygame.K_KP3: 3}.get(event.key, 0)
 
-        # --- modo ajuste: mover y cambiar el tamaño de toda la interfaz
+        # modo ajuste, mover y cambiar el tamaño de toda la interfaz
         if modo_ajuste:
             teclas = pygame.key.get_pressed()
             paso = 4 if (teclas[pygame.K_LSHIFT] or teclas[pygame.K_RSHIFT]) else 1
@@ -1295,7 +1292,7 @@ def Entrevista(rol=None):
             desenlace_preparado = True
 
         if fase == "intro":
-            # Apertura cinematográfica: la transmisión parece normal... hasta que CIVITAS habla.
+            # apertura cinematográfica, la transmisión parece normal... hasta que civitas habla.
             quien, dialogo = intro_dialogos[indice_dialogo]
             es_civitas = quien == "CIVITAS"
             col_d = COL_CIVITAS if es_civitas else COL_AGUA
@@ -1327,7 +1324,7 @@ def Entrevista(rol=None):
             canvas.blit(ind, r_ind)
             if completo:
                 triangulo_siguiente(panel.right - u(24), r_ind.centery, col_d)
-            # Una línea de escaneo muy sutil acompaña el diálogo, sin tapar el fondo.
+            # una línea de escaneo muy sutil acompaña el diálogo, sin tapar el fondo.
 
             if click or tecla == 1 or avanzar:
                 if not completo:
@@ -1340,11 +1337,11 @@ def Entrevista(rol=None):
                         lanzar_alerta("TRANSMISIÓN EN DIRECTO · 2.483 espectadores conectados", 4.0, COL_AGUA)
 
         elif fase == "civitas":
-            # CIVITAS rompe la cuarta pared. Sus líneas cambian según cómo vayas jugando.
+            # civitas rompe la cuarta pared. sus líneas cambian según cómo vayas jugando.
             lineas_civ = lineas_de_civitas(preguntas_hechas)
             etiqueta_c, dialogo = lineas_civ[indice_dialogo]
             canvas.blit(velo_civitas, (0, 0))
-            # CIVITAS conserva una firma visual inquietante, pero evita el ruido excesivo.
+            # civitas conserva una firma visual inquietante, pero evita el ruido excesivo.
             pulso_civ = 0.5 + 0.5 * math.sin(tiempo * 2.6)
             velo_civitas.set_alpha(int(188 + 22 * pulso_civ))
             canvas.blit(velo_civitas, (0, 0))
@@ -1424,7 +1421,7 @@ def Entrevista(rol=None):
                 else:
                     confianza_civinet = max(0, confianza_civinet - 1)
                     avisos["confianza"] = {"txt": "-1", "color": COL_MALO, "t": 1.4}
-                # El ciudadano tiene una valoración propia: no sustituye al influencer.
+                # el ciudadano tiene una valoración propia, no sustituye al influencer.
                 if random.random() < 0.28:
                     lanzar_reaccion(["👏", "🤔", "⚠️"][i],
                                     ["Un ciudadano respalda la respuesta",
@@ -1483,14 +1480,14 @@ def Entrevista(rol=None):
             datos = INTERVENCIONES_CIVINET[preguntas_hechas]
             y = bloque_cita(Y_CONTENIDO, "Pregunta original", ultima_pregunta,
                             ROLES["pregunta"][1], "pregunta", n=99999) + u(6)
-            # Dos columnas: lo que se dijo de verdad contra lo que circula en la red
+            # dos columnas, lo que se dijo de verdad contra lo que circula en la red
             col_w = (SCREEN_ANCHO - u(12)) // 2
             lin_resp = dividir_en_lineas(ultima_respuesta, fuente, col_w - u(28))
             lin_post = dividir_en_lineas(datos["publicacion"], fuente, col_w - u(28))
             alto_col = u(40) + max(len(lin_resp), len(lin_post)) * u(20) + u(46)
             r_izq = pygame.Rect(SCREEN_X, y, col_w, alto_col)
             r_der = pygame.Rect(SCREEN_X + col_w + u(12), y, col_w, alto_col)
-            compartido = int(120 * preguntas_hechas + t_fase * (35 + 12 * preguntas_hechas))   # sube en vivo: presión
+            compartido = int(120 * preguntas_hechas + t_fase * (35 + 12 * preguntas_hechas))   # sube en vivo, presión
             sacudida = random.randint(-2, 2) if int(tiempo * 7) % 13 == 0 else 0
             tarjeta_transcripcion(r_izq, lin_resp)
             tarjeta_post(r_der, CUENTAS_CIVINET.get(preguntas_hechas, "@red_anonima"), lin_post,
@@ -1531,14 +1528,14 @@ def Entrevista(rol=None):
                     "color": COL_AGUA if delta_espectadores > 0 else COL_MALO,
                     "t": 1.4,
                 }
-                # Cada integrante de la comunidad reacciona a la decisión tomada.
+                # cada integrante de la comunidad reacciona a la decisión tomada.
                 emoji_accion = "📈" if delta_confianza > 0 and delta_falso < 0 else ("⚠️" if delta_falso > 0 else "📰")
                 texto_accion = ("Buena verificación: la confianza se fortalece" if delta_confianza > 0 and delta_falso < 0
                                 else ("La publicación engañosa gana terreno" if delta_falso > 0
                                       else "La comunidad toma nota de tu decisión"))
                 lanzar_reaccion(emoji_accion, texto_accion,
                                 COL_AGUA if delta_falso < 0 else COL_VIVO)
-                # CIVITAS reacciona a tu decisión
+                # civitas reacciona a tu decisión
                 if delta_falso > 0:
                     lanzar_alerta("CIVITAS: " + random.choice(REACCIONES_CIVITAS["mal"]), 3.4, COL_CIVITAS)
                 elif delta_falso < 0 and random.random() < 0.6:
@@ -1577,7 +1574,7 @@ def Entrevista(rol=None):
         capa.set_alpha(int(255 * aparicion))
         canvas.blit(capa, (0, int((1 - aparicion) * u(14))))
 
-        # Notificación emergente (como un logro de videojuego): entra deslizando y tiene su cuenta regresiva.
+        # notificación emergente (como un logro de videojuego), entra deslizando y tiene su cuenta regresiva.
         if alerta_popup["tiempo"] > 0 and fase not in ("intro", "civitas"):
             ancho_a = min(ANCHO - u(36), u(440))
             lineas_a = dividir_en_lineas(alerta_popup["texto"], fuente, ancho_a - u(88))
@@ -1599,7 +1596,7 @@ def Entrevista(rol=None):
             surf_a.set_alpha(int(255 * min(1.0, alerta_popup["tiempo"] / 0.35)))
             canvas.blit(surf_a, (ANCHO - ancho_a - u(18) + desliza, u(18)))
 
-        # Reacción visual a TODAS las decisiones, no solo a las intervenciones.
+        # reacción visual a todas las decisiones, no solo a las intervenciones.
         reaccion["t"] = max(0.0, reaccion["t"] - dt)
         for p in particulas[:]:
             p["t"] -= dt
@@ -1629,7 +1626,7 @@ def Entrevista(rol=None):
             else:
                 fase = "pregunta"
 
-        # Tarjeta de cambio de turno: entra y se desvanece, sin bloquear controles.
+        # tarjeta de cambio de turno, entra y se desvanece, sin bloquear controles.
         if 0.06 < t_fase < 0.86 and fase not in ("intro", "siguiente"):
             nombres_turno = {"pregunta":"PERIODISTA / PREGUNTA", "respuesta":"PRESIDENTE / RESPUESTA",
                              "ciudadano":"CIUDADANO / VEREDICTO", "audiencia":"AUDIENCIA / REACCIÓN",
@@ -1646,7 +1643,7 @@ def Entrevista(rol=None):
             banner.set_alpha(int(235 * max(0.0, a)))
             canvas.blit(banner, (164, 280-int((1-a)*14)))
 
-        # MULTIJUGADOR: a quién le toca decidir
+        # multijugador, a quién le toca decidir
         if (red is not None or auto) and turnos["aviso"] and fase in DUENO_FASE:
             texto_t = tipo(16).render(turnos["aviso"], True, COL_POLVO)
             barra_t = pygame.Rect(0, 0, texto_t.get_width() + 36, texto_t.get_height() + 12)
@@ -1676,7 +1673,7 @@ def Entrevista(rol=None):
             for k, t in enumerate(textos):
                 canvas.blit(fuente_ajuste.render(t, True, COL_AMBAR if k == 0 else COL_PAPEL), (10, ALTO - 56 + k * 18))
 
-        # GUÍA: una línea arriba que dice qué sigue en cada momento
+        # guía, una línea arriba que dice qué sigue en cada momento
         guia = GUIA_FASES.get(fase)
         if guia:
             fte_guia = tipo(u(15))
@@ -1687,14 +1684,14 @@ def Entrevista(rol=None):
             canvas.blit(sombra_guia, caja_guia)
             canvas.blit(txt_guia, txt_guia.get_rect(center=caja_guia.center))
 
-        # Escala independiente: la ventana puede estirarse libremente sin bandas negras.
+        # escala independiente, la ventana puede estirarse libremente sin bandas negras.
         lienzo_escalado = pygame.transform.smoothscale(canvas, display.get_size())
         display.blit(lienzo_escalado, (0, 0))
         pygame.display.update()
 
     for f in fondos.values():
         f.cerrar()
-    # RESULTADO PARA LOS INDICADORES DEL JUGADOR (lo lee SecuenciaMisiones / Intz_Presidente)
+    # resultado para los indicadores del jugador (lo lee secuenciamisiones / intz_presidente)
     global ULTIMO_RESULTADO
     ULTIMO_RESULTADO = {"confianza": confianza_civinet, "alcance": alcance_falso}
     return puntos_influencer, puntos_ciudadano

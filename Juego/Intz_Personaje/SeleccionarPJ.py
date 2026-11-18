@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding, utf-8
 """Selector de The Leader, estética de la entrevista. Requiere pygame y los PNG incluidos."""
 import math
 import sys
@@ -25,7 +25,7 @@ OTRO=pygame.Rect(434,522,154,56)
 CONFIRMAR=pygame.Rect(591,522,184,56)
 
 def fuente(tam, negrita=False, cursiva=False):
-    # Toda la interfaz utiliza Times New Roman, incluso los botones.
+    # toda la interfaz utiliza times new roman, incluso los botones.
     return pygame.font.SysFont('timesnewroman', tam, bold=negrita, italic=cursiva)
 
 def texto(surf, mensaje, tam, color, centro=None, pos=None, negrita=False, cursiva=False):
@@ -42,7 +42,7 @@ def dibujar_logo(surf, zona, indice, t, resaltado=False):
     cx, cy = zona.center
     pulso = (math.sin(t * 3.3 + indice) + 1) / 2
     pygame.draw.rect(surf, (25, 27, 27), zona)
-    # Grabado radial, doble anillo y puntas de la insignia.
+    # grabado radial, doble anillo y puntas de la insignia.
     for radio in (61, 55, 47):
         pygame.draw.circle(surf, (75, 69, 56), (cx, cy), radio, 1)
     puntas = []
@@ -54,34 +54,34 @@ def dibujar_logo(surf, zona, indice, t, resaltado=False):
     pygame.draw.polygon(surf, color, puntas, 2)
     pygame.draw.circle(surf, color, (cx, cy), 47, 2)
     pygame.draw.circle(surf, (89, 80, 65), (cx, cy), 42, 1)
-    if indice == 0:  # Periodista: periódico
+    if indice == 0:  # periodista, periódico
         r = pygame.Rect(cx - 27, cy - 25, 54, 49)
         pygame.draw.rect(surf, color, r, 3)
         pygame.draw.rect(surf, color, (cx-20, cy-17, 17, 17), 2)
         for yy in (-16, -9, -2, 6, 14):
             x1 = cx+3 if yy < 0 else cx-20
             pygame.draw.line(surf, color, (x1,cy+yy), (cx+19,cy+yy), 2)
-    elif indice == 1:  # Influencer: antena y ondas
+    elif indice == 1:  # influencer, antena y ondas
         pygame.draw.circle(surf, color, (cx,cy-6), 6, 2)
         pygame.draw.line(surf, color, (cx,cy+2), (cx,cy+29), 3)
         pygame.draw.line(surf, color, (cx-13,cy+29), (cx+13,cy+29), 3)
         for rad in (18, 30):
             pygame.draw.arc(surf,color,(cx-rad,cy-6-rad,rad*2,rad*2),.55,2.6,2)
             pygame.draw.arc(surf,color,(cx-rad,cy-6-rad,rad*2,rad*2),3.68,5.73,2)
-    elif indice == 2:  # Ciudadano: ojo vigilante
+    elif indice == 2:  # ciudadano, ojo vigilante
         pygame.draw.ellipse(surf,color,(cx-33,cy-16,66,32),3)
         pygame.draw.circle(surf,color,(cx,cy),13,3)
         pygame.draw.circle(surf,color,(cx,cy),5)
         for sign in (-1,1):
             pygame.draw.line(surf,color,(cx-8,cy+sign*25),(cx,cy+sign*33),2)
             pygame.draw.line(surf,color,(cx+8,cy+sign*25),(cx,cy+sign*33),2)
-    else:  # Presidente: escudo con corona
+    else:  # presidente, escudo con corona
         escudo=[(cx,cy-32),(cx+30,cy-21),(cx+26,cy+16),(cx,cy+35),(cx-26,cy+16),(cx-30,cy-21)]
         pygame.draw.polygon(surf,color,escudo,3)
         pygame.draw.polygon(surf,color,[(cx-18,cy-8),(cx-20,cy-22),(cx-7,cy-14),(cx,cy-26),
                                         (cx+7,cy-14),(cx+20,cy-22),(cx+18,cy-8)],2)
         pygame.draw.line(surf,color,(cx-17,cy-3),(cx+17,cy-3),2)
-    # Esquinas de la placa
+    # esquinas de la placa
     for x,dx in ((zona.left+8,1),(zona.right-8,-1)):
         for y,dy in ((zona.top+8,1),(zona.bottom-8,-1)):
             pygame.draw.line(surf,color,(x,y),(x+dx*13,y),2)
@@ -106,7 +106,7 @@ def cargar_assets():
     return recursos
 
 def imagen_ajustada(surf, img, rect, alpha=255):
-    # Los PNG originales tienen bordes propios; se escalan al rectángulo indicado.
+    # los png originales tienen bordes propios, se escalan al rectángulo indicado.
     nueva=pygame.transform.smoothscale(img,rect.size)
     if alpha!=255: nueva.set_alpha(alpha)
     surf.blit(nueva,rect.topleft)
@@ -130,7 +130,7 @@ def boton(surf,recursos,rect,nombre,mouse,tipo='claro'):
     imagen_ajustada(surf,recursos[archivo],rect)
     color=(255,236,191) if tipo!='claro' else (46,31,24)
     
-    # El botón de regreso usa exclusivamente el icono de flecha del PNG.
+    # el botón de regreso usa exclusivamente el icono de flecha del png.
     if tipo != 'volver':
         texto(surf,nombre,16,color,rect.center,negrita=True,cursiva=True)
     if hover: pygame.draw.rect(surf,(215,177,133),rect,2,border_radius=5)
@@ -212,7 +212,7 @@ def SeleccionarPJ():
             if accion is not None: return abrir_rol(nombre)
 
         canvas.blit(recursos['fondo_entrevista'],(0,0))
-        # Oscurece la escena para que los expedientes sean legibles.
+        # oscurece la escena para que los expedientes sean legibles.
         velo=pygame.Surface((ANCHO,ALTO),pygame.SRCALPHA)
         velo.fill((16,12,12,82));canvas.blit(velo,(0,0))
         placa(canvas,pygame.Rect(20,17,760,120),(22,19,19,198),(154,120,93))

@@ -5,22 +5,20 @@ from pathlib import Path
 import pygame
 import Metodos
 
-# ====== AJUSTES DEL EVENTO ======
+# ajustes del evento
 NUM_MINAS = 450
 DISTANCIA_MINIMA = 52
-MINAS_VISIBLES = False      # solo para pruebas: si es True las minas se ven siempre
+MINAS_VISIBLES = False      # solo para pruebas, si es true las minas se ven siempre
 VIDAS = 2
 
-# --- PODER (tecla B): muestra las minas un momento ---
+# poder (tecla b), muestra las minas un momento
 TECLA_PODER = pygame.K_b
 DURACION_PODER = 5.0        # segundos que se ven las minas
 ESPERA_PODER = 9.0         # segundos de recarga tras finalizar el escaneo
-# -----------------------------------------------------
 
-# --- SEPARACIÓN DE TAMAÑOS ---
-RADIO_SPRITE_VISUAL = 75    # Tamaño gigante para que se vea genial y detallado en pantalla
-RADIO_HITBOX = 12           # Hitbox pequeña y justa: está en los PIES del personaje
-# -----------------------------
+# separación de tamaños
+RADIO_SPRITE_VISUAL = 75    # tamaño gigante para que se vea genial y detallado en pantalla
+RADIO_HITBOX = 12           # hitbox pequeña y justa, está en los pies del personaje
 
 RADIO_MINA = 7
 VELOCIDAD = 170
@@ -33,13 +31,12 @@ ALTO_INICIO = 80
 PAUSA_ENTRE_PAREJAS = 2.5   # subí esto de 1 a 2.5 para que alcance a leerse el resultado de la pareja
 INVULNERABLE = 2.0
 
-# --- FONDO ---
-# Copia la imagen mejorada a Assets/Interfaz y ponle este nombre.
+# fondo
+# copia la imagen mejorada a assets/interfaz y ponle este nombre.
 FONDO = "Mapa_evnt2.jpg"
 ALTURA_CORTE_TERRENO = 815  # separa el terreno de la plataforma inferior de la imagen
-# -------------
 
-# --- EFECTOS VISUALES (no necesitan imagenes adicionales) ---
+# efectos visuales (no necesitan imagenes adicionales)
 ACTIVAR_SOMBRAS = True
 ACTIVAR_POLVO = True
 ACTIVAR_ILUMINACION = True
@@ -48,23 +45,19 @@ CANTIDAD_PARTICULAS = 190
 DURACION_DESTELLO = 0.36
 DURACION_SACUDIDA = 0.24
 DURACION_GOTA = 0.7         # tiempo que tarda en "evaporarse" la gota cuando pierdes una vida
-# -----------------------------------------------------------
 
-# --- MINI INTERFAZ DE ARRIBA: una imagen por pareja, guardadas en Assets/Interfaz ---
-IMAGENES_DUO = ["Duo_1.png", "Duo_2.png"]   # 1a pareja (Presidente + Influencer) y 2a pareja (Periodista + Ciudadano)
-# ------------------------------------------------------------------------------------
+# mini interfaz de arriba, una imagen por pareja, guardadas en assets/interfaz
+IMAGENES_DUO = ["Duo_1.png", "Duo_2.png"]   # 1a pareja (presidente + influencer) y 2a pareja (periodista + ciudadano)
 
-# --- TIPOGRAFIAS (opcionales): ponlas en Assets/Fuentes. Si no estan, usa fuentes del sistema ---
-# Recomendadas (gratis en Google Fonts): "Stardos Stencil" (titulos) y "Special Elite" (maquina de escribir)
+# tipografias (opcionales), ponlas en assets/fuentes. si no estan, usa fuentes del sistema
+# recomendadas (gratis en google fonts), "stardos stencil" (titulos) y "special elite" (maquina de escribir)
 FUENTE_TITULO_TTF = None
 FUENTE_TEXTO_TTF = None
 VELOCIDAD_TEXTO = 70        # letras por segundo en la maquina de escribir del tutorial
-# -------------------------------------------------------------------------------------------
-# ================================
 
-# ====== PALETA DE LA INTERFAZ ======
-# Todo el mundo es polvo, oxido y metal viejo; el UNICO color frio es el agua.
-# Asi el agua (vidas y deposito) es lo que mas llama la atencion, igual que en la historia.
+# paleta de la interfaz
+# todo el mundo es polvo, oxido y metal viejo, el unico color frio es el agua.
+# asi el agua (vidas y deposito) es lo que mas llama la atencion, igual que en la historia.
 COL_POLVO = (22, 18, 14)
 COL_PAPEL = (214, 199, 166)
 COL_TINTA = (44, 34, 24)
@@ -74,16 +67,14 @@ COL_AGUA = (96, 190, 205)
 COL_ACERO = (96, 88, 76)
 COL_APAGADO = (122, 112, 96)
 COL_MINA = (220, 40, 40)
-# ===================================
 
 FPS_ANIMACION = 12
 ESCALA_SPRITE = 1.0
 
-# --- PRUEBA DE SPRITES: usa el cuerpo de otro personaje sin cambiar nombres ni HUD ---
-# {"Ciudadano": "Sobreviviente"} = el Ciudadano (amarillo) se dibuja con los sprites de Sobreviviente.
-# Deja el diccionario vacio ({}) para volver a la normalidad.
+# prueba de sprites, usa el cuerpo de otro personaje sin cambiar nombres ni hud
+# {"ciudadano", "sobreviviente"} = el ciudadano (amarillo) se dibuja con los sprites de sobreviviente.
+# deja el diccionario vacio ({}) para volver a la normalidad.
 SPRITES_PRUEBA = {"Ciudadano": "Sobreviviente"}
-# ---------------------------------------------------------------------------------------
 
 ALTURA_SPRITE = int(RADIO_SPRITE_VISUAL * 2 * ESCALA_SPRITE)
 LIMITE_ARRIBA = ALTURA_SPRITE - RADIO_HITBOX   # y mínima de los pies para que la cabeza no se salga por arriba
@@ -92,17 +83,17 @@ WASD = (pygame.K_w, pygame.K_s, pygame.K_a, pygame.K_d)
 FLECHAS = (pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT)
 IJKL = (pygame.K_i, pygame.K_k, pygame.K_j, pygame.K_l)
 NUMPAD = (pygame.K_KP8, pygame.K_KP5, pygame.K_KP4, pygame.K_KP6)
-# MULTIJUGADOR LOCAL: teclas del jugador 1, 2, 3 y 4 en el mismo teclado
+# multijugador local, teclas del jugador 1, 2, 3 y 4 en el mismo teclado
 TECLAS_LOCALES = [WASD, FLECHAS, IJKL, NUMPAD]
 NOMBRE_TECLAS = {WASD: "W A S D", FLECHAS: "las flechas", IJKL: "I J K L", NUMPAD: "8 4 5 6 del teclado numérico"}
 TEXTO_CONTROLES = "El primer jugador se mueve con W, A, S, D; el segundo, con las flechas."
 
 PAREJAS = [
     [("Presidente", (70, 130, 255), WASD), ("Influencer", (200, 110, 255), FLECHAS)],
-    [("Periodista", (80, 220, 120), WASD), ("Ciudadano", (255, 220, 70), FLECHAS)],   # Ciudadano (Estella) = amarillo
+    [("Periodista", (80, 220, 120), WASD), ("Ciudadano", (255, 220, 70), FLECHAS)],   # ciudadano (estella) = amarillo
 ]
 
-# MULTIJUGADOR: rol elegido en la selección -> nombre del personaje en el campo minado
+# multijugador, rol elegido en la selección -> nombre del personaje en el campo minado
 NOMBRE_POR_ROL = {"PRESIDENTE": "Presidente", "CIUDADANO": "Ciudadano",
                   "PERIODISTA": "Periodista", "INFLUENCER": "Influencer"}
 MIN_JUGADORES_RED = 2       # con menos jugadores conectados se juega el modo clásico (dos parejas)
@@ -122,7 +113,7 @@ def carpeta_assets(*partes):
     return ruta
 
 
-# ---------------------------------------------------------------- animaciones
+# animaciones
 
 def cargar_frames(carpeta):
     originales = []
@@ -149,8 +140,8 @@ def cargar_frames(carpeta):
     if not originales:
         return []
 
-    # Caja que contiene al personaje en TODOS los cuadros de esta animación.
-    # Se usa la misma caja y la misma escala para todos, así no "palpita" al caminar.
+    # caja que contiene al personaje en todos los cuadros de esta animación.
+    # se usa la misma caja y la misma escala para todos, así no "palpita" al caminar.
     caja = None
     for img in originales:
         r = img.get_bounding_rect(50)          # solo píxeles visibles (alfa >= 128)
@@ -176,7 +167,7 @@ def cargar_animaciones():
     for pareja in PAREJAS:
         for nombre, color, teclas in pareja:
             ANIMACIONES[nombre] = {}
-            carpeta = SPRITES_PRUEBA.get(nombre, nombre)      # p.ej. el Ciudadano usa los sprites de Sobreviviente
+            carpeta = SPRITES_PRUEBA.get(nombre, nombre)      # p.ej. el ciudadano usa los sprites de sobreviviente
             ruta_personaje = ruta_base / carpeta / "Hombre" if carpeta == "Periodista" else ruta_base / carpeta
             if not ruta_personaje.exists():
                 if nombre == "Periodista":
@@ -195,7 +186,7 @@ def cargar_animaciones():
             for estado in ESTADOS_MOVIMIENTO:
                 if not ANIMACIONES[nombre][estado]:
                     ANIMACIONES[nombre][estado] = respaldo
-            # las de "quieto" NO se rellenan: si no existen, parado se ve un solo cuadro (sin caminar en el lugar)
+            # las de "quieto" no se rellenan, si no existen, parado se ve un solo cuadro (sin caminar en el lugar)
 
 
 def elegir_fotogramas(nombre, estado, ultima_direccion):
@@ -239,7 +230,7 @@ def actualizar_animacion(jugador, dt):
     jugador["frame_activo"] = fotogramas[indice]
 
 
-# ---------------------------------------------------------------- mundo
+# mundo
 
 def crear_minas(semilla=None):
     """semilla: en multijugador la manda el servidor, así todos tienen exactamente las mismas minas."""
@@ -270,7 +261,7 @@ def crear_jugadores(pareja):
     jugadores = []
     for i, (nombre, color, teclas) in enumerate(pareja):
         x = ANCHO * (i + 1) // (len(pareja) + 1)   # con 2 queda igual que antes (tercios)
-        y = ALTO_MUNDO - ALTO_INICIO + 20       # (x, y) es la posición de los PIES
+        y = ALTO_MUNDO - ALTO_INICIO + 20       # (x, y) es la posición de los pies
         jugador = {
             "nombre": nombre,
             "color": color,
@@ -279,7 +270,7 @@ def crear_jugadores(pareja):
             "y": y,
             "inicio": (x, y),
             "vidas": VIDAS,
-            "gota_t": 0.0,                      # animación de la gota que se pierde en el HUD
+            "gota_t": 0.0,                      # animación de la gota que se pierde en el hud
             "invulnerable": 0.0,
             "llego": False,
             "eliminado": False,
@@ -324,19 +315,19 @@ def mover(jugador, presionadas, dt):
     jugador["y"] = max(LIMITE_ARRIBA, min(ALTO_MUNDO - RADIO_HITBOX, jugador["y"] + dy * VELOCIDAD * dt))
 
 
-# ---------------------------------------------------------------- fondo
+# fondo
 
 def preparar_fondo(imagen):
     """Construye el recorrido sin deformar el terreno ni reflejarlo."""
     ancho_original, alto_original = imagen.get_size()
     corte = max(1, min(ALTURA_CORTE_TERRENO, alto_original - 1))
 
-    # Separamos el terreno de la plataforma inferior.
+    # separamos el terreno de la plataforma inferior.
     terreno_original = imagen.subsurface((0, 0, ancho_original, corte)).copy()
     alto_terreno = max(1, int(terreno_original.get_height() * ANCHO / ancho_original))
     terreno = pygame.transform.smoothscale(terreno_original, (ANCHO, alto_terreno)).convert()
 
-    # Repetimos siempre la imagen en su orientacion original. Para disimular
+    # repetimos siempre la imagen en su orientacion original. para disimular
     # las uniones, mezclamos suavemente una franja entre una copia y la siguiente.
     fondo = pygame.Surface((ANCHO, ALTO_MUNDO)).convert()
     solape = min(70, max(24, alto_terreno // 12))
@@ -347,8 +338,8 @@ def preparar_fondo(imagen):
     while y < ALTO_MUNDO:
         fondo.blit(terreno, (0, y))
 
-        # Mezcla progresiva entre el borde inferior de la copia anterior
-        # y el borde superior de la nueva copia. Evita el reflejo invertido.
+        # mezcla progresiva entre el borde inferior de la copia anterior
+        # y el borde superior de la nueva copia. evita el reflejo invertido.
         for fila in range(solape):
             progreso = fila / max(1, solape - 1)
             anterior = terreno.subsurface((0, alto_terreno - solape + fila, ANCHO, 1)).copy()
@@ -360,7 +351,7 @@ def preparar_fondo(imagen):
 
         y += paso
 
-    # La plataforma se coloca una sola vez, al final del recorrido.
+    # la plataforma se coloca una sola vez, al final del recorrido.
     plataforma_original = imagen.subsurface((0, corte, ancho_original, alto_original - corte)).copy()
     alto_plataforma = max(1, int(plataforma_original.get_height() * ANCHO / ancho_original))
     plataforma = pygame.transform.smoothscale(plataforma_original, (ANCHO, alto_plataforma)).convert()
@@ -383,7 +374,7 @@ def dibujar_fondo(canvas, fondo, camara):
     canvas.blit(fondo, (0, 0), (0, camara, ANCHO, ALTO))
 
 
-# ---------------------------------------------------------------- efectos visuales
+# efectos visuales
 
 def crear_particulas_polvo(cantidad):
     """Crea particulas de polvo mas visibles, repartidas por el recorrido."""
@@ -436,7 +427,7 @@ def crear_sombra():
 
 def dibujar_sombra_personaje(canvas, sombra, jugador, sy):
     x = int(jugador["x"] - sombra.get_width() / 2)
-    # En pantalla, unos pixeles por debajo de los pies equivale a dejarla atras.
+    # en pantalla, unos pixeles por debajo de los pies equivale a dejarla atras.
     y = int(sy + RADIO_HITBOX - 3)
     canvas.blit(sombra, (x, y))
 
@@ -460,7 +451,7 @@ def crear_capa_ambiente():
 
 def crear_explosion(particulas, ondas, x, y):
     """Estallido mas contundente: chispas, polvo, fragmentos y ondas expansivas."""
-    # Fragmentos principales: salen disparados en todas las direcciones.
+    # fragmentos principales, salen disparados en todas las direcciones.
     for _ in range(48):
         angulo = random.uniform(0, math.tau)
         velocidad = random.uniform(85, 290)
@@ -475,7 +466,7 @@ def crear_explosion(particulas, ondas, x, y):
                                     (105, 91, 76), (225, 205, 165), (255, 225, 165)))
         })
 
-    # Polvo mas grande que se abre cerca del suelo.
+    # polvo mas grande que se abre cerca del suelo.
     for _ in range(16):
         angulo = random.uniform(0, math.tau)
         velocidad = random.uniform(25, 115)
@@ -510,7 +501,7 @@ def actualizar_explosiones(particulas, ondas, dt):
 
 
 def dibujar_explosiones(canvas, particulas, ondas, camara):
-    # Ondas expansivas visibles sobre el terreno.
+    # ondas expansivas visibles sobre el terreno.
     for onda in ondas:
         sy = int(onda["y"] - camara)
         if -100 <= sy <= ALTO + 100:
@@ -519,7 +510,7 @@ def dibujar_explosiones(canvas, particulas, ondas, camara):
             color = (235, 166, 83) if onda["vida_max"] > 0.3 else (255, 220, 155)
             pygame.draw.circle(canvas, color, (int(onda["x"]), sy), int(onda["radio"]), grosor)
 
-    # Chispas y fragmentos con una pequeña estela.
+    # chispas y fragmentos con una pequeña estela.
     for p in particulas:
         sy = int(p["y"] - camara)
         if -20 <= sy <= ALTO + 20:
@@ -538,7 +529,7 @@ def dibujar_destello_dano(canvas, tiempo_restante):
         canvas.blit(capa, (0, 0))
 
 
-# ---------------------------------------------------------------- textos flotantes (feedback en el mundo)
+# textos flotantes (feedback en el mundo)
 
 def crear_texto_flotante(lista, x, y, texto, color):
     lista.append({"x": x, "y": y, "texto": texto, "color": color, "vida": 1.1})
@@ -567,19 +558,17 @@ def dibujar_textos(canvas, lista, camara):
         canvas.blit(img, rect)
 
 
-# ================================================================
-#  INTERFAZ
-#  Idea: el juego va de AGUA escasa en unas ruinas. Todo lo que se ve en pantalla
-#  sale de ese mundo: las vidas son gotas, el progreso es una ruta hacia un deposito
-#  que se llena, el escaner es un radar, el tutorial es una nota recuperada.
-# ================================================================
+# interfaz
+# idea, el juego va de agua escasa en unas ruinas. todo lo que se ve en pantalla
+# sale de ese mundo, las vidas son gotas, el progreso es una ruta hacia un deposito
+# que se llena, el escaner es un radar, el tutorial es una nota recuperada.
 
 def mezclar(a, b, t):
     t = max(0.0, min(1.0, t))
     return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
 
 
-# ---------------------------------------------------------------- tipografia
+# tipografia
 
 _CACHE_TEXTO = {}
 
@@ -645,7 +634,7 @@ def dividir_en_lineas(texto, fuente, ancho):
     return lineas
 
 
-# ---------------------------------------------------------------- piezas base
+# piezas base
 
 _CACHE_PLACAS = {}
 
@@ -781,7 +770,7 @@ def dibujar_tanque(canvas, cx, y, ancho, alto, nivel):
     return (gx + gw - 2, gy + gh)
 
 
-# ---------------------------------------------------------------- HUD de arriba a la izquierda
+# hud de arriba a la izquierda
 
 def crear_retrato(i, imagen):
     """Foto instantanea pegada con cinta. Se genera una sola vez al cargar."""
@@ -835,7 +824,7 @@ def dibujar_hud(canvas, jugadores, retrato, poder_espera, poder_activo, tiempo):
     if retrato:
         canvas.blit(retrato, retrato.get_rect(center=(panel.x + 84, panel.centery)))
 
-    # --- jugadores: nombre y gotas de agua (vidas)
+    # jugadores, nombre y gotas de agua (vidas)
     x0 = panel.x + 172
     for i, j in enumerate(jugadores):
         y = panel.y + 26 + i * 52
@@ -857,7 +846,7 @@ def dibujar_hud(canvas, jugadores, retrato, poder_espera, poder_activo, tiempo):
             else:
                 dibujar_gota(canvas, cx, cy, 8, COL_APAGADO, seca=True)
 
-    # --- escaner: radar + anillo de tiempo + tecla
+    # escaner, radar + anillo de tiempo + tecla
     cx, cy = panel.right - 64, panel.y + 58
     if poder_activo > 0:
         fraccion, color, estado = poder_activo / DURACION_PODER, COL_AMBAR, "Activo"
@@ -876,7 +865,7 @@ def dibujar_hud(canvas, jugadores, retrato, poder_espera, poder_activo, tiempo):
     escribir(canvas, estado, FUENTES["nota"], color, (tecla.right + 8, tecla.centery - 1), "midleft")
 
 
-# ---------------------------------------------------------------- ruta de progreso (derecha)
+# ruta de progreso (derecha)
 
 def dibujar_ruta(canvas, x, y_tanque, y_base, marcadores, esc=1.0, restante=None, nivel=None):
     """Ruta vertical hacia el deposito. Cada jugador es un marcador que sube; el deposito se llena con el que va primero."""
@@ -932,7 +921,7 @@ def dibujar_ruta_juego(canvas, jugadores):
                  f"{int((1 - mejor) * total / 10)} m", nivel=mejor)
 
 
-# ---------------------------------------------------------------- resultado entre parejas
+# resultado entre parejas
 
 def dibujar_resultado(canvas, jugadores, siguiente):
     llegaron = [j for j in jugadores if j["llego"]]
@@ -970,7 +959,7 @@ def dibujar_resultado(canvas, jugadores, siguiente):
                  (ANCHO - 160, banda.bottom - 24), "bottomright")
 
 
-# ---------------------------------------------------------------- tutorial: una nota recuperada
+# tutorial, una nota recuperada
 
 def crear_fondo_tutorial(fondo):
     base = pygame.Surface((ANCHO, ALTO))
@@ -1150,7 +1139,7 @@ def mostrar_tutorial(display, canvas, fondo, reloj):
             if event.type == pygame.KEYDOWN:
                 if event.key in (pygame.K_RETURN, pygame.K_SPACE, pygame.K_RIGHT):
                     if not revelado:
-                        t_pagina = 9999.0          # primer toque: termina de escribir la nota
+                        t_pagina = 9999.0          # primer toque, termina de escribir la nota
                     else:
                         indice += 1
                         if indice >= len(paginas):
@@ -1171,7 +1160,7 @@ def mostrar_tutorial(display, canvas, fondo, reloj):
         pagina = paginas[indice]
         canvas.blit(fondo_tutorial, (0, 0))
 
-        # --- nota
+        # nota
         canvas.blit(nota, (nota_rect.x - pad_nota, nota_rect.y - pad_nota))
         x = nota_rect.x + margen
         y = nota_rect.y + 62
@@ -1196,7 +1185,7 @@ def mostrar_tutorial(display, canvas, fondo, reloj):
         if cursor and int(t_total * 6) % 2 == 0:
             pygame.draw.rect(canvas, COL_TINTA, (cursor[0], cursor[1] + 4, 12, fuente.get_linesize() - 8))
 
-        # pie de la nota: teclas reales
+        # pie de la nota, teclas reales
         y_pie = nota_rect.bottom - 82
         r1 = dibujar_tecla(canvas, "Enter", x, y_pie)
         ultima = indice == len(paginas) - 1
@@ -1207,7 +1196,7 @@ def mostrar_tutorial(display, canvas, fondo, reloj):
         escribir(canvas, f"{indice + 1}/{len(paginas)}", FUENTES["nota"], COL_TINTA,
                  (nota_rect.right - margen, y_pie + 16), "midright", sombra=False)
 
-        # --- visor con la demostracion
+        # visor con la demostracion
         canvas.blit(visor, visor_rect.topleft)
         canvas.set_clip(visor_rect)
         pagina["demo"](canvas, visor_rect, t_pagina)
@@ -1217,12 +1206,10 @@ def mostrar_tutorial(display, canvas, fondo, reloj):
         pygame.display.update()
 
 
-# ---------------------------------------------------------------- evento
+# evento
 
 
-# ==============================================================
-# REMASTER — efectos y optimización independientes de las mecánicas
-# ==============================================================
+# remaster — efectos y optimización independientes de las mecánicas
 REMASTER_CINEMATICA = False
 REMASTER_RADAR_PROXIMIDAD = False
 REMASTER_PARTICULAS_PASOS = True
@@ -1333,10 +1320,10 @@ def remaster_pasos(canvas, jugadores, camara, tiempo):
 
 
 
-# Niebla de polvo precalculada: superficies pequeñas, sin ruido por píxel en el bucle.
-# Efectos ambientales precalculados: no se crean superficies durante el dibujo.
+# niebla de polvo precalculada, superficies pequeñas, sin ruido por píxel en el bucle.
+# efectos ambientales precalculados, no se crean superficies durante el dibujo.
 NIEBLA_ACTIVA = True
-NIEBLA_OPACIDAD = 0.78  # 0.0 a 1.0; valores bajos mejoran la visibilidad
+NIEBLA_OPACIDAD = 0.78  # 0.0 a 1.0, valores bajos mejoran la visibilidad
 LUCES_PERSONAJES = False
 POLVO_RAFAGAS = True
 HUD_REMASTER = True
@@ -1359,7 +1346,7 @@ def cargar_atmosfera():
 def dibujar_neblina(canvas, capas, tiempo, camara):
     if not NIEBLA_ACTIVA:
         return
-    # Bruma en franjas amplias, desplazamiento lento con parallax.
+    # bruma en franjas amplias, desplazamiento lento con parallax.
     for indice, (imagen, velocidad, amplitud) in enumerate(capas):
         w, h = imagen.get_size()
         x_inicio = int(tiempo * velocidad) % w - w
@@ -1406,7 +1393,7 @@ def dibujar_rafagas(canvas, rafagas, camara, tiempo):
 def dibujar_hud_remaster(canvas, jugadores, activo, espera, tiempo):
     if not HUD_REMASTER:
         return
-    # Franja de estado bajo el panel existente, sin tapar el mapa central.
+    # franja de estado bajo el panel existente, sin tapar el mapa central.
     r = pygame.Rect(22, 174, 580, 31)
     placa(canvas, r, corte=7, alfa=200)
     if activo > 0:
@@ -1430,7 +1417,7 @@ def dibujar_hud_remaster(canvas, jugadores, activo, espera, tiempo):
     pygame.draw.rect(canvas, COL_ACERO, (r.right - 190, r.y + 10, 171, 10), 1)
 
 
-# ====== REMASTER VISUAL: onda, quemaduras, sombras y chispas ======
+# remaster visual, onda, quemaduras, sombras y chispas
 RADAR_VELOCIDAD_ONDA = 610.0
 RADAR_ALCANCE_ONDA = 1900.0
 DECAL_DURACION = 24.0
@@ -1470,7 +1457,7 @@ def dibujar_onda_radar(canvas, jugadores, tiempo_desde_activacion, camara):
                 pygame.draw.circle(canvas, color, (cx, cy), r, grosor)
 
 def dibujar_minas_pulso(canvas, minas, camara, tiempo, edad_poder, jugadores):
-    # La onda revela progresivamente las minas; no altera sus hitboxes.
+    # la onda revela progresivamente las minas, no altera sus hitboxes.
     alcance = min(RADAR_ALCANCE_ONDA, edad_poder * RADAR_VELOCIDAD_ONDA)
     for mx, my in minas:
         sy = int(my - camara)
@@ -1495,10 +1482,8 @@ def dibujar_marcos_peligro(canvas, poder_activo, tiempo):
     pygame.draw.rect(canvas, (129, 178, 180), (5, 5, ANCHO-10, ALTO-10), 2)
 
 
-# ===============================================================
-# HUD INDUSTRIAL: inspirado en la interfaz de la entrevista
-# Componentes y retratos cargados una sola vez; datos siempre dinámicos.
-# ===============================================================
+# hud industrial, inspirado en la interfaz de la entrevista
+# componentes y retratos cargados una sola vez, datos siempre dinámicos.
 def cargar_retratos_industriales():
     nombres = {
         "Presidente": "retrato_respuesta.png",
@@ -1538,7 +1523,7 @@ def _hud_txt_ajustado(canvas, texto, tam, color, x, y, max_ancho, bold=False):
             return _hud_txt(canvas, texto, talla, color, x, y, bold)
     return _hud_txt(canvas, texto, 12, color, x, y, bold)
 
-SENSOR_RADIO = 90  # distancia en píxeles del mundo; un aviso compartido
+SENSOR_RADIO = 90  # distancia en píxeles del mundo, un aviso compartido
 
 def sensor_compartido(jugadores, indice):
     """Solo indica peligro si AL MENOS UNO está cerca; no revela quién."""
@@ -1573,8 +1558,8 @@ def dibujar_hud_industrial(canvas, jugadores, pareja, retratos, espera, activo, 
     _hud_txt(canvas, "EXPEDIENTE DE CAMPO", 19, (219, 172, 112), x+25,y+12,True)
     _hud_txt_ajustado(canvas, "SECTOR / CAMPO MINADO", 15, (151, 145, 129), x+440,y+15, 225)
     pygame.draw.line(canvas,(103,79,61),(x+22,y+41),(x+w-22,y+41),1)
-    # Dos filas con fotos auténticas del evento de periodista.
-    if len(jugadores) > 2:                       # multijugador local con 3 o 4: filas compactas
+    # dos filas con fotos auténticas del evento de periodista.
+    if len(jugadores) > 2:                       # multijugador local con 3 o 4, filas compactas
         n = len(jugadores)
         alto = 37 if n == 3 else 27
         for i, j in enumerate(jugadores):
@@ -1610,7 +1595,7 @@ def dibujar_hud_industrial(canvas, jugadores, pareja, retratos, espera, activo, 
             cy=yy+29
             dibujar_gota(canvas,cx,cy,9,COL_AGUA if k<j["vidas"] else COL_APAGADO,
                          seca=k>=j["vidas"])
-    # Un único sensor para toda la pareja: nunca identifica al jugador.
+    # un único sensor para toda la pareja, nunca identifica al jugador.
     cx,cy=x+542,y+105
     pygame.draw.circle(canvas,(9,21,22),(cx,cy),53)
     borde=(224,70,52) if alerta else (163,117,70)
@@ -1622,7 +1607,7 @@ def dibujar_hud_industrial(canvas, jugadores, pareja, retratos, espera, activo, 
     pygame.draw.circle(canvas,(52,101,92),(cx,cy),47,1)
     dibujar_radar(canvas,cx,cy,40,tiempo*(4.2 if activo>0 else 0.75),
                   (99,207,184) if activo>0 else (117,147,131),True)
-    # Zona de texto estrictamente contenida dentro del chasis (borde derecho x+w).
+    # zona de texto estrictamente contenida dentro del chasis (borde derecho x+w).
     tx=x+605
     disponible=x+w-tx-16
     if alerta:
@@ -1639,7 +1624,7 @@ def dibujar_hud_industrial(canvas, jugadores, pareja, retratos, espera, activo, 
         tiempo_restante=f"{activo if activo>0 else espera:.1f} s" if activo>0 or espera>0 else "[B]"
         _hud_txt_ajustado(canvas,tiempo_restante,18,(230,215,184),tx,y+118,disponible,True)
     color=(110,229,195) if activo>0 else ((211,153,94) if espera>0 else (132,215,160))
-    # Barra inferior única con progreso real.
+    # barra inferior única con progreso real.
     pygame.draw.rect(canvas,(17,15,15),(x+18,y+176,w-36,29),border_radius=3)
     if activo>0:
         fraccion=activo/DURACION_PODER
@@ -1656,15 +1641,15 @@ def dibujar_hud_industrial(canvas, jugadores, pareja, retratos, espera, activo, 
     pygame.draw.rect(canvas,color,(x+393,y+184,int(bw*max(0,min(1,fraccion))),12))
     pygame.draw.rect(canvas,(170,127,81),(x+393,y+184,bw,12),1)
 
-# ATMÓSFERA VISIBLE: sombras de bordes, manchas de terreno y bancos de polvo.
-# Sin focos aditivos ni filtros de píxeles por fotograma.
+# atmósfera visible, sombras de bordes, manchas de terreno y bancos de polvo.
+# sin focos aditivos ni filtros de píxeles por fotograma.
 def crear_atmosfera_profunda():
     rng=random.Random(8841)
     sombras=pygame.Surface((ANCHO,ALTO),pygame.SRCALPHA)
     for i in range(70):
         a=int(35*(1-i/70)**1.8)
         pygame.draw.rect(sombras,(8,9,14,a),(i,i,ANCHO-2*i,ALTO-2*i),3)
-    # Detalles ambientales de suelo ligados a coordenadas del mundo.
+    # detalles ambientales de suelo ligados a coordenadas del mundo.
     suelo=pygame.Surface((ANCHO,ALTO_MUNDO),pygame.SRCALPHA)
     for _ in range(100):
         x=rng.randrange(135,ANCHO-135)
@@ -1673,7 +1658,7 @@ def crear_atmosfera_profunda():
         alto=rng.randrange(7,19)
         pygame.draw.ellipse(suelo,(18,14,12,17),(x-radio,y-alto,radio*2,alto*2))
         pygame.draw.ellipse(suelo,(192,163,120,11),(x-radio+9,y-alto+3,radio*2,alto*2),2)
-    # Bancos de niebla pre-renderizados con transparencias reales.
+    # bancos de niebla pre-renderizados con transparencias reales.
     bancos=[]
     for i in range(3):
         surf=pygame.Surface((500,190),pygame.SRCALPHA)
@@ -1708,7 +1693,7 @@ def Evento_2(rol=None):
     para todos. Si no, se juega el modo clásico de siempre (dos parejas en un teclado)."""
     pygame.init()
 
-    # ---------- MULTIJUGADOR ----------
+    # multijugador
     red, semilla = None, None
     if rol in NOMBRE_POR_ROL:
         try:
@@ -1719,8 +1704,8 @@ def Evento_2(rol=None):
         if red is not None and red.conectados() >= MIN_JUGADORES_RED:
             semilla = red.pedir_campo()
         if semilla is None:
-            red = None                          # sin servidor o solo: modo clásico
-    # Modo elegido en el menú (CREAR PARTIDA): un jugador, local (2-4 en este PC) o en red.
+            red = None                          # sin servidor o solo, modo clásico
+    # modo elegido en el menú (crear partida), un jugador, local (2-4 en este pc) o en red.
     try:
         from Red import cliente as _cliente
         modo, locales = _cliente.modo(), _cliente.jugadores_locales()
@@ -1731,23 +1716,23 @@ def Evento_2(rol=None):
     nombre_pj = NOMBRE_POR_ROL.get(rol, "Presidente")
     orden = [nombre_pj] + [n for n in ("Presidente", "Ciudadano", "Periodista", "Influencer") if n != nombre_pj]
     if red is None and modo == "local" and locales == 4:
-        # 4 jugadores: por parejas y por turnos, como el clásico (cada pareja con WASD y flechas)
+        # 4 jugadores, por parejas y por turnos, como el clásico (cada pareja con wasd y flechas)
         parejas = [[(orden[0], colores[orden[0]], WASD), (orden[1], colores[orden[1]], FLECHAS)],
                    [(orden[2], colores[orden[2]], WASD), (orden[3], colores[orden[3]], FLECHAS)]]
         TEXTO_CONTROLES = ("Juegan por parejas y por turnos: primero " + orden[0] + " y " + orden[1] +
                            ", luego " + orden[2] + " y " + orden[3] +
                            ". En cada pareja, uno usa W, A, S, D y el otro las flechas.")
     elif red is None and modo == "local":
-        # 2 o 3: todos a la vez, cada uno con sus teclas; el jugador 1 lleva el personaje elegido
+        # 2 o 3, todos a la vez, cada uno con sus teclas, el jugador 1 lleva el personaje elegido
         grupo = [(n, colores[n], TECLAS_LOCALES[k]) for k, n in enumerate(orden[:locales])]
         parejas = [grupo]
         TEXTO_CONTROLES = "Controles: " + "; ".join(
             f"{n}, {NOMBRE_TECLAS[t]}" for n, _, t in grupo) + "."
     elif red is not None or modo in ("solo", "red"):
-        parejas = [[(nombre_pj, colores[nombre_pj], WASD)]]  # solo mi personaje (WASD o flechas)
+        parejas = [[(nombre_pj, colores[nombre_pj], WASD)]]  # solo mi personaje (wasd o flechas)
         TEXTO_CONTROLES = "Te mueves con W, A, S, D o con las flechas."
     else:
-        parejas = PAREJAS                   # sin menú: modo clásico de dos parejas
+        parejas = PAREJAS                   # sin menú, modo clásico de dos parejas
         TEXTO_CONTROLES = "El primer jugador se mueve con W, A, S, D; el segundo, con las flechas."
 
     pantalla_completa = False
@@ -1756,7 +1741,7 @@ def Evento_2(rol=None):
     canvas = pygame.Surface((ANCHO, ALTO))
 
     cargar_fuentes()                # después de pygame.init()
-    cargar_animaciones()            # después de crear la ventana: convert_alpha() la necesita
+    cargar_animaciones()            # después de crear la ventana, convert_alpha() la necesita
 
     fondo = None
     if FONDO:
@@ -1771,10 +1756,10 @@ def Evento_2(rol=None):
 
     reloj = pygame.time.Clock()
 
-    # El tutorial se muestra una sola vez al entrar al minijuego.
+    # el tutorial se muestra una sola vez al entrar al minijuego.
     mostrar_tutorial(display, canvas, fondo, reloj)
 
-    # Recursos visuales creados una sola vez para cuidar el rendimiento.
+    # recursos visuales creados una sola vez para cuidar el rendimiento.
     particulas_polvo = crear_particulas_polvo(CANTIDAD_PARTICULAS) if ACTIVAR_POLVO else []
     particulas_explosion = []
     ondas_explosion = []
@@ -1821,7 +1806,7 @@ def Evento_2(rol=None):
         dt = min(reloj.tick(60) / 1000, 0.05)
         tiempo_mundo += dt
         poder_activo = max(0.0, poder_activo - dt)
-        # La recarga comienza cuando termina el escaneo, no mientras está activo.
+        # la recarga comienza cuando termina el escaneo, no mientras está activo.
         if poder_activo <= 0:
             poder_espera = max(0.0, poder_espera - dt)
         destello_dano = max(0.0, destello_dano - dt)
@@ -1865,11 +1850,11 @@ def Evento_2(rol=None):
                 camara += (objetivo - camara) * min(1, 8 * dt)
 
             for j in activos:
-                # el que se queda atrás no se sale de la pantalla: el borde de abajo lo va empujando
+                # el que se queda atrás no se sale de la pantalla, el borde de abajo lo va empujando
                 j["y"] = max(camara + LIMITE_ARRIBA, min(camara + ALTO - RADIO_HITBOX, j["y"]))
                 j["invulnerable"] = max(0, j["invulnerable"] - dt)
 
-                # --- COLISIONES USANDO RADIO_HITBOX (en los pies) ---
+                # colisiones usando radio_hitbox (en los pies)
                 if j["invulnerable"] <= 0:
                     for mx, my in remaster_minas_cercanas(
                             indice_minas, j["x"], j["y"], RADIO_HITBOX + RADIO_MINA):
@@ -1893,10 +1878,9 @@ def Evento_2(rol=None):
                             else:
                                 j["eliminado"] = True
                             break
-                # ----------------------------------------------------
 
                 if not j["eliminado"] and j["y"] <= LIMITE_ARRIBA + 4:
-                    j["llego"] = True       # llegó con la cabeza al borde superior: el final del recorrido
+                    j["llego"] = True       # llegó con la cabeza al borde superior, el final del recorrido
 
             if all(j["llego"] or j["eliminado"] for j in jugadores):
                 for j in jugadores:
@@ -1936,7 +1920,7 @@ def Evento_2(rol=None):
         dibujar_neblina(canvas_mundo, capas_neblina, tiempo_mundo, cam)
         dibujar_atmosfera_bruma(canvas_mundo, atmosfera_profunda, tiempo_mundo)
         dibujar_rafagas(canvas_mundo, rafagas, cam, tiempo_mundo)
-        # No se usan luces aditivas sobre el suelo: evitamos círculos amarillos.
+        # no se usan luces aditivas sobre el suelo, evitamos círculos amarillos.
 
         if poder_activo > 0 and radar_inicio is not None:
             edad_radar = tiempo_mundo - radar_inicio
@@ -1948,7 +1932,7 @@ def Evento_2(rol=None):
                 if -12 <= sy <= ALTO + 12:
                     pygame.draw.circle(canvas_mundo, COL_MINA, (mx, sy), RADIO_MINA)
 
-        # MULTIJUGADOR: las minas que ya pisó alguien del grupo quedan marcadas para todos
+        # multijugador, las minas que ya pisó alguien del grupo quedan marcadas para todos
         if red is not None:
             for indice_mina in list(red.minas_pisadas):
                 if 0 <= indice_mina < len(minas):
@@ -1960,7 +1944,7 @@ def Evento_2(rol=None):
 
         for j in jugadores:
             sy = int(j["y"]) - cam
-            # el sprite va ANCLADO A LOS PIES: se dibuja hacia arriba desde la hitbox
+            # el sprite va anclado a los pies, se dibuja hacia arriba desde la hitbox
             if sy + RADIO_HITBOX < 0 or sy + RADIO_HITBOX - ALTURA_SPRITE > ALTO:
                 continue
 
@@ -1971,7 +1955,7 @@ def Evento_2(rol=None):
 
             if frame_a_dibujar:
                 superficie_a_blit = frame_a_dibujar
-                # Micro movimiento corporal: pasos mas vivos al caminar y respiracion al estar quieto.
+                # micro movimiento corporal, pasos mas vivos al caminar y respiracion al estar quieto.
                 if j["estado"] == "quieto":
                     balanceo = math.sin(tiempo_mundo * 2.8 + j["x"] * 0.01) * 1.1
                 else:
@@ -1987,7 +1971,7 @@ def Evento_2(rol=None):
 
                 canvas_mundo.blit(superficie_a_blit, sprite_rect)
             else:
-                # Fallback de bolita: es justo la hitbox
+                # fallback de bolita, es justo la hitbox
                 color = (110, 110, 110) if j["eliminado"] else j["color"]
                 pygame.draw.circle(canvas_mundo, color, (int(j["x"]), sy), RADIO_HITBOX)
                 pygame.draw.circle(canvas_mundo, (255, 255, 255), (int(j["x"]), sy), RADIO_HITBOX, 2)
@@ -1999,7 +1983,7 @@ def Evento_2(rol=None):
             remaster_pasos(canvas_mundo, jugadores, cam, tiempo_mundo)
         dibujar_textos(canvas_mundo, textos_flotantes, cam)
 
-        # El ambiente se aplica encima del mundo, pero debajo de la interfaz.
+        # el ambiente se aplica encima del mundo, pero debajo de la interfaz.
         if ACTIVAR_ILUMINACION:
             canvas_mundo.blit(capa_ambiente, (0, 0))
         if remaster_vineta is not None:
@@ -2008,7 +1992,7 @@ def Evento_2(rol=None):
         dibujar_marcos_peligro(canvas_mundo, poder_activo, tiempo_mundo)
         dibujar_destello_dano(canvas_mundo, destello_dano)
 
-        # Sacudida breve de camara al pisar una mina; el HUD permanece estable.
+        # sacudida breve de camara al pisar una mina, el hud permanece estable.
         canvas.fill((15, 13, 11))
         if sacudida > 0:
             intensidad = sacudida / DURACION_SACUDIDA

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding, utf-8
 """The Leader - Evento 1 Periodista.
 
 Reproduce el video original y lo pausa en sus cuatro preguntas.
@@ -11,11 +11,11 @@ import cv2
 import pygame
 import Metodos
 
-# Momentos donde todas las opciones ya están escritas en el video.
-# Se usan fotogramas del propio archivo, no un reloj que siga corriendo en pausa.
+# momentos donde todas las opciones ya están escritas en el video.
+# se usan fotogramas del propio archivo, no un reloj que siga corriendo en pausa.
 PAUSAS_SEGUNDOS = (17.0, 35.0, 53.0, 72.0)
 
-# Coordenadas sobre una referencia de 831 x 623 (misma proporción que el video).
+# coordenadas sobre una referencia de 831 x 623 (misma proporción que el video).
 REF_W, REF_H = 831, 623
 ZONAS = (
     ((75, 265, 685, 60), (75, 325, 685, 78), (75, 403, 685, 55), (75, 458, 685, 60)),
@@ -77,7 +77,7 @@ def Evento1Periodista():
         pantalla = pygame.display.set_mode((900, 675), pygame.RESIZABLE)
     pygame.display.set_caption('The Leader | Evento 1 - Periodista')
 
-    # Leer hasta el fotograma exacto de cada pregunta, evitando saltársela.
+    # leer hasta el fotograma exacto de cada pregunta, evitando saltársela.
     frames_pausa = [round(seg * fps) for seg in PAUSAS_SEGUNDOS]
     numero_frame = 0
     indice_pregunta = 0
@@ -90,7 +90,7 @@ def Evento1Periodista():
     reloj = pygame.time.Clock()
     acumulado = 0.0
 
-    # Audio opcional separado. No se exige para que el evento funcione.
+    # audio opcional separado. no se exige para que el evento funcione.
     audio = ruta.with_name('Evento1 periodista_audio.mp3')
     reproduciendo_audio = False
     if audio.is_file():
@@ -121,7 +121,7 @@ def Evento1Periodista():
                     pantalla = pygame.display.set_mode((max(320, evento.w), max(240, evento.h)), pygame.RESIZABLE)
                     rect = rect_video(pantalla, vw, vh)
                     tam_escalado = None
-                if Metodos.doble_espacio(evento) and not pausado:     # doble espacio: ir a la siguiente pregunta
+                if Metodos.doble_espacio(evento) and not pausado:     # doble espacio, ir a la siguiente pregunta
                     if indice_pregunta < len(frames_pausa):
                         numero_frame = frames_pausa[indice_pregunta] - 1
                         cap.set(cv2.CAP_PROP_POS_FRAMES, numero_frame)

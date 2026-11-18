@@ -31,7 +31,7 @@ class Personaje:
                 frames.append(pygame.transform.scale_by(f, ESCALA))  # nearest
             self.anims[nombre] = frames
 
-        self.pos = pygame.Vector2(x, y)   # posicion de los PIES
+        self.pos = pygame.Vector2(x, y)   # posicion de los pies
         self.direccion = "down"
         self.estado = "idle"
         self.t = 0.0
@@ -57,7 +57,7 @@ class Personaje:
         frames = self.anims[f"{self.estado}_{self.direccion}"]
         i = int(self.t * FPS_ANIM[self.estado]) % len(frames)
         img = frames[i]
-        # pivote abajo-centro: los pies quedan en self.pos
+        # pivote abajo-centro, los pies quedan en self.pos
         pantalla.blit(img, img.get_rect(midbottom=self.pos))
 
 

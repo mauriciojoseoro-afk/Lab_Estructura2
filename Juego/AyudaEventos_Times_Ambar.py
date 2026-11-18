@@ -25,7 +25,7 @@ _panel=pygame.Rect(0,0,300,500)
 def _contexto():
     pila=inspect.stack(context=0)
     archivos=[(f.filename.replace('\\','/').lower(),f.function.lower()) for f in pila]
-    # El reproductor de vídeo y las escenas de transición nunca muestran el panel.
+    # el reproductor de vídeo y las escenas de transición nunca muestran el panel.
     for ruta,fn in archivos:
         if fn in ('cinematica_minas','reproducir_escena','remaster_cinematica','reproducirvideo','video'):
             return None
@@ -137,7 +137,7 @@ def _flip(*args,**kwargs):
 
 def _update(*args,**kwargs):
     _pintar()
-    # Redibujar todo cuando el overlay está visible, incluso si el evento actualiza rectángulos.
+    # redibujar todo cuando el overlay está visible, incluso si el evento actualiza rectángulos.
     if _contexto() is not None and pygame.display.get_surface() is not None:
         return _original_update()
     return _original_update(*args,**kwargs)

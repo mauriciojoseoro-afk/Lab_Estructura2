@@ -18,7 +18,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-# ------------------------- CONFIGURACION -------------------------
+# configuracion
 BASE = Path(__file__).resolve().parent
 ENTRADAS = {            # direccion -> hoja generada (en herramientas/originales/)
     "down":  BASE / "originales" / "abajo.jpg",
@@ -28,16 +28,15 @@ ENTRADAS = {            # direccion -> hoja generada (en herramientas/originales
 }
 COLUMNAS, FILAS = 8, 2
 FILA_ANIM = {0: "walk", 1: "idle"}   # fila 1 = caminar, fila 2 = quieto
-# nombres de carpeta que usan los eventos del juego (Evento_2, etc.)
+# nombres de carpeta que usan los eventos del juego (evento_2, etc.)
 CARPETA_JUEGO = {"down": "abajo", "up": "arriba", "left": "izquierda", "right": "derecha"}
 
 ALTO_PERSONAJE = 240   # alto final del personaje en px (pixel art real)
-PIXELAR = True          # True = reduce con NEAREST (pixel art limpio)
-                        # False = reduce suave (LANCZOS)
+PIXELAR = True          # true = reduce con nearest (pixel art limpio)
+                        # false = reduce suave (lanczos)
 MARGEN = 4              # px libres alrededor del personaje en cada celda
 QUITAR_SOMBRAS = True   # borra manchas oscuras verdosas (sombras en el suelo)
 SALIDA = BASE.parent / "Assets" / "Personajes" / "Sobreviviente"
-# -----------------------------------------------------------------
 
 
 def quitar_verde(img: Image.Image) -> Image.Image:
@@ -48,15 +47,15 @@ def quitar_verde(img: Image.Image) -> Image.Image:
     # "cuanto mas verde que el resto" es cada pixel
     exceso = g - np.maximum(r, b)
 
-    # fondo: verde dominante y brillante
+    # fondo, verde dominante y brillante
     fondo = (exceso > 60) & (g > 120)
-    # sombras del suelo: verde dominante pero oscuro
+    # sombras del suelo, verde dominante pero oscuro
     if QUITAR_SOMBRAS:
         fondo |= (exceso > 25) & (g > 40) & (g < 140) & (r < 90) & (b < 90)
 
     alpha = np.where(fondo, 0, 255).astype(np.float32)
 
-    # despill: a los pixeles que quedan, no dejar que G supere a max(R,B)
+    # despill, a los pixeles que quedan, no dejar que g supere a max(r, b)
     limite = np.maximum(r, b)
     g = np.where(g > limite, limite, g)
 
@@ -148,15 +147,15 @@ def main() -> None:
         print("No se encontro ninguna hoja.")
         return
 
-    # 2) escala comun: el idle de cada direccion define su altura real,
-    #    y todas se llevan a ALTO_PERSONAJE
+    # 2) escala comun, el idle de cada direccion define su altura real
+    # y todas se llevan a alto_personaje
     escalas = {}
     for d, frames in datos.items():
         alto_idle = np.median([fr.height for fr in frames[1]])
         escalas[d] = ALTO_PERSONAJE / alto_idle
 
-    # 3) escalar frames (LANCZOS conserva los contornos al reducir;
-    #    si PIXELAR, luego el alfa se vuelve binario = bordes de pixel art)
+    # 3) escalar frames (lanczos conserva los contornos al reducir
+    # si pixelar, luego el alfa se vuelve binario = bordes de pixel art)
     finales = {}
     for d, frames in datos.items():
         s = escalas[d]
@@ -171,7 +170,7 @@ def main() -> None:
                     a[..., 3] = np.where(a[..., 3] > 128, 255, 0)
                     fila[i] = limpiar_ruido(Image.fromarray(a, "RGBA"))
 
-    # 4) tamano de celda unico para TODO (el frame mas grande + margen)
+    # 4) tamano de celda unico para todo (el frame mas grande + margen)
     todos = [fr for d in finales for fila in finales[d] for fr in fila]
     cel_w = max(fr.width for fr in todos) + 2 * MARGEN
     cel_h = max(fr.height for fr in todos) + 2 * MARGEN
@@ -199,8 +198,8 @@ def main() -> None:
         hoja.save(SALIDA / f"{d}.png")
         print(f"  -> {SALIDA / (d + '.png')}")
 
-        # Copia en el formato que usan los eventos del juego (p.ej. Evento_2):
-        #   Sobreviviente/abajo/frame_1.png ... Sobreviviente/quieto_abajo/frame_1.png ...
+        # copia en el formato que usan los eventos del juego (p.ej. evento_2)
+        # sobreviviente/abajo/frame_1.png ... sobreviviente/quieto_abajo/frame_1.png ...
         for f, fila in enumerate(filas):
             carpeta_juego = SALIDA / (CARPETA_JUEGO[d] if f == 0 else f"quieto_{CARPETA_JUEGO[d]}")
             carpeta_juego.mkdir(parents=True, exist_ok=True)

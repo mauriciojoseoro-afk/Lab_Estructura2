@@ -41,7 +41,7 @@ def _icono_mapa(display, canvas, escala, offset_x, offset_y):
     global _mapa_presionado, MAPA_BLOQUEADO
     from Eventos import Mapa
     ancho_canvas = canvas.get_width()
-    margen = 150 if ancho_canvas >= 1400 else 75    # en el Evento 2 hay una barra a la derecha
+    margen = 150 if ancho_canvas >= 1400 else 75    # en el evento 2 hay una barra a la derecha
     rect = pygame.Rect(ancho_canvas - margen, 22, 50, 40)
 
     raton = mouse_en_canvas(escala, offset_x, offset_y)
@@ -83,7 +83,7 @@ def mostrar_canvas(display, canvas):
 
     display.fill((0, 0, 0))
     if offset_x > 2 or offset_y > 2:
-        # RELLENO DE LOS BORDES: la misma imagen, borrosa y oscura, en vez de franjas negras
+        # relleno de los bordes, la misma imagen, borrosa y oscura, en vez de franjas negras
         cubre = max(ancho_ventana / ancho_canvas, alto_ventana / alto_canvas)
         fw, fh = int(ancho_canvas * cubre) + 2, int(alto_canvas * cubre) + 2
         fondo = pygame.transform.smoothscale(canvas_escalado, (max(1, nuevo_ancho // 16), max(1, nuevo_alto // 16)))
@@ -186,7 +186,7 @@ def ElegirGenero(rol):
             Intz_Influencer.Influencer(genero)
 
 
-# DOBLE ESPACIO PARA SALTAR VIDEOS
+# doble espacio para saltar videos
 _ultimo_espacio = [-1000]
 
 

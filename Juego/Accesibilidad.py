@@ -13,7 +13,7 @@ def read():
 def save(**kwargs):
     d=read();d.update(kwargs);CONFIG.write_text(json.dumps(d,indent=2),encoding='utf8')
 def window(size=None, title=None):
-    # Tamaño físico persistente; los canvases de cada evento mantienen su resolución lógica.
+    # tamaño físico persistente, los canvases de cada evento mantienen su resolución lógica.
     size=tuple(size or read()['window'])
     if not pygame.display.get_init():pygame.display.init()
     display=pygame.display.set_mode(size,pygame.RESIZABLE)
@@ -21,7 +21,7 @@ def window(size=None, title=None):
     return display
 def remember_size(size):
     if size[0]>=640 and size[1]>=400:save(window=list(size))
-# Matrices aproximadas para SIMULACIÓN de percepción; el modo compensatorio usa daltonización.
+# matrices aproximadas para simulación de percepción, el modo compensatorio usa daltonización.
 SIM={
  'Protanopia':np.array([[.152,.849,0],[.115,.885,0],[0,.063,.937]],dtype=np.float32),
  'Deuteranopia':np.array([[.367,.633,0],[.280,.720,0],[-.012,.102,.910]],dtype=np.float32),
@@ -30,7 +30,7 @@ SIM={
 def filter_surface(surface,mode=None):
     mode=mode or read().get('filter','Normal')
     if mode=='Normal':return surface
-    # Aplicación sobre una copia; nunca muta assets originales.
+    # aplicación sobre una copia, nunca muta assets originales.
     if not pygame.display.get_init():return surface
     result=surface.copy()
     rgb=pygame.surfarray.pixels3d(result)
@@ -40,7 +40,7 @@ def filter_surface(surface,mode=None):
     elif mode in SIM:
         sim=np.clip(a@SIM[mode].T,0,255)
         error=a-sim
-        # Corrección daltónica suave, redistribuye información perdida a canales visibles.
+        # corrección daltónica suave, redistribuye información perdida a canales visibles.
         a=np.clip(a+np.stack((.0*error[...,0]+.65*error[...,1],
                                .7*error[...,0]+.15*error[...,2],
                                .65*error[...,1]+.25*error[...,0]),axis=-1),0,255)
@@ -84,7 +84,7 @@ def help_overlay(display,event):
             if e.type==pygame.MOUSEBUTTONDOWN:running=False
         display=pygame.display.get_surface()
         w,h=display.get_size()
-        # Render a logical modal, scale to physical resolution.
+        # render a logical modal, scale to physical resolution.
         layer=pygame.Surface((1000,680),pygame.SRCALPHA)
         layer.fill((6,8,11,244))
         pygame.draw.rect(layer,(26,24,25),(43,44,914,587),border_radius=8)

@@ -19,30 +19,30 @@ import threading
 
 try:
     from Red.protocolo import ROLES, enviar, lineas, leer_config
-except ImportError:                      # si se ejecuta como "python servidor.py" dentro de Red/
+except ImportError:                      # si se ejecuta como "python servidor.py" dentro de red/
     from protocolo import ROLES, enviar, lineas, leer_config
 
 
 class Servidor:
     def __init__(self, puerto):
         self.puerto = puerto
-        self.candado = threading.Lock()  # protege el estado: dos hilos no lo cambian a la vez
+        self.candado = threading.Lock()  # protege el estado, dos hilos no lo cambian a la vez
         self.jugadores = {}              # id -> {"nombre", "rol", "sock", "progreso", "indicadores", "decision"}
-        self.roles = {r: None for r in ROLES}   # rol -> id del jugador que lo usa (o None)
+        self.roles = {r: None for r in ROLES}   # rol -> id del jugador que lo usa (o none)
         self.siguiente_id = 1
-        # SALA DE ESPERA: si la partida se creo desde el menu (CON COMPAÑIA), solo el anfitrion
-        # puede iniciarla. Si el servidor se abrio con el comando, no hay anfitrion y se juega como antes.
+        # sala de espera, si la partida se creo desde el menu (con compañia), solo el anfitrion
+        # puede iniciarla. si el servidor se abrio con el comando, no hay anfitrion y se juega como antes.
         self.anfitrion = None            # id del jugador que creo la partida
         self.iniciada = True
-        # CAMPO MINADO COMPARTIDO: con la misma semilla todos generan las mismas minas
+        # campo minado compartido, con la misma semilla todos generan las mismas minas
         self.semilla = random.randint(1, 10 ** 9)
         self.minas_pisadas = {}          # indice de la mina -> nombre de quien la piso
-        # ENTREVISTA POR TURNOS
+        # entrevista por turnos
         self.entrevista_listos = set()   # ids de quienes ya llegaron a la entrevista
         self.decisiones = []             # decision numero n -> opcion elegida (la misma para todos)
         self.votos = {}                  # numero de decision -> [(id, opcion), ...] en orden de llegada
 
-    # ---------- estado ----------
+    # estado
     def ocupados(self):
         """{rol: nombre} de los roles en uso (llamar con el candado tomado)."""
         return {r: self.jugadores[j]["nombre"] for r, j in self.roles.items() if j is not None}
@@ -68,7 +68,7 @@ class Servidor:
     def avisar_jugadores(self):
         self.difundir({"tipo": "JUGADORES", "lista": self.lista_jugadores()})
 
-    # ---------- final del grupo ----------
+    # final del grupo
     def participantes(self):
         """Jugadores que estan jugando (tienen rol)."""
         return [d for d in self.jugadores.values() if d["rol"] is not None]
@@ -96,7 +96,7 @@ class Servidor:
         for d in terminados:                 # listo para otra partida
             d["termino"] = False
 
-    # ---------- entrevista por turnos ----------
+    # entrevista por turnos
     def revisar_entrevista(self):
         """Sala de espera: cuando llegan todos los que juegan, empieza la entrevista."""
         jugando = [j for j, d in self.jugadores.items() if d["rol"] is not None]
@@ -141,7 +141,7 @@ class Servidor:
             self.jugadores[jid]["rol"] = None
         return rol
 
-    # ---------- un hilo por jugador ----------
+    # un hilo por jugador
     def atender(self, sock, direccion):
         with self.candado:
             jid = self.siguiente_id
@@ -160,10 +160,10 @@ class Servidor:
                             self.jugadores[jid]["nombre"] = nombre
                         if msg.get("anfitrion") and self.anfitrion is None:
                             self.anfitrion = jid             # el que creo la partida
-                            self.iniciada = False            # se espera a que el pulse INICIAR
+                            self.iniciada = False            # se espera a que el pulse iniciar
                         elif self.iniciada and self.anfitrion is not None:
                             enviar(sock, {"tipo": "RECHAZADO", "motivo": "La partida ya empezó"})
-                            break                            # llega tarde: no entra
+                            break                            # llega tarde, no entra
                         enviar(sock, {"tipo": "BIENVENIDO", "id": jid, "ocupados": self.ocupados(),
                                       "anfitrion": self.anfitrion, "iniciada": self.iniciada})
                         self.avisar_jugadores()
@@ -181,7 +181,7 @@ class Servidor:
                             continue
                         dueno = self.roles[rol]
                         if dueno is not None and dueno != jid:
-                            # Alguien lo tomo primero: se rechaza
+                            # alguien lo tomo primero, se rechaza
                             enviar(sock, {"tipo": "OCUPADO", "rol": rol, "por": self.jugadores[dueno]["nombre"]})
                             continue
                         self.soltar_rol(jid)               # si tenia otro, lo libera
@@ -205,7 +205,7 @@ class Servidor:
                         self.revisar_entrevista()
 
                     elif tipo == "ELECCION":
-                        # Una decision de la entrevista: del dueño de la fase o un voto
+                        # una decision de la entrevista, del dueño de la fase o un voto
                         numero, opcion = msg.get("numero"), msg.get("opcion")
                         if not isinstance(numero, int) or not isinstance(opcion, int):
                             continue
@@ -220,7 +220,7 @@ class Servidor:
                             self.publicar_decision(numero, opcion)
 
                     elif tipo == "TERMINE":
-                        # Termino la partida: guarda sus indicadores y puntaje y espera a los demas
+                        # termino la partida, guarda sus indicadores y puntaje y espera a los demas
                         datos = self.jugadores[jid]
                         if isinstance(msg.get("indicadores"), dict) and isinstance(msg.get("puntaje"), (int, float)):
                             datos["indicadores"] = msg["indicadores"]
@@ -232,7 +232,7 @@ class Servidor:
                             self.revisar_final()
 
                     elif tipo == "RESULTADO":
-                        # Un jugador termino un evento: se guarda y se reparte a todos
+                        # un jugador termino un evento, se guarda y se reparte a todos
                         datos = self.jugadores[jid]
                         datos["progreso"] = str(msg.get("evento") or datos["progreso"])
                         if isinstance(msg.get("indicadores"), dict):
@@ -291,7 +291,7 @@ class Servidor:
             servidor.close()
 
 
-_en_marcha = None          # servidor abierto desde el menu (CREAR PARTIDA -> CON COMPAÑIA)
+_en_marcha = None          # servidor abierto desde el menu (crear partida -> con compañia)
 
 
 def en_segundo_plano(puerto=None):
