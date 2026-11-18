@@ -1,32 +1,26 @@
 # The Leader
 
+En una ciudad destruida por la desinformación, 4 sobrevivientes deciden qué compartir, verificar o ignorar mientras Civitas, una IA que esparce rumores, los manipula. Cada decisión cambia la confianza del grupo… hasta descubrir que todos tuvieron que ver con Civitas.
+
 Videojuego educativo sobre la desinformación y el uso responsable de las redes sociales, desarrollado como laboratorio de la asignatura **Estructura de Datos II** — Universidad del Norte.
 
 ## Historia
 
-**Ciudad Nova** colapsó después de que un rumor falso sobre el agua se regara por **CIVINET**, la red controlada por **Civitas**, una inteligencia artificial que decide qué ve la ciudad. Los sobrevivientes buscan a alguien que los guíe, pero nadie confía en nadie. Cada jugador asume uno de cuatro personajes, y todos esconden algo:
+**Ciudad Nova** colapsó después de que una noticia falsa se regara por **CIVINET**, la red controlada por **Civitas**, una inteligencia artificial que decide qué ve la ciudad. Los sobrevivientes buscan a alguien que los guíe, pero nadie confía en nadie. Cada jugador asume uno de cuatro personajes, y todos esconden algo:
 
 - **Héctor — Presidente:** detectó el rumor antes del colapso y nadie le hizo caso.
 - **Osamu Kuga — Periodista:** tenía la prueba que lo desmentía y esperó demasiado.
 - **Jenny — Influencer:** lo publicó sin verificarlo.
-- **Estella — Sobreviviente:** lo compartió sin leerlo.
+- **Estella — Ciudadana:** lo compartió sin leerlo.
 
 ## Recorrido
 
-1. **Evento 1:** cada personaje por su lado (el pozo, el depósito, el video del periodista…); decide qué hacer con un mensaje dudoso.
-2. **Evento 2 — Campo minado:** el grupo cruza el Campo Sembrado.
-3. **Entrevista en vivo:** Osamu entrevista a Héctor mientras Civitas publica rumores; cada rol decide si verificar, compartir o corregir.
-4. **Evento 3 — La oficina:** en la Central de Datos el jugador descubre su propio expediente.
-5. **Final:** según la **Confianza**, el **Caos** y la **Cohesión** (en multijugador, el promedio del grupo).
-
-Los videos se saltan con **doble espacio**.
-
-## Tecnologías
-
-- **Lenguaje:** Python 3.12
-- **Interfaz gráfica:** Pygame
-- **Video:** OpenCV (`opencv-python`)
-- **Arquitectura:** Cliente-servidor mediante sockets (multijugador)
+1. **Intro:** una cinemática muestra cómo una sola notificación compartida por todos destruye la ciudad.
+2. **Evento 1:** cada personaje por su lado decide qué hacer con un mensaje dudoso.
+3. **Evento 2 — Campo minado:** el grupo cruza el Campo Sembrado.
+4. **Entrevista en vivo:** Osamu entrevista a Héctor mientras Civitas publica rumores; cada rol decide si verificar, compartir o corregir.
+5. **Evento 3 — La oficina:** en la Central de Datos el jugador descubre su propio expediente.
+6. **Final:** depende de la **Confianza**, el **Caos** y la **Cohesión** (en multijugador, del promedio del grupo).
 
 ## Modos de juego
 
@@ -36,35 +30,37 @@ Los videos se saltan con **doble espacio**.
 
 ## Estructuras de datos utilizadas
 
-- **Árboles AVL:** organizan las preguntas y respuestas de cada rol (por ejemplo, el árbol de preguntas del periodista y el árbol de respuestas del presidente, sincronizados por ID), usados en la entrevista en vivo.
+- **Árboles AVL:** organizan las preguntas y respuestas de la entrevista en vivo (el árbol de preguntas del periodista y el de respuestas del presidente, sincronizados por ID).
 - **Grafos:** representan el mapa de la ciudad y la red social del grupo; en la oficina se usa **BFS** para mostrar cómo se propagó el rumor ronda por ronda y para encontrar caminos en el tablero de pistas.
 
+## Tecnologías
+
+- **Lenguaje:** Python 3.12
+- **Interfaz gráfica:** Pygame
+- **Video:** OpenCV (`opencv-python`)
+- **Arquitectura:** cliente-servidor mediante sockets (multijugador)
 
 ## Requisitos
 
 - Python 3.12 o superior
 - Pygame, OpenCV y NumPy
 
-Instalación de dependencias:
-
-\`\`\`bash
+```bash
 pip install pygame opencv-python numpy
-\`\`\`
+```
 
 ## Ejecución
 
-El juego siempre se debe ejecutar desde el punto de entrada principal, nunca desde los archivos internos por separado:
+El juego siempre se ejecuta desde el punto de entrada principal:
 
-\`\`\`bash
+```bash
 cd Juego
 python Pantalla.py
-\`\`\`
-
+```
 
 ## Integrantes
 
-- Mauricio Orozco
+- Isaac González
 - Karla Paredes
 - Laura Lanchero
-- Isaac González
-
+- Mauricio Orozco
