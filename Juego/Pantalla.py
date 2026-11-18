@@ -2,6 +2,8 @@ import sys
 from pathlib import Path
 import cv2
 import pygame
+import AyudaEventos
+AyudaEventos.instalar()
 import Historia
 import Accesibilidad
 from Red import cliente
