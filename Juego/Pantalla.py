@@ -136,6 +136,8 @@ def lista_sala(s,red,y):
 
 def main():
  pygame.init();display=Accesibilidad.window(title='The Leader')
+ import Metodos  # VIDEO DE INTRO ANTES DE TODO
+ Metodos.reproducir_video(display,pygame.Surface((1280,720)),BASE/'Assets'/'Videos'/'Video_Intro.mp4')
  canvas=pygame.Surface((W,H),pygame.SRCALPHA);clock=pygame.time.Clock()
  video=cv2.VideoCapture(str(VIDEO))
  if not video.isOpened():raise FileNotFoundError('No se pudo abrir '+str(VIDEO))
